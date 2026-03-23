@@ -1,10 +1,22 @@
 from pydantic import BaseModel
+from datetime import datetime
+from typing import Optional
 
-class TripCreate(BaseModel):    
+class TripCreate(BaseModel):
+    user_id: int
     destination: str
-    start_date: str
+    start_date: datetime
+    end_date: datetime
+    budget: Optional[float] = None
+    notes: Optional[str] = None
 
-class TripResponse(BaseModel):    
+
+class TripResponse(BaseModel):
     id: int
+    user_id: int
     destination: str
-    start_date: str
+    start_date: datetime
+    end_date: datetime
+
+    class Config:
+        orm_mode = True
