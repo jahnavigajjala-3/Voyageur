@@ -18,5 +18,6 @@ class TripResponse(BaseModel):
     start_date: datetime
     end_date: datetime
 
-    class Config:
-        orm_mode = True
+    model_config = {
+    "from_attributes": True
+}
