@@ -1,4 +1,4 @@
-Amigo – Travel Planning Backend API
+Voyageur - Smart AI Travel Guide and Safety Companion.
 
 This project is a backend system for a travel planning application built using FastAPI.
 It allows users to create and manage trips. 
