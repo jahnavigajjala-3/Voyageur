@@ -1,14 +1,13 @@
 # Python
 Backend/venv/
 __pycache__/
-*.pyc
+*.py[cod]
 
 # Env
 .env
-Backend/.env
 
 # Node
-frontend/node_modules/
+Frontend/node_modules/
 
 # Build
 dist/
