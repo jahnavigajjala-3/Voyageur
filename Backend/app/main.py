@@ -1,10 +1,9 @@
 from fastapi import FastAPI
-
 from app.db.session import engine
 from app.db.base import Base
 from app.models import user  
 from app.api.v1.routes import ai,user as user_routes, trip as trip_routes
-
+from app.api.v1.routes import ai as ai_routes
 app = FastAPI()
 
 Base.metadata.create_all(bind=engine)
@@ -14,6 +13,7 @@ API_PREFIX = "/api/v1"
 app.include_router(user_routes.router, prefix=API_PREFIX)
 app.include_router(trip_routes.router, prefix=API_PREFIX)
 app.include_router(ai.router, prefix=API_PREFIX)
+app.include_router(ai_routes.router)
 
 @app.get("/")
 def home():

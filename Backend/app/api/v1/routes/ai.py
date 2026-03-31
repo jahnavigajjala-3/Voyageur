@@ -2,7 +2,9 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import List
 from app.services.ai_service import get_ai_response
-
+from fastapi import APIRouter
+from app.services.travel_service import get_crime_risk
+from app.services.ai_service import analyze_crime
 router = APIRouter()
 
 
@@ -27,3 +29,14 @@ def chat(request: ChatRequest):
     )
 
     return {"response": response}
+@router.get("/crime-warning/{state}")
+async def get_crime_warning(state: str):
+    
+    crime_data = await get_crime_risk(state)
+    warning = await analyze_crime(state, crime_data)
+
+    return {
+        "state": state,
+        "crime_data": crime_data,
+        "ai_warning": warning
+    }
