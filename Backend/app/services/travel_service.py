@@ -3,7 +3,7 @@ import os
 
 async def get_crime_risk(state: str):
     api_key = os.getenv("DATA_GOV_API_KEY")
-    
+    state = state.title()
     url = "https://api.data.gov.in/resource/15150682-a9ed-475d-b0e3-67b292e90d22"
     
     params = {
