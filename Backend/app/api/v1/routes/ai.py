@@ -8,7 +8,7 @@ from app.services.ai_service import analyze_crime
 router = APIRouter()
 
 
-# 🔸 Define request schema
+
 class Message(BaseModel):
     role: str   # "user" or "assistant"
     content: str
@@ -21,7 +21,14 @@ class ChatRequest(BaseModel):
 
 
 @router.post("/chat")
-def chat(request: ChatRequest):
+async def chat(request: ChatRequest):
+    response = await get_ai_response(
+        history=request.history,
+        new_message=request.message,
+        trip_context=request.trip_context
+    )
+
+    return {"response": response}
     response = get_ai_response(
         history=request.history,
         new_message=request.message,
