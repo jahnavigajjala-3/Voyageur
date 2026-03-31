@@ -88,3 +88,15 @@ def get_ai_response(history: list, new_message: str, trip_context: str) -> str:
     response = generate_with_fallback(client, contents, config)
 
     return response.text
+
+async def analyze_crime(state: str, crime_data: dict):
+    prompt = f"""
+    The user is planning to travel to {state}, India.
+    Here is the crime data for {state}:
+    - Total IPC Crimes in 2022: {crime_data['crimes_2022']}
+    - Crime Rate per lakh population: {crime_data['crime_rate_per_lakh']}
+    - Risk Level: {crime_data['risk']}
+    
+    Give a short, friendly travel safety warning in 2-3 sentences.
+    """
+   
