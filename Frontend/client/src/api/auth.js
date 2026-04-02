@@ -1,4 +1,4 @@
-const BASE_URL = "http://127.0.0.1:8000"; // your FastAPI backend
+const BASE_URL = "https://voyageur-1i0h.onrender.com/"; // your FastAPI backend
 
 export const loginUser = async (form) => {
   const res = await fetch(`${BASE_URL}/login`, {

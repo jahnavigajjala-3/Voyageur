@@ -13,13 +13,20 @@ export default function Login() {
   });
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
+  try {
     const data = await loginUser(form);
-    login(data);
+    console.log("LOGIN SUCCESS:", data);
 
-    navigate("/");
-  };
+    login(data);
+    navigate("/dashboard");
+
+  } catch (err) {
+    console.error("LOGIN ERROR:", err);
+    alert("Login failed");
+  }
+};
 
   return (
     <div className="h-screen flex items-center justify-center bg-gray-100">

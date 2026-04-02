@@ -11,12 +11,20 @@ export default function Signup() {
   });
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    await signupUser(form);
+  try {
+    const res = await signupUser(form);
+    console.log("SIGNUP SUCCESS:", res);
+
+    alert("Signup successful ✅");
     navigate("/login");
-  };
 
+  } catch (err) {
+    console.error("SIGNUP ERROR:", err);
+    alert("Signup failed");
+  }
+};
   return (
     <div className="h-screen flex items-center justify-center bg-gradient-to-r from-purple-500 to-blue-500">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-96">
