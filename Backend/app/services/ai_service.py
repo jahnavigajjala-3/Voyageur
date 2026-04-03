@@ -84,15 +84,14 @@ async def analyze_crime(state: str, crime_data: dict):
 
     try:
         prompt = f"""
-        The user is traveling to {state}, India.
-        
-        Crime Data:
-        - Total Crimes (2022): {crime_data['crimes_2022']}
-        - Crime Rate per lakh: {crime_data['crime_rate_per_lakh']}
-        - Risk Level: {crime_data['risk']}
+            The user is traveling to {state}, India.
 
-        Give a short safety warning (2 sentences).
-        """
+            Crime Data:
+            - Total Crimes: {crime_data['total_crime']}
+            - Risk Level: {crime_data['risk']}
+
+            Give a short safety warning (2 sentences).
+            """
 
         contents = [
             types.Content(

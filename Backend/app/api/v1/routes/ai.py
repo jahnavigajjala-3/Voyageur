@@ -7,8 +7,6 @@ from app.services.travel_service import get_crime_risk
 from app.services.ai_service import analyze_crime
 router = APIRouter()
 
-
-
 class Message(BaseModel):
     role: str   # "user" or "assistant"
     content: str
@@ -19,7 +17,6 @@ class ChatRequest(BaseModel):
     message: str
     trip_context: str
 
-
 @router.post("/chat")
 async def chat(request: ChatRequest):
     response = await get_ai_response(
@@ -29,13 +26,7 @@ async def chat(request: ChatRequest):
     )
 
     return {"response": response}
-    response = get_ai_response(
-        history=request.history,
-        new_message=request.message,
-        trip_context=request.trip_context
-    )
 
-    return {"response": response}
 @router.get("/crime-warning/{state}")
 async def get_crime_warning(state: str):
     
