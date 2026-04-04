@@ -3,7 +3,7 @@ Backend/venv/
 __pycache__/
 *.py[cod]
 .ipynb_checkpoints/
-
+Backend/data/processed_crime_data.csv
 # Env
 .env
 
