@@ -25,3 +25,4 @@ class Trip(Base):
 
 
     user = relationship("User", back_populates="trips")
+    chat_messages = relationship("ChatMessage", back_populates="trip")
