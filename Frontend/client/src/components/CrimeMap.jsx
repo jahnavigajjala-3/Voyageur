@@ -22,22 +22,24 @@ const RISK_COLORS = {
 
 export default function CrimeMap() {
   const { location, error }   = useLocation();
-  const [crimeRisk, setCrimeRisk] = useState(null);
+const [crimeRisk, setCrimeRisk] = useState(null);
+const [hasFetched, setHasFetched] = useState(false);
 
-  useEffect(() => {
-    if (!location) return;
+useEffect(() => {
+  if (!location || hasFetched) return;
 
-    const fetchRisk = async () => {
-      try {
-        const data = await getCrimeRiskByCoords(location.lat, location.lng);
-        setCrimeRisk(data);
-      } catch (err) {
-        console.error("Crime risk fetch failed:", err);
-      }
-    };
+  const fetchRisk = async () => {
+    try {
+      const data = await getCrimeRiskByCoords(location.lat, location.lng);
+      setCrimeRisk(data);
+      setHasFetched(true);
+    } catch (err) {
+      console.error("Crime risk fetch failed:", err);
+    }
+  };
 
-    fetchRisk();
-  }, [location]);
+  fetchRisk();
+}, [location, hasFetched]);
 
   if (error)    return <p className="text-red-500">Location error: {error}</p>;
   if (!location) return <p className="text-gray-500">Fetching location...</p>;
