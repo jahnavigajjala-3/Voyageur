@@ -45,7 +45,7 @@ export default function ChatBox() {
         ...updatedHistory,
         { role: "assistant", content: data.response },
       ]);
-    } catch (err) {
+    } catch (_) { // eslint-disable-line no-unused-vars
       setMessages([
         ...updatedHistory,
         { role: "assistant", content: "Sorry, something went wrong. Try again." },

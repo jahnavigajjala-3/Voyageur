@@ -45,7 +45,7 @@ export default function Dashboard() {
         notes: `From: ${tripForm.from}`,
       });
       setTripSaved(true);
-    } catch (err) {
+    } catch (_) { // eslint-disable-line no-unused-vars
       setTripError("Failed to save trip. Try again.");
     } finally {
       setSaving(false);

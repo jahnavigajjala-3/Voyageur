@@ -48,6 +48,14 @@ export const getCrimeRiskByCoords = async (lat, lng) => {
   return handleResponse(res);
 };
 
+// Hospitals
+export const getNearbyHospitals = async (lat, lng, radius = 10, limit = 5) => {
+  const res = await fetch(
+    `${API_V1}/travel/hospitals?lat=${lat}&lng=${lng}&radius=${radius}&limit=${limit}`
+  );
+  return handleResponse(res);
+};
+
 // Trips
 export const createTrip = async (tripData) => {
   const res = await fetch(`${API_V1}/trips`, {
