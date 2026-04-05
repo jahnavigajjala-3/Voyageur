@@ -13,11 +13,12 @@ load_dotenv()
 
 app = FastAPI()
 
-# 🌍 PRODUCTION CORS SETTINGS
+
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    os.getenv("FRONTEND_URL", "https://voyageur-frontend.vercel.app"), # REPLACE with your actual deployed URL
+    "https://voyageur-sable.vercel.app",
+    os.getenv("FRONTEND_URL", "https://voyageur-frontend.vercel.app"),
 ]
 
 app.add_middleware(
