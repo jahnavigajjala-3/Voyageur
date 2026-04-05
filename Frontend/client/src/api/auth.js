@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"; // local dev fallback
+const BASE_URL = import.meta.env.VITE_API_URL || "https://voyageur-1i0h.onrender.com"; // local dev fallback
 const API_PREFIX = "/api/v1";
 
 export const loginUser = async (form) => {
