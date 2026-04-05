@@ -51,3 +51,5 @@ export const createTrip = async (tripData) => {
   if (!res.ok) throw new Error("Failed to save trip to database");
   return res.json();
 };
+
+export default App;
