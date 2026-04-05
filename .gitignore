@@ -17,11 +17,4 @@ build/
 # OS
 .DS_Store
 
-#Processed Data files
-data/processed_crime_data.csv
-data/processed_hospitals.csv
-data/hospital_district_summary.csv
-
-#unprocessed data files
-data/crime_data.csv
-data/hospitals.csv
+Backend/data/
