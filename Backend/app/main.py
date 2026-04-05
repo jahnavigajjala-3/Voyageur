@@ -2,9 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.session import engine
 from app.db.base import Base
-from app.models import user  
+from app.models import user
 from app.api.v1.routes import user as user_routes, trip as trip_routes
 from app.api.v1.routes import ai as ai_routes
+from app.api.v1.routes import travel as travel_routes
+
 app = FastAPI()
 
 origins = [
@@ -16,8 +18,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"] ,
-    allow_headers=["*"] ,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 Base.metadata.create_all(bind=engine)
@@ -26,7 +28,8 @@ API_PREFIX = "/api/v1"
 
 app.include_router(user_routes.router, prefix=API_PREFIX)
 app.include_router(trip_routes.router, prefix=API_PREFIX)
-app.include_router(ai_routes.router, prefix=API_PREFIX)
+app.include_router(ai_routes.router, prefix=API_PREFIX + "/ai")
+app.include_router(travel_routes.router, prefix=API_PREFIX + "/travel")
 
 @app.get("/")
 def home():
