@@ -1,69 +1,69 @@
 const BASE_URL = import.meta.env.VITE_API_URL || "https://voyageur-1i0h.onrender.com";
+const API_V1 = `${BASE_URL}/api/v1`;
 
-// ── Auth ────────────────────────────────────────────────────────────────────
+const defaultHeaders = {
+  "Content-Type": "application/json",
+};
 
+const handleResponse = async (res) => {
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Request failed");
+  return data;
+};
+
+// Auth
 export const loginUser = async (form) => {
-  const res = await fetch(`${BASE_URL}/login`, {
+  const res = await fetch(`${API_V1}/login`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: defaultHeaders,
     body: JSON.stringify(form),
   });
-  if (!res.ok) throw new Error("Login failed");
-  return res.json();
+  return handleResponse(res);
 };
 
 export const signupUser = async (form) => {
-  const res = await fetch(`${BASE_URL}/signup`, {
+  const res = await fetch(`${API_V1}/signup`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: defaultHeaders,
     body: JSON.stringify(form),
   });
-  if (!res.ok) throw new Error("Signup failed");
-  return res.json();
+  return handleResponse(res);
 };
 
-// ── Chat ────────────────────────────────────────────────────────────────────
-
+// Chat
 export const sendChatMessage = async ({ history, message, trip_context }) => {
-  const res = await fetch(`${BASE_URL}/api/v1/ai/chat`, {
+  const res = await fetch(`${API_V1}/ai/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: defaultHeaders,
     body: JSON.stringify({ history, message, trip_context }),
   });
-  if (!res.ok) throw new Error("Chat request failed");
-  return res.json();
+  return handleResponse(res);
 };
 
-// ── Crime Risk ───────────────────────────────────────────────────────────────
-
+// Crime
 export const getCrimeRiskByCoords = async (lat, lng) => {
   const res = await fetch(
-    `${BASE_URL}/api/v1/travel/crime-risk?lat=${lat}&lng=${lng}`
+    `${API_V1}/travel/crime-risk?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`
   );
-  if (!res.ok) throw new Error("Crime risk fetch failed");
-  return res.json();
+  return handleResponse(res);
 };
 
-export const getAllDistrictRisks = async () => {
-  const res = await fetch(`${BASE_URL}/api/v1/travel/districts`);
-  if (!res.ok) throw new Error("District risks fetch failed");
-  return res.json();
-};
-
-// ── Trips ───────────────────────────────────────────────────────────────────
-
+// Trips
 export const createTrip = async (tripData) => {
-  const res = await fetch(`${BASE_URL}/api/v1/trips`, {
+  const res = await fetch(`${API_V1}/trips`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: defaultHeaders,
     body: JSON.stringify(tripData),
   });
-  if (!res.ok) throw new Error("Failed to create trip");
-  return res.json();
+  return handleResponse(res);
 };
 
 export const getTrips = async () => {
-  const res = await fetch(`${BASE_URL}/api/v1/trips`);
-  if (!res.ok) throw new Error("Failed to fetch trips");
-  return res.json();
+  const res = await fetch(`${API_V1}/trips`);
+  return handleResponse(res);
+};
+
+export const getTripById = async (id) => {
+  const res = await fetch(`${API_V1}/trips/${id}`);
+  return handleResponse(res);
 };
