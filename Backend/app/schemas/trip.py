@@ -7,7 +7,6 @@ class TripCreate(BaseModel):
     destination: str
     start_date: datetime
     end_date: datetime
-    budget: Optional[float] = None
     notes: Optional[str] = None
 
 

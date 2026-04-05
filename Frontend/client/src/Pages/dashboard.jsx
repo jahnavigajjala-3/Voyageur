@@ -13,7 +13,6 @@ export default function Dashboard() {
     to: "",
     start_date: "",
     end_date: "",
-    budget: "",
   });
   const [tripSaved, setTripSaved]   = useState(false);
   const [tripError, setTripError]   = useState("");
@@ -38,7 +37,6 @@ export default function Dashboard() {
         destination: tripForm.to,
         start_date: new Date(tripForm.start_date).toISOString(),
         end_date: new Date(tripForm.end_date).toISOString(),
-        budget: tripForm.budget ? parseFloat(tripForm.budget) : null,
         notes: `From: ${tripForm.from}`,
       });
       setTripSaved(true);
@@ -118,17 +116,6 @@ export default function Dashboard() {
             />
           </div>
 
-          <div className="md:col-span-2">
-            <label className="text-xs text-gray-500 uppercase font-semibold">Budget (₹) — Optional</label>
-            <input
-              name="budget"
-              type="number"
-              value={tripForm.budget}
-              onChange={handleTripChange}
-              placeholder="e.g. 5000"
-              className="w-full border rounded-lg px-4 py-2 mt-1 text-sm outline-none focus:ring-2 focus:ring-black"
-            />
-          </div>
         </div>
 
         {tripError && <p className="text-red-500 text-sm mt-3">{tripError}</p>}

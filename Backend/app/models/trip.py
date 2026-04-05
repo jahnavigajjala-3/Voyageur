@@ -16,7 +16,6 @@ class Trip(Base):
     start_date = Column(DateTime, nullable=False)
     end_date = Column(DateTime, nullable=False)
 
-    budget = Column(Float, nullable=True)
     notes = Column(Text, nullable=True)
 
     ai_recommendation = Column(Text, nullable=True)  
