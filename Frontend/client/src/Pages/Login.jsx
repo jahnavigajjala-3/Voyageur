@@ -39,7 +39,7 @@ export default function Login() {
             w-full max-w-[460px]
             rounded-[34px]
             border border-white/30
-            bg-white/18
+            bg-white/20
             backdrop-blur-[18px]
             shadow-[0_20px_60px_rgba(0,0,0,0.18)]
             overflow-hidden
