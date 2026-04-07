@@ -36,7 +36,9 @@ export default function ChatBox() {
 
     try {
       const data = await sendChatMessage({
-        history: messages, // previous messages only, not including current
+        history: messages
+        .slice(-5)
+        .filter(m => m.content && m.role), // previous messages only, not including current
         message: input,
         trip_context: buildTripContext(),
       });

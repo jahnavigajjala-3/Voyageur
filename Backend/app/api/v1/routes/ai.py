@@ -19,16 +19,20 @@ class ChatRequest(BaseModel):
     history: List[Message]
     message: str
     trip_context: str
-
+    
 @router.post("/chat")
 async def chat(request: ChatRequest):
-    response = await get_ai_response(
-        history=request.history,
-        new_message=request.message,
-        trip_context=request.trip_context
-    )
+    try:
+        response = await get_ai_response(
+            history=request.history,
+            new_message=request.message,
+            trip_context=request.trip_context
+        )
+        return {"response": response}
 
-    return {"response": response}
+    except Exception as e:
+        print("[ROUTE ERROR]", e)
+        return {"response": "Server error. Try again."}
 
 @router.post("/chat-messages", response_model=ChatMessageResponse)
 def create_chat_message(message: ChatMessageCreate, db: Session = Depends(get_db)):
