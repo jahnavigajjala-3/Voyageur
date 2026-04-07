@@ -1,10 +1,11 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/v1";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_V1 = `${API_URL}/api/v1`;
 
 // Create axios instance
 const axiosInstance = axios.create({
-  baseURL: API_URL,
+  baseURL: API_V1,
 });
 
 // Request interceptor: Add access token to headers
