@@ -42,12 +42,3 @@ app.include_router(travel_routes.router, prefix=API_PREFIX + "/travel")
 @app.get("/")
 def home():
     return {"message": "Voyageur API is Live 🚀"}
-
-# Placeholder Auth (if not in user_routes)
-@app.post(f"{API_PREFIX}/login")
-async def login(data: dict):
-    return {"message": "Login successful", "user": data.get("email")}
-
-@app.post(f"{API_PREFIX}/signup")
-async def signup(data: dict):
-    return {"message": "Signup successful", "user": data.get("email")}
