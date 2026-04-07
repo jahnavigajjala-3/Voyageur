@@ -9,16 +9,21 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    const storedUser = localStorage.getItem("user");
+  const token = localStorage.getItem("accessToken");
+  const storedUser = localStorage.getItem("user");
 
-    if (token && storedUser) {
+  if (token && storedUser && storedUser !== "undefined") {
+    try {
       setAccessToken(token);
       setUser(JSON.parse(storedUser));
+    } catch (err) {
+      console.error("Invalid user in localStorage");
+      localStorage.removeItem("user");
     }
+  }
 
-    setLoading(false);
-  }, []);
+  setLoading(false);
+}, []);
 
   const saveAuthData = ({ access_token, refresh_token, user }) => {
     localStorage.setItem("accessToken", access_token);
