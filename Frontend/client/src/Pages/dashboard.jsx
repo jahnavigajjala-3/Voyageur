@@ -68,7 +68,7 @@ export default function Dashboard() {
 
       {/* Welcome Card */}
       <div className="bg-white p-6 rounded-xl shadow mb-6">
-        <h2 className="text-xl font-semibold">Welcome {user?.email} 👋</h2>
+        <h2 className="text-xl font-semibold">Welcome {user?.name} 👋</h2>
         <p className="text-gray-500 mt-1 text-sm">Your smart travel companion is active 🚀</p>
       </div>
 
