@@ -5,6 +5,7 @@ import Login from "./Pages/Login";
 import Signup from "./Pages/Signup";
 import Dashboard from "./Pages/dashboard";
 import ChatBox from "./components/ChatBox";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
@@ -14,8 +15,24 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/chat" element={<ChatBox />} />
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/chat" 
+            element={
+              <ProtectedRoute>
+                <ChatBox />
+              </ProtectedRoute>
+            } 
+          />
+
         </Routes>
       </BrowserRouter>
     </AuthProvider>

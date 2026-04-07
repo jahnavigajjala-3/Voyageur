@@ -1,5 +1,4 @@
 import { useState, useContext } from "react";
-import { loginUser } from "../api/auth";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -12,16 +11,12 @@ export default function Login() {
     password: "",
   });
 
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
   e.preventDefault();
 
   try {
-    const data = await loginUser(form);
-    console.log("LOGIN SUCCESS:", data);
-
-    login(data);
+    await login(form.email, form.password);
     navigate("/dashboard");
-
   } catch (err) {
     console.error("LOGIN ERROR:", err);
     alert("Login failed");
