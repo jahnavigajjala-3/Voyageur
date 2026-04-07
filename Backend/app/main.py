@@ -22,7 +22,6 @@ origins = [
     "http://127.0.0.1:5174",
     "http://127.0.0.1:5175",
     "https://voyageur-sable.vercel.app",
-    os.getenv("FRONTEND_URL", "https://voyageur-frontend.vercel.app"),
 ]
 
 app.add_middleware(
