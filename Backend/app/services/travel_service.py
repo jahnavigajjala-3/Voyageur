@@ -57,7 +57,7 @@ async def reverse_geocode(lat: float, lng: float) -> dict:
 
 
 def lookup_crime(district: str, state: str) -> dict:
-    """Look up crime risk from CSV by district, fallback to state average."""
+    """Look up crime risk from CSV by district, fallback to state average, then national average."""
     if crime_df is None:
         return {"error": "Crime data not loaded"}
 
@@ -78,8 +78,17 @@ def lookup_crime(district: str, state: str) -> dict:
                 "source": "state_average"
             }
 
+    # Fallback: national average if no state match
     if match.empty:
-        return {"error": f"No data found for {district}, {state}"}
+        avg_score = crime_df['RISK_SCORE'].mean()
+        risk_level = crime_df['RISK_LEVEL'].mode()[0] if not crime_df.empty else "UNKNOWN"
+        return {
+            "district": "India (national average)",
+            "state": "India",
+            "risk_score": round(avg_score, 2),
+            "risk_level": risk_level,
+            "source": "national_average"
+        }
 
     row = match.iloc[0]
     return {
