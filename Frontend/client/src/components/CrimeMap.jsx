@@ -196,10 +196,20 @@ export default function CrimeMap() {
     setLoading(true);
     try {
       console.log('Geocoding locations...');
-      const [fromResult, toResult] = await Promise.all([
-        geocodeLocation(routeFrom),
-        geocodeLocation(routeTo)
-      ]);
+
+      // Handle current location vs regular address
+      let fromResult;
+      if (routeFrom === '📍 Current Location' && location) {
+        fromResult = {
+          lat: location.lat,
+          lng: location.lng,
+          name: 'Current Location'
+        };
+      } else {
+        fromResult = await geocodeLocation(routeFrom);
+      }
+
+      const toResult = await geocodeLocation(routeTo);
 
       console.log('Geocoding results:', fromResult, toResult);
 
@@ -223,6 +233,48 @@ export default function CrimeMap() {
     setRouteWaypoints([]);
     setRouteFrom('');
     setRouteTo('');
+  };
+
+  const useCurrentLocationAsFrom = async () => {
+    if (!location) return;
+
+    try {
+      // Use current location coordinates directly for routing
+      const currentLocationCoords = {
+        lat: location.lat,
+        lng: location.lng,
+        name: 'Current Location'
+      };
+
+      // Set routeFrom to indicate current location is being used
+      setRouteFrom('📍 Current Location');
+
+      // If we have a destination, calculate route immediately
+      if (routeTo.trim()) {
+        setLoading(true);
+        try {
+          const [toResult] = await Promise.all([
+            geocodeLocation(routeTo)
+          ]);
+
+          if (toResult) {
+            setRouteWaypoints([currentLocationCoords, toResult]);
+            setShowRoute(true);
+            console.log('Route set from current location successfully');
+          } else {
+            alert('Could not find the destination location. Please try a different address.');
+          }
+        } catch (error) {
+          console.error('Route planning error:', error);
+          alert('Error planning route. Please check your internet connection and try again.');
+        } finally {
+          setLoading(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error using current location:', error);
+      alert('Error accessing current location. Please try again.');
+    }
   };
 
   const handleMapClick = async (lat, lng) => {
@@ -347,14 +399,23 @@ export default function CrimeMap() {
           <p className="text-sm text-blue-700 mb-2">
             📍 Enter locations to plan a driving route
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <input
-              type="text"
-              value={routeFrom}
-              onChange={(e) => setRouteFrom(e.target.value)}
-              placeholder="From (e.g. Bengaluru)"
-              className="px-3 py-2 border rounded text-sm"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+            <div className="md:col-span-2 flex gap-2">
+              <input
+                type="text"
+                value={routeFrom}
+                onChange={(e) => setRouteFrom(e.target.value)}
+                placeholder="From (or click 'Use Current')"
+                className="flex-1 px-3 py-2 border rounded text-sm"
+              />
+              <button
+                onClick={useCurrentLocationAsFrom}
+                className="px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 whitespace-nowrap"
+                title="Use current location as starting point"
+              >
+                📍 Use Current
+              </button>
+            </div>
             <input
               type="text"
               value={routeTo}
