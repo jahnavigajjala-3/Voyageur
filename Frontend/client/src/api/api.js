@@ -5,6 +5,13 @@ const defaultHeaders = {
   "Content-Type": "application/json",
 };
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("accessToken");
+  return token
+    ? { ...defaultHeaders, Authorization: `Bearer ${token}` }
+    : defaultHeaders;
+};
+
 const handleResponse = async (res) => {
   const data = await res.json();
   if (!res.ok) throw new Error(data.detail || "Request failed");
@@ -34,7 +41,7 @@ export const signupUser = async (form) => {
 export const sendChatMessage = async ({ history, message, trip_context }) => {
   const res = await fetch(`${API_V1}/ai/chat`, {
     method: "POST",
-    headers: defaultHeaders,
+    headers: getAuthHeaders(),
     body: JSON.stringify({ history, message, trip_context }),
   });
   return handleResponse(res);
@@ -43,7 +50,10 @@ export const sendChatMessage = async ({ history, message, trip_context }) => {
 // Crime
 export const getCrimeRiskByCoords = async (lat, lng) => {
   const res = await fetch(
-    `${API_V1}/travel/crime-risk?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`
+    `${API_V1}/travel/crime-risk?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`,
+    {
+      headers: getAuthHeaders(),
+    }
   );
   return handleResponse(res);
 };
@@ -51,7 +61,10 @@ export const getCrimeRiskByCoords = async (lat, lng) => {
 // Hospitals
 export const getNearbyHospitals = async (lat, lng, radius = 10, limit = 5) => {
   const res = await fetch(
-    `${API_V1}/travel/hospitals?lat=${lat}&lng=${lng}&radius=${radius}&limit=${limit}`
+    `${API_V1}/travel/hospitals?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&radius=${radius}&limit=${limit}`,
+    {
+      headers: getAuthHeaders(),
+    }
   );
   return handleResponse(res);
 };
@@ -60,18 +73,22 @@ export const getNearbyHospitals = async (lat, lng, radius = 10, limit = 5) => {
 export const createTrip = async (tripData) => {
   const res = await fetch(`${API_V1}/trips`, {
     method: "POST",
-    headers: defaultHeaders,
+    headers: getAuthHeaders(),
     body: JSON.stringify(tripData),
   });
   return handleResponse(res);
 };
 
 export const getTrips = async () => {
-  const res = await fetch(`${API_V1}/trips`);
+  const res = await fetch(`${API_V1}/trips`, {
+    headers: getAuthHeaders(),
+  });
   return handleResponse(res);
 };
 
 export const getTripById = async (id) => {
-  const res = await fetch(`${API_V1}/trips/${id}`);
+  const res = await fetch(`${API_V1}/trips/${id}`, {
+    headers: getAuthHeaders(),
+  });
   return handleResponse(res);
 };
