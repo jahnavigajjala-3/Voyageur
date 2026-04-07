@@ -103,6 +103,26 @@ function RoutingMachine({ waypoints, isActive }) {
   return null;
 }
 
+function MapClickHandler({ onMapClick }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map) return;
+
+    const handleClick = (event) => {
+      const { lat, lng } = event.latlng;
+      onMapClick(lat, lng);
+    };
+
+    map.on('click', handleClick);
+    return () => {
+      map.off('click', handleClick);
+    };
+  }, [map, onMapClick]);
+
+  return null;
+}
+
 export default function CrimeMap() {
   const { location, error } = useLocation();
   const [crimeRisk, setCrimeRisk] = useState(null);
@@ -114,6 +134,12 @@ export default function CrimeMap() {
   const [routeTo, setRouteTo] = useState('');
   const [routeWaypoints, setRouteWaypoints] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [clickedLocation, setClickedLocation] = useState(null);
+  const [clickedCrimeRisk, setClickedCrimeRisk] = useState(null);
+  const [clickError, setClickError] = useState(null);
+  const [currentLocationCrime, setCurrentLocationCrime] = useState(null);
+  const [currentLocationError, setCurrentLocationError] = useState(null);
+  const [showClickedLocationDetails, setShowClickedLocationDetails] = useState(true);
 
   useEffect(() => {
     if (!location || hasFetched) return;
@@ -170,10 +196,20 @@ export default function CrimeMap() {
     setLoading(true);
     try {
       console.log('Geocoding locations...');
-      const [fromResult, toResult] = await Promise.all([
-        geocodeLocation(routeFrom),
-        geocodeLocation(routeTo)
-      ]);
+
+      // Handle current location vs regular address
+      let fromResult;
+      if (routeFrom === '📍 Current Location' && location) {
+        fromResult = {
+          lat: location.lat,
+          lng: location.lng,
+          name: 'Current Location'
+        };
+      } else {
+        fromResult = await geocodeLocation(routeFrom);
+      }
+
+      const toResult = await geocodeLocation(routeTo);
 
       console.log('Geocoding results:', fromResult, toResult);
 
@@ -197,6 +233,77 @@ export default function CrimeMap() {
     setRouteWaypoints([]);
     setRouteFrom('');
     setRouteTo('');
+  };
+
+  const useCurrentLocationAsFrom = async () => {
+    if (!location) return;
+
+    try {
+      // Use current location coordinates directly for routing
+      const currentLocationCoords = {
+        lat: location.lat,
+        lng: location.lng,
+        name: 'Current Location'
+      };
+
+      // Set routeFrom to indicate current location is being used
+      setRouteFrom('📍 Current Location');
+
+      // If we have a destination, calculate route immediately
+      if (routeTo.trim()) {
+        setLoading(true);
+        try {
+          const [toResult] = await Promise.all([
+            geocodeLocation(routeTo)
+          ]);
+
+          if (toResult) {
+            setRouteWaypoints([currentLocationCoords, toResult]);
+            setShowRoute(true);
+            console.log('Route set from current location successfully');
+          } else {
+            alert('Could not find the destination location. Please try a different address.');
+          }
+        } catch (error) {
+          console.error('Route planning error:', error);
+          alert('Error planning route. Please check your internet connection and try again.');
+        } finally {
+          setLoading(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error using current location:', error);
+      alert('Error accessing current location. Please try again.');
+    }
+  };
+
+  const handleMapClick = async (lat, lng) => {
+    setClickedLocation({ lat, lng });
+    setClickedCrimeRisk(null);
+    setClickError(null);
+
+    try {
+      const riskData = await getCrimeRiskByCoords(lat, lng);
+      setClickedCrimeRisk(riskData);
+    } catch (err) {
+      console.error('Map click crime lookup failed:', err);
+      setClickError('Unable to fetch crime rate for this location. Please try again.');
+    }
+  };
+
+  const checkCurrentLocationCrime = async () => {
+    if (!location) return;
+
+    setCurrentLocationCrime(null);
+    setCurrentLocationError(null);
+
+    try {
+      const riskData = await getCrimeRiskByCoords(location.lat, location.lng);
+      setCurrentLocationCrime(riskData);
+    } catch (err) {
+      console.error('Current location crime lookup failed:', err);
+      setCurrentLocationError('Unable to fetch crime rate for your current location. Please try again.');
+    }
   };
 
   if (error) return <p className="text-red-500">Location error: {error}</p>;
@@ -230,7 +337,61 @@ export default function CrimeMap() {
         >
           🛣️ {showRoute ? 'Clear Route' : 'Plan Route'}
         </button>
+
+        <button
+          onClick={checkCurrentLocationCrime}
+          className="px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700"
+        >
+          📊 Check Crime Rate Here
+        </button>
+
+        {clickedLocation && (
+          <button
+            onClick={() => setShowClickedLocationDetails(!showClickedLocationDetails)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium ${
+              showClickedLocationDetails ? 'bg-yellow-600 text-white' : 'bg-gray-200 text-gray-700'
+            }`}
+          >
+            📍 {showClickedLocationDetails ? 'Hide' : 'Show'} Location Details
+          </button>
+        )}
       </div>
+
+      {clickedLocation && showClickedLocationDetails && (
+        <div className="mb-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+          <p className="text-sm font-semibold text-yellow-800 mb-2">
+            📍 Crime rate for clicked location
+          </p>
+          <p className="text-sm text-gray-700">
+            Latitude: {clickedLocation.lat.toFixed(5)}, Longitude: {clickedLocation.lng.toFixed(5)}
+          </p>
+          {clickError && (
+            <p className="text-sm text-red-600 mt-2">{clickError}</p>
+          )}
+          {clickedCrimeRisk && !clickedCrimeRisk.error && (
+            <div className="mt-2 text-sm text-gray-700">
+              <p>
+                <span className="font-semibold">District:</span> {clickedCrimeRisk.detected_district}
+              </p>
+              <p>
+                <span className="font-semibold">State:</span> {clickedCrimeRisk.detected_state}
+              </p>
+              <p>
+                <span className="font-semibold">Risk Level:</span> {clickedCrimeRisk.risk_level}
+              </p>
+              <p>
+                <span className="font-semibold">Score:</span> {clickedCrimeRisk.risk_score}
+              </p>
+              <p className="mt-2 text-xs text-gray-500">
+                Click anywhere on the map to inspect crime rate for that spot.
+              </p>
+            </div>
+          )}
+          {clickedCrimeRisk && clickedCrimeRisk.error && (
+            <p className="text-sm text-red-600 mt-2">{clickedCrimeRisk.error}</p>
+          )}
+        </div>
+      )}
 
       {/* Route Input */}
       {showRoute && !routeWaypoints.length && (
@@ -238,14 +399,23 @@ export default function CrimeMap() {
           <p className="text-sm text-blue-700 mb-2">
             📍 Enter locations to plan a driving route
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            <input
-              type="text"
-              value={routeFrom}
-              onChange={(e) => setRouteFrom(e.target.value)}
-              placeholder="From (e.g. Bengaluru)"
-              className="px-3 py-2 border rounded text-sm"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+            <div className="md:col-span-2 flex gap-2">
+              <input
+                type="text"
+                value={routeFrom}
+                onChange={(e) => setRouteFrom(e.target.value)}
+                placeholder="From (or click 'Use Current')"
+                className="flex-1 px-3 py-2 border rounded text-sm"
+              />
+              <button
+                onClick={useCurrentLocationAsFrom}
+                className="px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 whitespace-nowrap"
+                title="Use current location as starting point"
+              >
+                📍 Use Current
+              </button>
+            </div>
             <input
               type="text"
               value={routeTo}
@@ -289,6 +459,8 @@ export default function CrimeMap() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
+        <MapClickHandler onMapClick={handleMapClick} />
+
         {/* Live location marker */}
         <Marker position={[location.lat, location.lng]}>
           <Popup>
@@ -298,6 +470,22 @@ export default function CrimeMap() {
             )}
           </Popup>
         </Marker>
+
+        {clickedLocation && showClickedLocationDetails && (
+          <Marker position={[clickedLocation.lat, clickedLocation.lng]}>
+            <Popup>
+              📍 Selected spot<br />
+              {clickedCrimeRisk ? (
+                <>
+                  Risk: {clickedCrimeRisk.risk_level}<br />
+                  Score: {clickedCrimeRisk.risk_score}
+                </>
+              ) : (
+                'Fetching crime rate...'
+              )}
+            </Popup>
+          </Marker>
+        )}
 
         {/* Risk overlay circle */}
         {crimeRisk && !crimeRisk.error && (
@@ -313,20 +501,23 @@ export default function CrimeMap() {
         )}
 
         {/* Hospital markers */}
-        {showHospitals && hospitals.map((hospital, index) => (
-          <Marker
-            key={index}
-            position={[hospital.Latitude, hospital.Longitude]}
-            icon={hospitalIcon}
-          >
-            <Popup>
-              🏥 <strong>{hospital['Hospital Name']}</strong><br />
-              📍 {hospital.City}, {hospital.State}<br />
-              ⭐ Rating: {hospital.Rating}/5<br />
-              📊 Beds: {hospital['Number of Beds']}
-            </Popup>
-          </Marker>
-        ))}
+        {showHospitals && hospitals
+          .filter((hospital) => hospital.latitude != null && hospital.longitude != null)
+          .map((hospital, index) => (
+            <Marker
+              key={index}
+              position={[hospital.latitude, hospital.longitude]}
+              icon={hospitalIcon}
+            >
+              <Popup>
+                🏥 <strong>{hospital.city}</strong><br />
+                📍 {hospital.district}, {hospital.state}<br />
+                ⭐ Rating: {hospital.rating}/5<br />
+                📊 Reviews: {hospital.reviews}<br />
+                ⛳ Distance: {hospital.distance_km} km
+              </Popup>
+            </Marker>
+          ))}
 
         {/* Route */}
         {showRoute && routeWaypoints.length >= 2 && (
