@@ -313,20 +313,23 @@ export default function CrimeMap() {
         )}
 
         {/* Hospital markers */}
-        {showHospitals && hospitals.map((hospital, index) => (
-          <Marker
-            key={index}
-            position={[hospital.Latitude, hospital.Longitude]}
-            icon={hospitalIcon}
-          >
-            <Popup>
-              🏥 <strong>{hospital['Hospital Name']}</strong><br />
-              📍 {hospital.City}, {hospital.State}<br />
-              ⭐ Rating: {hospital.Rating}/5<br />
-              📊 Beds: {hospital['Number of Beds']}
-            </Popup>
-          </Marker>
-        ))}
+        {showHospitals && hospitals
+          .filter((hospital) => hospital.latitude != null && hospital.longitude != null)
+          .map((hospital, index) => (
+            <Marker
+              key={index}
+              position={[hospital.latitude, hospital.longitude]}
+              icon={hospitalIcon}
+            >
+              <Popup>
+                🏥 <strong>{hospital.city}</strong><br />
+                📍 {hospital.district}, {hospital.state}<br />
+                ⭐ Rating: {hospital.rating}/5<br />
+                📊 Reviews: {hospital.reviews}<br />
+                ⛳ Distance: {hospital.distance_km} km
+              </Popup>
+            </Marker>
+          ))}
 
         {/* Route */}
         {showRoute && routeWaypoints.length >= 2 && (
