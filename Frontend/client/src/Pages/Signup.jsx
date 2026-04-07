@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import bgImage from "../assets/loginbg.jpg";
 
 export default function Signup() {
   const { signup } = useAuth();
@@ -12,69 +13,139 @@ export default function Signup() {
     password: "",
   });
 
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       await signup(form.name, form.email, form.password);
-      alert("Signup successful ✅");
-      navigate("/dashboard");
+
+      // redirect to login page after signup
+      navigate("/login");
     } catch (err) {
-      console.error("SIGNUP ERROR:", err);
+      console.error(err);
       alert("Signup failed");
     }
   };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-green-400 via-blue-500 to-purple-600 relative overflow-hidden">
-      {/* Background travel imagery effect */}
-      <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800')] bg-cover bg-center opacity-20"></div>
-      
-      <div className="relative z-10 bg-white/10 backdrop-blur-md p-8 rounded-2xl shadow-2xl w-96 border border-white/20">
-        <h2 className="text-3xl font-bold mb-6 text-center text-white">Join Amigo</h2>
-        <p className="text-center text-white/80 mb-6">Start your travel adventure</p>
+    <div
+      className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center"
+      style={{ backgroundImage: `url(${bgImage})` }}
+    >
+      <div className="w-full px-6 sm:px-10 md:px-16 lg:px-20">
+        <div
+          className="
+            w-full max-w-[460px]
+            rounded-[34px]
+            border border-white/30
+            bg-white/20
+            backdrop-blur-[18px]
+            shadow-[0_20px_60px_rgba(0,0,0,0.18)]
+            overflow-hidden
+          "
+        >
+          <div className="bg-gradient-to-br from-white/20 via-white/10 to-green-100/20 p-8 sm:p-10 md:p-12">
+            <h2 className="text-[46px] leading-none font-bold text-slate-900 mb-4">
+              Voyageur
+            </h2>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            placeholder="Full Name"
-            className="w-full p-3 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
-            onChange={(e) =>
-              setForm({ ...form, name: e.target.value })
-            }
-          />
+            <p className="text-slate-700 text-lg mb-10">
+              Sign Up to create an Account
+            </p>
 
-          <input
-            type="email"
-            placeholder="Email"
-            className="w-full p-3 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
-            onChange={(e) =>
-              setForm({ ...form, email: e.target.value })
-            }
-          />
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <input
+                type="text"
+                name="name"
+                placeholder="Name"
+                value={form.name}
+                onChange={handleChange}
+                className="
+                  w-full h-16 px-6
+                  rounded-full
+                  bg-white/85
+                  text-slate-800
+                  placeholder:text-slate-500
+                  outline-none
+                  border border-white/40
+                  focus:ring-2 focus:ring-blue-300
+                  transition
+                "
+              />
 
-          <input
-            type="password"
-            placeholder="Password"
-            className="w-full p-3 bg-white/20 border border-white/30 rounded-lg text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
-            onChange={(e) =>
-              setForm({ ...form, password: e.target.value })
-            }
-          />
+              <input
+                type="email"
+                name="email"
+                placeholder="Email"
+                value={form.email}
+                onChange={handleChange}
+                className="
+                  w-full h-16 px-6
+                  rounded-full
+                  bg-white/85
+                  text-slate-800
+                  placeholder:text-slate-500
+                  outline-none
+                  border border-white/40
+                  focus:ring-2 focus:ring-blue-300
+                  transition
+                "
+              />
 
-          <button className="w-full bg-white/20 hover:bg-white/30 text-white p-3 rounded-lg border border-white/30 transition-all duration-200">
-            Create Account
-          </button>
-        </form>
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                value={form.password}
+                onChange={handleChange}
+                className="
+                  w-full h-16 px-6
+                  rounded-full
+                  bg-white/85
+                  text-slate-800
+                  placeholder:text-slate-500
+                  outline-none
+                  border border-white/40
+                  focus:ring-2 focus:ring-blue-300
+                  transition
+                "
+              />
 
-        <p className="text-sm text-center mt-4 text-white/80">
-          Already have an account?{" "}
-          <span
-            onClick={() => navigate("/login")}
-            className="text-white hover:text-white/80 cursor-pointer underline"
-          >
-            Login
-          </span>
-        </p>
+              <button
+                type="submit"
+                className="
+                  w-full h-16
+                  rounded-full
+                  bg-gradient-to-r from-green-800 to-green-500
+                  hover:from-green-700 hover:to-green-400
+                  text-white
+                  text-2xl font-semibold
+                  shadow-[0_10px_30px_rgba(20,120,50,0.35)]
+                  transition-all duration-300
+                "
+              >
+                Sign Up
+              </button>
+            </form>
+
+            <p className="text-sm text-slate-600 mt-6 text-center">
+              Already have an account?{" "}
+              <Link
+                to="/login"
+                className="font-semibold text-green-900 hover:text-green-700 transition"
+              >
+                Login
+              </Link>
+            </p>
+
+            <p className="text-sm text-slate-600 mt-4 text-center">
+              Secure login • Privacy protected
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
