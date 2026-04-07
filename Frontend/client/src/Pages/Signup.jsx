@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { signupUser } from "../api/auth";
+import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 
 export default function Signup() {
+  const { signup } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -14,18 +15,15 @@ export default function Signup() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-  try {
-    const res = await signupUser(form);
-    console.log("SIGNUP SUCCESS:", res);
-
-    alert("Signup successful ✅");
-    navigate("/login");
-
-  } catch (err) {
-    console.error("SIGNUP ERROR:", err);
-    alert("Signup failed");
-  }
-};
+    try {
+      await signup(form.name, form.email, form.password);
+      alert("Signup successful ✅");
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("SIGNUP ERROR:", err);
+      alert("Signup failed");
+    }
+  };
   return (
     <div className="h-screen flex items-center justify-center bg-gradient-to-r from-purple-500 to-blue-500">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-96">
