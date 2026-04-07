@@ -21,8 +21,6 @@ export default function Signup() {
     e.preventDefault();
     try {
       await signup(form.name, form.email, form.password);
-
-      // redirect to login page after signup
       navigate("/login");
     } catch (err) {
       console.error(err);
