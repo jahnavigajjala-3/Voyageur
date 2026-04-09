@@ -310,6 +310,10 @@ export default function CrimeMap() {
   if (!location) return <p className="text-gray-500">Fetching location...</p>;
 
   const riskColor = RISK_COLORS[crimeRisk?.risk_level] || RISK_COLORS.UNKNOWN;
+  const displayDistrict = crimeRisk?.detected_district || crimeRisk?.district || "Unknown district";
+  const displayState = crimeRisk?.detected_state || crimeRisk?.state || "Unknown state";
+  const clickDisplayDistrict = clickedCrimeRisk?.detected_district || clickedCrimeRisk?.district || "Unknown district";
+  const clickDisplayState = clickedCrimeRisk?.detected_state || clickedCrimeRisk?.state || "Unknown state";
 
   return (
     <div>
@@ -371,10 +375,10 @@ export default function CrimeMap() {
           {clickedCrimeRisk && !clickedCrimeRisk.error && (
             <div className="mt-2 text-sm text-gray-700">
               <p>
-                <span className="font-semibold">District:</span> {clickedCrimeRisk.detected_district}
+                <span className="font-semibold">District:</span> {clickDisplayDistrict}
               </p>
               <p>
-                <span className="font-semibold">State:</span> {clickedCrimeRisk.detected_state}
+                <span className="font-semibold">State:</span> {clickDisplayState}
               </p>
               <p>
                 <span className="font-semibold">Risk Level:</span> {clickedCrimeRisk.risk_level}
@@ -440,7 +444,7 @@ export default function CrimeMap() {
           className="mb-3 px-4 py-2 rounded-lg text-white text-sm font-semibold inline-block"
           style={{ backgroundColor: riskColor }}
         >
-          {crimeRisk.detected_district}, {crimeRisk.detected_state} —{" "}
+          {displayDistrict}, {displayState} —{" "}
           {crimeRisk.risk_level} RISK
           <span className="ml-2 font-normal opacity-80">
             (Score: {crimeRisk.risk_score})
@@ -466,7 +470,7 @@ export default function CrimeMap() {
           <Popup>
             📍 You are here
             {crimeRisk && !crimeRisk.error && (
-              <><br />{crimeRisk.detected_district}<br />Risk: {crimeRisk.risk_level}</>
+              <><br />{displayDistrict}<br />{displayState}<br />Risk: {crimeRisk.risk_level}</>
             )}
           </Popup>
         </Marker>
