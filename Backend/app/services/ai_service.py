@@ -77,6 +77,9 @@ async def extract_state_with_ai(text: str):
 
     response = generate_with_fallback(client, contents, config)
 
+    if not response or not response.text:
+        return None
+
     return response.text.strip()
 
 async def analyze_crime(state: str, crime_data: dict):
