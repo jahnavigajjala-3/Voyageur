@@ -386,14 +386,15 @@ export default function CrimeMap() {
               <p>
                 <span className="font-semibold">Score:</span> {clickedCrimeRisk.risk_score}
               </p>
-              <p className="mt-2 text-xs text-gray-500">
-                Click anywhere on the map to inspect crime rate for that spot.
-              </p>
             </div>
           )}
           {clickedCrimeRisk && clickedCrimeRisk.error && (
             <p className="text-sm text-red-600 mt-2">{clickedCrimeRisk.error}</p>
           )}
+
+          <p className="mt-3 text-xs text-gray-500">
+            Click anywhere on the map to check crime rate for that district.
+          </p>
         </div>
       )}
 
@@ -491,7 +492,7 @@ export default function CrimeMap() {
           </Marker>
         )}
 
-        {/* Risk overlay circle */}
+        {/* Risk overlay circle for current location */}
         {crimeRisk && !crimeRisk.error && (
           <Circle
             center={[location.lat, location.lng]}

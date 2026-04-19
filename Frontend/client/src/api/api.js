@@ -58,6 +58,16 @@ export const getCrimeRiskByCoords = async (lat, lng) => {
   return handleResponse(res);
 };
 
+export const getDistrictsInState = async (lat, lng) => {
+  const res = await fetch(
+    `${API_V1}/travel/districts-in-state?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`,
+    {
+      headers: getAuthHeaders(),
+    }
+  );
+  return handleResponse(res);
+};
+
 // Hospitals
 export const getNearbyHospitals = async (lat, lng, radius = 10, limit = 5) => {
   const res = await fetch(
