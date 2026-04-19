@@ -140,6 +140,8 @@ export default function CrimeMap() {
   const [currentLocationCrime, setCurrentLocationCrime] = useState(null);
   const [currentLocationError, setCurrentLocationError] = useState(null);
   const [showClickedLocationDetails, setShowClickedLocationDetails] = useState(true);
+  const [clickedHospitals, setClickedHospitals] = useState([]);
+  const [showClickedHospitals, setShowClickedHospitals] = useState(false);
 
   useEffect(() => {
     if (!location || hasFetched) return;
@@ -164,6 +166,16 @@ export default function CrimeMap() {
       setHospitals(hospitalData);
     } catch (err) {
       console.error("Hospital fetch failed:", err);
+    }
+  };
+
+  const fetchClickedHospitals = async () => {
+    if (!clickedLocation) return;
+    try {
+      const hospitalData = await getNearbyHospitals(clickedLocation.lat, clickedLocation.lng, 20, 10);
+      setClickedHospitals(hospitalData);
+    } catch (err) {
+      console.error("Clicked location hospital fetch failed:", err);
     }
   };
 
@@ -281,6 +293,8 @@ export default function CrimeMap() {
     setClickedLocation({ lat, lng });
     setClickedCrimeRisk(null);
     setClickError(null);
+    setClickedHospitals([]);
+    setShowClickedHospitals(false);
 
     try {
       const riskData = await getCrimeRiskByCoords(lat, lng);
@@ -350,14 +364,29 @@ export default function CrimeMap() {
         </button>
 
         {clickedLocation && (
-          <button
-            onClick={() => setShowClickedLocationDetails(!showClickedLocationDetails)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium ${
-              showClickedLocationDetails ? 'bg-yellow-600 text-white' : 'bg-gray-200 text-gray-700'
-            }`}
-          >
-            📍 {showClickedLocationDetails ? 'Hide' : 'Show'} Location Details
-          </button>
+          <>
+            <button
+              onClick={() => setShowClickedLocationDetails(!showClickedLocationDetails)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                showClickedLocationDetails ? 'bg-yellow-600 text-white' : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              📍 {showClickedLocationDetails ? 'Hide' : 'Show'} Location Details
+            </button>
+            <button
+              onClick={() => {
+                setShowClickedHospitals(!showClickedHospitals);
+                if (!showClickedHospitals && clickedHospitals.length === 0) {
+                  fetchClickedHospitals();
+                }
+              }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                showClickedHospitals ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700'
+              }`}
+            >
+              🏥 {showClickedHospitals ? 'Hide' : 'Show'} Hospitals Here
+            </button>
+          </>
         )}
       </div>
 
@@ -510,7 +539,26 @@ export default function CrimeMap() {
           .filter((hospital) => hospital.latitude != null && hospital.longitude != null)
           .map((hospital, index) => (
             <Marker
-              key={index}
+              key={`current-${index}`}
+              position={[hospital.latitude, hospital.longitude]}
+              icon={hospitalIcon}
+            >
+              <Popup>
+                🏥 <strong>{hospital.city}</strong><br />
+                📍 {hospital.district}, {hospital.state}<br />
+                ⭐ Rating: {hospital.rating}/5<br />
+                📊 Reviews: {hospital.reviews}<br />
+                ⛳ Distance: {hospital.distance_km} km
+              </Popup>
+            </Marker>
+          ))}
+
+        {/* Clicked location hospital markers */}
+        {showClickedHospitals && clickedHospitals
+          .filter((hospital) => hospital.latitude != null && hospital.longitude != null)
+          .map((hospital, index) => (
+            <Marker
+              key={`clicked-${index}`}
               position={[hospital.latitude, hospital.longitude]}
               icon={hospitalIcon}
             >
@@ -541,7 +589,12 @@ export default function CrimeMap() {
       {/* Hospital count */}
       {showHospitals && (
         <p className="mt-2 text-sm text-gray-600">
-          Found {hospitals.length} hospitals within 20km
+          Found {hospitals.length} hospitals within 20km of your location
+        </p>
+      )}
+      {showClickedHospitals && clickedLocation && (
+        <p className="mt-2 text-sm text-green-600">
+          Found {clickedHospitals.length} hospitals within 20km of clicked location
         </p>
       )}
     </div>
