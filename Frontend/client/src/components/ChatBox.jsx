@@ -65,59 +65,75 @@ export default function ChatBox() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
+    <div className="flex flex-col h-screen bg-slate-950 text-slate-100">
 
       {/* Header */}
-      <div className="bg-black text-white p-4 text-lg font-bold">
-        Amigo AI Assistant 🤖
+      <div className="bg-slate-900/95 border-b border-slate-800 p-4 md:p-6">
+        <div className="max-w-6xl mx-auto flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm uppercase tracking-[0.35em] text-cyan-300/70">
+                Voyageur AI Assistant
+              </p>
+              
+            </div>
+            <div className="hidden md:flex items-center gap-2 rounded-2xl bg-slate-800/90 px-4 py-2 text-sm text-slate-300 ring-1 ring-white/5">
+            </div>
+          </div>
+          
+        </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-          >
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.12),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(79,70,229,0.08),_transparent_25%),_rgba(15,23,42,1)]">
+        <div className="max-w-6xl mx-auto space-y-4">
+          {messages.map((msg, i) => (
             <div
-              className={`max-w-xs md:max-w-md px-4 py-2 rounded-2xl text-sm whitespace-pre-wrap ${
-                msg.role === "user"
-                  ? "bg-black text-white rounded-br-none"
-                  : "bg-white text-gray-800 shadow rounded-bl-none"
-              }`}
+              key={i}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              {msg.content}
+              <div
+                className={`max-w-xs md:max-w-2xl px-5 py-3 rounded-3xl text-sm leading-6 whitespace-pre-wrap shadow-[0_16px_50px_-40px_rgba(15,23,42,0.8)] ${
+                  msg.role === "user"
+                    ? "bg-cyan-500/15 text-cyan-100 ring-1 ring-cyan-400/20 rounded-br-none"
+                    : "bg-slate-900/90 text-slate-100 ring-1 ring-slate-700/60 rounded-bl-none"
+                }`}
+              >
+                {msg.content}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
 
-        {loading && (
-          <div className="flex justify-start">
-            <div className="bg-white text-gray-400 px-4 py-2 rounded-2xl shadow text-sm animate-pulse">
-              Amigo is thinking...
+          {loading && (
+            <div className="flex justify-start">
+              <div className="bg-slate-900/90 text-slate-400 px-5 py-3 rounded-3xl shadow-[0_16px_50px_-40px_rgba(15,23,42,0.8)] text-sm animate-pulse ring-1 ring-slate-700/50">
+                Amigo is thinking...
+              </div>
             </div>
-          </div>
-        )}
-        <div ref={bottomRef} />
+          )}
+          <div ref={bottomRef} />
+        </div>
       </div>
 
       {/* Input */}
-      <div className="p-4 bg-white border-t flex gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Ask about your destination..."
-          className="flex-1 border rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-black"
-        />
-        <button
-          onClick={handleSend}
-          disabled={loading}
-          className="bg-black text-white px-4 py-2 rounded-xl text-sm disabled:opacity-50"
-        >
-          Send
-        </button>
+      <div className="p-4 md:p-6 bg-slate-900/95 border-t border-slate-800">
+        <div className="max-w-6xl mx-auto flex flex-col gap-3 md:flex-row md:items-center">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type your message here..."
+            className="flex-1 rounded-2xl border border-slate-700/80 bg-slate-950 px-4 py-3 text-sm text-slate-100 outline-none placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"
+          />
+          <button
+            onClick={handleSend}
+            disabled={loading}
+            className="inline-flex items-center justify-center rounded-2xl bg-cyan-500 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-50 md:ml-4"
+          >
+            Send
+          </button>
+        </div>
       </div>
 
     </div>
