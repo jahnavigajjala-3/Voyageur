@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
-import bgImage from "../assets/loginbg.jpg";
 
 export default function Signup() {
   const { signup } = useAuth();
@@ -29,11 +28,19 @@ export default function Signup() {
   };
 
   return (
-    <div
-      className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center"
-      style={{ backgroundImage: `url(${bgImage})` }}
-    >
-      <div className="w-full px-6 sm:px-10 md:px-16 lg:px-20">
+    <div className="min-h-screen flex items-center relative overflow-hidden">
+      <video
+        className="absolute top-0 left-0 w-full h-full object-cover z-0"
+        autoPlay
+        loop
+        muted
+        playsInline
+      >
+        <source src="/login-bg.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+      <div className="absolute top-0 left-0 w-full h-full bg-black/30 z-10"></div>
+      <div className="w-full px-6 sm:px-10 md:px-16 lg:px-20 relative z-20">
         <div
           className="
             w-full max-w-[460px]
