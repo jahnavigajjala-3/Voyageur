@@ -69,7 +69,7 @@ export const getDistrictsInState = async (lat, lng) => {
 };
 
 // Hospitals
-export const getNearbyHospitals = async (lat, lng, radius = 10, limit = 5) => {
+export const getNearbyHospitals = async (lat, lng, radius = 30, limit = 5) => {
   const res = await fetch(
     `${API_V1}/travel/hospitals?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&radius=${radius}&limit=${limit}`,
     {

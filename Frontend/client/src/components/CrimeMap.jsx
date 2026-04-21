@@ -162,7 +162,7 @@ export default function CrimeMap() {
   const fetchHospitals = async () => {
     if (!location) return;
     try {
-      const hospitalData = await getNearbyHospitals(location.lat, location.lng, 20, 10);
+      const hospitalData = await getNearbyHospitals(location.lat, location.lng, 30, 10);
       setHospitals(hospitalData);
     } catch (err) {
       console.error("Hospital fetch failed:", err);
@@ -172,7 +172,7 @@ export default function CrimeMap() {
   const fetchClickedHospitals = async () => {
     if (!clickedLocation) return;
     try {
-      const hospitalData = await getNearbyHospitals(clickedLocation.lat, clickedLocation.lng, 20, 10);
+      const hospitalData = await getNearbyHospitals(clickedLocation.lat, clickedLocation.lng, 30, 10);
       setClickedHospitals(hospitalData);
     } catch (err) {
       console.error("Clicked location hospital fetch failed:", err);
