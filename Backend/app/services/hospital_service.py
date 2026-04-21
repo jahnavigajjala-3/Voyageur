@@ -51,23 +51,20 @@ def get_nearby_hospitals(lat: float, lng: float, radius_km: float = 10, top_n: i
     )
 
     nearby = df[df['distance_km'] <= radius_km].copy()
-    nearby = nearby.sort_values(
-        by=['Rating', 'distance_km'],
-        ascending=[False, True]
-    ).head(top_n)
+    nearby = nearby.sort_values(by=['distance_km']).head(top_n)
 
     result = []
     for _, row in nearby.iterrows():
         result.append({
-            "id":          row['id'],
-            "city":        row['City'],
-            "state":       row['State'],
-            "district":    row['District'],
+            "id":          int(row['Sr_No']),
+            "city":        row.get('Hospital_Name', row.get('Location', '')),
+            "state":       row.get('State', ''),
+            "district":    row.get('District', ''),
             "latitude":    row['Latitude'],
             "longitude":   row['Longitude'],
-            "rating":      row['Rating'],
-            "reviews":     int(row['Number of Reviews']),
-            "distance_km": round(row['distance_km'], 2)
+            "rating":      0,
+            "reviews":     0,
+            "distance_km": round(float(row['distance_km']), 2) if pd.notna(row['distance_km']) else None
         })
 
     return result
