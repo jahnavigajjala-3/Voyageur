@@ -626,7 +626,10 @@ function RiskCard({ title, risk, delay = "" }) {
   const district = risk?.detected_district || risk?.district;
   const state    = risk?.detected_state    || risk?.state;
   const score    = risk?.risk_score;
-  const barPct   = score ? Math.min((score / 3000) * 100, 100) : 0;
+  // Normalise raw score (0–3000 range) to a 0–10 display score
+  const MAX_RAW  = 3000;
+  const score10  = score != null ? Math.min((score / MAX_RAW) * 10, 10).toFixed(1) : null;
+  const barPct   = score != null ? Math.min((score / MAX_RAW) * 100, 100) : 0;
 
   return (
     <div
@@ -663,7 +666,7 @@ function RiskCard({ title, risk, delay = "" }) {
             <div>
               <div className="flex justify-between items-center mb-2">
                 <span className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>Crime Score</span>
-                <span className="text-xs font-bold tabular-nums" style={{ color: colors.text }}>{score}</span>
+                <span className="text-xs font-bold tabular-nums" style={{ color: colors.text }}>{score10} / 10</span>
               </div>
               <div className="rounded-full overflow-hidden" style={{ height: "3px", background: "rgba(255,255,255,0.06)" }}>
                 <div className="score-bar-fill h-full rounded-full" style={{ width: `${barPct}%`, background: `linear-gradient(90deg, ${colors.accent}cc, ${colors.accent})`, boxShadow: `0 0 6px ${colors.glow}` }} />

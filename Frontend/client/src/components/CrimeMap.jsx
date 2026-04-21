@@ -238,155 +238,26 @@ const CrimeMap = forwardRef(function CrimeMap(
   const clickState      = clickedCrimeRisk?.detected_state    || clickedCrimeRisk?.state    || "";
 
   return (
-    <div>
-      {/* Controls */}
-      <div className="mb-4 flex flex-wrap gap-2">
-        <button
-          onClick={() => {
-            setShowHospitals(!showHospitals);
-            if (!showHospitals && hospitals.length === 0) {
-              fetchHospitals();
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      {/* Hospitals at selection — only when a location is clicked */}
+      {clickedLocation && (
+        <div className="anim-fade-in flex flex-wrap gap-1.5 px-4 pt-3 pb-2">
+          <button
+            className="ctrl-btn px-3 py-1 rounded-lg text-xs font-medium"
+            style={
+              showClickedHospitals
+                ? { background: "rgba(34,197,94,0.18)", border: "1px solid rgba(34,197,94,0.3)", color: "#86efac" }
+                : { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.5)" }
             }
-          }}
-          className={`px-4 py-2 rounded-lg text-sm font-medium ${
-            showHospitals ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700'
-          }`}
-        >
-          🏥 {showHospitals ? 'Hide' : 'Show'} Hospitals
-        </button>
-
-        <button
-          onClick={showRoute ? clearRoute : () => setShowRoute(true)}
-          className={`px-4 py-2 rounded-lg text-sm font-medium ${
-            showRoute ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
-          }`}
-        >
-          🛣️ {showRoute ? 'Clear Route' : 'Plan Route'}
-        </button>
-
-        <button
-          onClick={checkCurrentLocationCrime}
-          className="px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700"
-        >
-          📊 Check Crime Rate Here
-        </button>
-
-        {clickedLocation && (
-          <>
-            <button
-              onClick={() => setShowClickedLocationDetails(!showClickedLocationDetails)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                showClickedLocationDetails ? 'bg-yellow-600 text-white' : 'bg-gray-200 text-gray-700'
-              }`}
-            >
-              📍 {showClickedLocationDetails ? 'Hide' : 'Show'} Location Details
-            </button>
-            <button
-              onClick={() => {
-                setShowClickedHospitals(!showClickedHospitals);
-                if (!showClickedHospitals && clickedHospitals.length === 0) {
-                  fetchClickedHospitals();
-                }
-              }}
-              className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                showClickedHospitals ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700'
-              }`}
-            >
-              🏥 {showClickedHospitals ? 'Hide' : 'Show'} Hospitals Here
-            </button>
-          </>
-        )}
-      </div>
-
-      {clickedLocation && showClickedLocationDetails && (
-        <div className="mb-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-          <p className="text-sm font-semibold text-yellow-800 mb-2">
-            📍 Crime rate for clicked location
-          </p>
-          <p className="text-sm text-gray-700">
-            Latitude: {clickedLocation.lat.toFixed(5)}, Longitude: {clickedLocation.lng.toFixed(5)}
-          </p>
-          {clickError && (
-            <p className="text-sm text-red-600 mt-2">{clickError}</p>
-          )}
-          {clickedCrimeRisk && !clickedCrimeRisk.error && (
-            <div className="mt-2 text-sm text-gray-700">
-              <p>
-                <span className="font-semibold">District:</span> {clickDisplayDistrict}
-              </p>
-              <p>
-                <span className="font-semibold">State:</span> {clickDisplayState}
-              </p>
-              <p>
-                <span className="font-semibold">Risk Level:</span> {clickedCrimeRisk.risk_level}
-              </p>
-              <p>
-                <span className="font-semibold">Score:</span> {clickedCrimeRisk.risk_score}
-              </p>
-            </div>
-          )}
-          {clickedCrimeRisk && clickedCrimeRisk.error && (
-            <p className="text-sm text-red-600 mt-2">{clickedCrimeRisk.error}</p>
-          )}
-
-          <p className="mt-3 text-xs text-gray-500">
-            Click anywhere on the map to check crime rate for that district.
-          </p>
-        </div>
-      )}
-
-      {/* Route Input */}
-      {showRoute && !routeWaypoints.length && (
-        <div className="mb-4 p-4 bg-blue-50 rounded-lg border">
-          <p className="text-sm text-blue-700 mb-2">
-            📍 Enter locations to plan a driving route
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-            <div className="md:col-span-2 flex gap-2">
-              <input
-                type="text"
-                value={routeFrom}
-                onChange={(e) => setRouteFrom(e.target.value)}
-                placeholder="From (or click 'Use Current')"
-                className="flex-1 px-3 py-2 border rounded text-sm"
-              />
-              <button
-                onClick={useCurrentLocationAsFrom}
-                className="px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 whitespace-nowrap"
-                title="Use current location as starting point"
-              >
-                📍 Use Current
-              </button>
-            </div>
-            <input
-              type="text"
-              value={routeTo}
-              onChange={(e) => setRouteTo(e.target.value)}
-              placeholder="To (e.g. Mumbai)"
-              className="px-3 py-2 border rounded text-sm"
-            />
-            <button
-              onClick={handleShowRoute}
-              disabled={loading}
-              className="bg-blue-600 text-white px-4 py-2 rounded text-sm disabled:opacity-50"
-            >
-              {loading ? 'Finding...' : 'Show Route'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Risk Badge */}
-      {crimeRisk && !crimeRisk.error && (
-        <div
-          className="mb-3 px-4 py-2 rounded-lg text-white text-sm font-semibold inline-block"
-          style={{ backgroundColor: riskColor }}
-        >
-          {displayDistrict}, {displayState} —{" "}
-          {crimeRisk.risk_level} RISK
-          <span className="ml-2 font-normal opacity-80">
-            (Score: {crimeRisk.risk_score})
-          </span>
+            onClick={() => {
+              setShowClickedHospitals((p) => {
+                if (!p && clickedHospitals.length === 0) fetchClickedHospitals(clickedLocation);
+                return !p;
+              });
+            }}
+          >
+            {showClickedHospitals ? "Hide Hospitals Here" : "Hospitals at Selection"}
+          </button>
         </div>
       )}
 
@@ -412,23 +283,7 @@ const CrimeMap = forwardRef(function CrimeMap(
           </Popup>
         </Marker>
 
-        {clickedLocation && showClickedLocationDetails && (
-          <Marker position={[clickedLocation.lat, clickedLocation.lng]}>
-            <Popup>
-              📍 Selected spot<br />
-              {clickedCrimeRisk ? (
-                <>
-                  Risk: {clickedCrimeRisk.risk_level}<br />
-                  Score: {clickedCrimeRisk.risk_score}
-                </>
-              ) : (
-                'Fetching crime rate...'
-              )}
-            </Popup>
-          </Marker>
-        )}
-
-        {/* Risk overlay circle for current location */}
+        {/* Risk zone circle */}
         {crimeRisk && !crimeRisk.error && (
           <Circle
             center={[location.lat, location.lng]}
@@ -443,7 +298,7 @@ const CrimeMap = forwardRef(function CrimeMap(
           />
         )}
 
-        {/* Clicked location marker — always shown when a location is selected */}
+        {/* Clicked location marker */}
         {clickedLocation && (
           <Marker position={[clickedLocation.lat, clickedLocation.lng]} icon={clickedIcon}>
             <Popup>
@@ -487,7 +342,6 @@ const CrimeMap = forwardRef(function CrimeMap(
         )}
       </MapContainer>
 
-      {/* Hospital counts */}
       {showHospitals && (
         <p className="anim-fade-in px-4 py-1.5 text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
           {hospitals.length} hospitals within 30 km of your location
