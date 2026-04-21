@@ -98,6 +98,58 @@ function MapClickHandler({ onMapClick }) {
   return null;
 }
 
+function RecenterButton({ lat, lng }) {
+  const map = useMap();
+  const [hovered, setHovered] = useState(false);
+
+  const handleClick = () => {
+    map.flyTo([lat, lng], map.getZoom(), { duration: 1.2, easeLinearity: 0.25 });
+  };
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        bottom: "24px",
+        right: "12px",
+        zIndex: 1000,
+      }}
+    >
+      <button
+        onClick={handleClick}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        title="Recenter to my location"
+        style={{
+          width: "36px",
+          height: "36px",
+          borderRadius: "50%",
+          background: hovered
+            ? "rgba(139,92,246,0.35)"
+            : "rgba(10,10,20,0.7)",
+          backdropFilter: "blur(12px)",
+          border: hovered
+            ? "1px solid rgba(139,92,246,0.6)"
+            : "1px solid rgba(255,255,255,0.15)",
+          boxShadow: hovered
+            ? "0 0 14px rgba(139,92,246,0.4)"
+            : "0 4px 12px rgba(0,0,0,0.4)",
+          color: hovered ? "rgba(167,139,250,1)" : "rgba(255,255,255,0.7)",
+          fontSize: "15px",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "all 0.2s ease",
+          transform: hovered ? "scale(1.08)" : "scale(1)",
+        }}
+      >
+        ◎
+      </button>
+    </div>
+  );
+}
+
 const CrimeMap = forwardRef(function CrimeMap(
   { embedded = false, onRiskUpdate, onClickedRiskUpdate, pickingFor, onRoutePick },
   ref
@@ -272,6 +324,7 @@ const CrimeMap = forwardRef(function CrimeMap(
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <MapClickHandler onMapClick={handleMapClick} />
+        <RecenterButton lat={location.lat} lng={location.lng} />
 
         {/* Current location marker */}
         <Marker position={[location.lat, location.lng]}>
