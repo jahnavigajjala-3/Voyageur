@@ -563,11 +563,9 @@ export default function CrimeMap() {
               icon={hospitalIcon}
             >
               <Popup>
-                🏥 <strong>{hospital.city}</strong><br />
-                📍 {hospital.district}, {hospital.state}<br />
-                ⭐ Rating: {hospital.rating}/5<br />
-                📊 Reviews: {hospital.reviews}<br />
-                ⛳ Distance: {hospital.distance_km} km
+                <strong>{hospital.city}</strong><br />
+                 {hospital.district}, {hospital.state}<br />
+                Distance: {hospital.distance_km} km
               </Popup>
             </Marker>
           ))}
@@ -589,7 +587,7 @@ export default function CrimeMap() {
       {/* Hospital count */}
       {showHospitals && (
         <p className="mt-2 text-sm text-gray-600">
-          Found {hospitals.length} hospitals within 20km of your location
+          Found {hospitals.length} hospitals within 30km of your location
         </p>
       )}
       {showClickedHospitals && clickedLocation && (
