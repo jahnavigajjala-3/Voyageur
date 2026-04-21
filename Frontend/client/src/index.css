@@ -1,6 +1,135 @@
 @import "tailwindcss";
 
+* { box-sizing: border-box; }
+
 body {
   margin: 0;
-  font-family: sans-serif;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  background: #05050f;
+  color: #fff;
 }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.25); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(139,92,246,0.5); }
+
+/* ── Inputs ── */
+input::placeholder { color: rgba(255,255,255,0.2); }
+input:focus { outline: none; }
+
+/* ── Leaflet ── */
+.leaflet-container {
+  border-radius: 0 0 1.25rem 1.25rem;
+  z-index: 0;
+}
+.leaflet-control-container { z-index: 1; }
+
+/* ── Animations ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes pulse-ring {
+  0%   { transform: scale(0.9); opacity: 0.8; }
+  70%  { transform: scale(1.4); opacity: 0; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-4px); }
+}
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.15; }
+  50%       { opacity: 0.35; }
+}
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes pulse-dot {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40%           { transform: scale(1);   opacity: 1; }
+}
+
+.anim-fade-up   { animation: fadeUp 0.4s ease forwards; }
+.anim-fade-in   { animation: fadeIn 0.3s ease forwards; }
+.anim-float     { animation: float 3s ease-in-out infinite; }
+.anim-glow      { animation: glow-pulse 3s ease-in-out infinite; }
+
+.pulse-ring::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  animation: pulse-ring 2s ease-out infinite;
+}
+
+.shimmer-text {
+  background: linear-gradient(90deg, rgba(255,255,255,0.4) 25%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0.4) 75%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 2.5s linear infinite;
+}
+
+/* Glass card hover lift */
+.glass-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.glass-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,92,246,0.15);
+}
+
+/* Ctrl button hover */
+.ctrl-btn {
+  transition: all 0.18s ease;
+}
+.ctrl-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.15);
+}
+.ctrl-btn:active {
+  transform: translateY(0);
+}
+
+/* Nav button hover */
+.nav-btn {
+  transition: all 0.2s ease;
+}
+.nav-btn:hover {
+  background: rgba(139,92,246,0.12) !important;
+  border-color: rgba(139,92,246,0.25) !important;
+  color: rgba(167,139,250,0.9) !important;
+}
+
+/* Input focus glow */
+.glass-input {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.glass-input:focus {
+  border-color: rgba(139,92,246,0.5) !important;
+  box-shadow: 0 0 0 3px rgba(139,92,246,0.1);
+}
+
+/* Risk score bar fill animation */
+.score-bar-fill {
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Staggered card entrance */
+.card-enter-1 { animation: fadeUp 0.4s ease 0.05s both; }
+.card-enter-2 { animation: fadeUp 0.4s ease 0.15s both; }
+.card-enter-3 { animation: fadeUp 0.4s ease 0.25s both; }
