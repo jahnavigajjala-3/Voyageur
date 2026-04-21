@@ -3,19 +3,27 @@ import os
 import math
 
 BASE_DIR     = os.path.dirname(os.path.abspath(__file__))
-HOSPITAL_CSV = os.path.join(BASE_DIR, "../../data/processed_hospitals.csv")
+HOSPITAL_CSV = os.path.join(BASE_DIR, "../../data/processed_hospital_directory.csv")
 DISTRICT_CSV = os.path.join(BASE_DIR, "../../data/hospital_district_summary.csv")
 
 try:
-    hospital_df = pd.read_csv(HOSPITAL_CSV)
+    hospital_df = pd.read_csv(HOSPITAL_CSV, dtype=str)
+    coords = hospital_df["Location_Coordinates"].str.extract(r'([+-]?\d+(?:\.\d+)?),\s*([+-]?\d+(?:\.\d+)?)')
+    hospital_df["Latitude"] = pd.to_numeric(coords[0], errors="coerce")
+    hospital_df["Longitude"] = pd.to_numeric(coords[1], errors="coerce")
+    hospital_df["Sr_No"] = pd.to_numeric(hospital_df["Sr_No"], errors="coerce").fillna(0).astype(int)
     print(f"[HOSPITAL SERVICE] Loaded {len(hospital_df)} hospitals")
 except Exception as e:
     hospital_df = None
     print(f"[HOSPITAL SERVICE] Failed to load hospitals: {e}")
 
 try:
-    district_df = pd.read_csv(DISTRICT_CSV)
-    print(f"[HOSPITAL SERVICE] Loaded {len(district_df)} district summaries")
+    if os.path.exists(DISTRICT_CSV):
+        district_df = pd.read_csv(DISTRICT_CSV)
+        print(f"[HOSPITAL SERVICE] Loaded {len(district_df)} district summaries")
+    else:
+        district_df = None
+        print("[HOSPITAL SERVICE] No hospital district summary file found")
 except Exception as e:
     district_df = None
     print(f"[HOSPITAL SERVICE] Failed to load district summary: {e}")
