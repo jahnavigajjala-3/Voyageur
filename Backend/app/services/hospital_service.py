@@ -40,7 +40,7 @@ def haversine(lat1, lon1, lat2, lon2):
     return R * 2 * math.asin(math.sqrt(a))
 
 
-def get_nearby_hospitals(lat: float, lng: float, radius_km: float = 10, top_n: int = 5) -> list:
+def get_nearby_hospitals(lat: float, lng: float, radius_km: float = 30, top_n: int = 5) -> list:
     if hospital_df is None:
         return []
 

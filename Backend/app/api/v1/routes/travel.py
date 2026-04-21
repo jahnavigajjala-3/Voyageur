@@ -18,5 +18,5 @@ async def all_districts():
     return get_all_district_risks()
 
 @router.get("/hospitals")
-async def nearby_hospitals(lat: float, lng: float, radius: float = 10, limit: int = 5):
+async def nearby_hospitals(lat: float, lng: float, radius: float = 30, limit: int = 5):
     return get_nearby_hospitals(lat, lng, radius, limit)
