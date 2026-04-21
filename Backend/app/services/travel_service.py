@@ -32,10 +32,26 @@ try:
     crime_df = pd.read_csv(CSV_PATH)
     crime_df['STATE']    = crime_df['STATE'].str.title().str.strip()
     crime_df['DISTRICT'] = crime_df['DISTRICT'].str.title().str.strip()
+    
+    # Calculate min/max for normalization
+    RISK_SCORE_MIN = crime_df['RISK_SCORE'].min()
+    RISK_SCORE_MAX = crime_df['RISK_SCORE'].max()
+    
     print(f"[TRAVEL SERVICE] Crime data loaded: {len(crime_df)} districts")
+    print(f"[TRAVEL SERVICE] Risk score range: {RISK_SCORE_MIN:.2f} - {RISK_SCORE_MAX:.2f}")
 except Exception as e:
     crime_df = None
+    RISK_SCORE_MIN = 0
+    RISK_SCORE_MAX = 1000
     print(f"[TRAVEL SERVICE] Failed to load crime data: {e}")
+
+
+def normalize_risk_score(score: float) -> float:
+    """Normalize risk score to 1-10 scale (10 = lowest risk/safest, 1 = highest risk/most dangerous)."""
+    if RISK_SCORE_MAX == RISK_SCORE_MIN:
+        return 5.0  # Default if all scores are the same
+    normalized = 1 + 9 * (score - RISK_SCORE_MIN) / (RISK_SCORE_MAX - RISK_SCORE_MIN)
+    return round(11 - normalized, 1)  # Invert so 10 = safest, 1 = most dangerous
 
 
 def get_state_from_district(district: str) -> str:
@@ -273,6 +289,7 @@ def lookup_crime(district: str, state: str) -> dict:
         "district": row['DISTRICT'],
         "state": display_state,
         "risk_score": round(row['RISK_SCORE'], 2),
+        "normalized_score": normalize_risk_score(row['RISK_SCORE']),
         "risk_level": row['RISK_LEVEL'],
         "marker_color": row['MARKER_COLOR'],
         "source": "district_match"
@@ -338,6 +355,7 @@ async def get_crime_risk(state: str) -> dict:
         "state": state,
         "risk": risk_level,
         "risk_score": round(avg_score, 2),
+        "normalized_score": normalize_risk_score(avg_score),
         "total_crime": int(match['RISK_SCORE'].sum())
     }
 
@@ -349,6 +367,7 @@ def get_all_district_risks() -> list:
 
     return crime_df[['STATE', 'DISTRICT', 'RISK_LEVEL', 'RISK_SCORE', 'MARKER_COLOR']]\
         .dropna()\
+        .assign(normalized_score=lambda df: df['RISK_SCORE'].apply(normalize_risk_score))\
         .to_dict(orient="records")
 
 
@@ -388,6 +407,7 @@ async def get_districts_in_state(lat: float, lng: float) -> list:
             'district': row['DISTRICT'],
             'state': display_state,
             'risk_score': round(row['RISK_SCORE'], 2),
+            'normalized_score': normalize_risk_score(row['RISK_SCORE']),
             'risk_level': row['RISK_LEVEL'],
             'marker_color': row['MARKER_COLOR']
         })
