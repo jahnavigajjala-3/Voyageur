@@ -26,6 +26,7 @@ export default function Dashboard() {
   const [liveRisk, setLiveRisk]       = useState(null);
   const [clickedRisk, setClickedRisk] = useState(null);
   const [chatOpen, setChatOpen]       = useState(false);
+  const mapRef = useRef(null);
 
   const handleLogout = () => { logout(); navigate("/login"); };
   const hour = new Date().getHours();
@@ -131,10 +132,10 @@ export default function Dashboard() {
         {/* Content */}
         <div className="flex flex-1 gap-5 p-6 overflow-auto">
           <div className="flex-1 flex flex-col" style={{ minWidth: 0 }}>
-            <GlassMapCard onRiskUpdate={setLiveRisk} onClickedRiskUpdate={setClickedRisk} />
+            <GlassMapCard onRiskUpdate={setLiveRisk} onClickedRiskUpdate={setClickedRisk} mapRef={mapRef} />
           </div>
           <aside className="flex flex-col gap-4" style={{ width: "255px", flexShrink: 0 }}>
-            <RiskPanel liveRisk={liveRisk} clickedRisk={clickedRisk} />
+            <RiskPanel liveRisk={liveRisk} clickedRisk={clickedRisk} mapRef={mapRef} />
           </aside>
         </div>
       </main>
@@ -378,7 +379,7 @@ function FloatingChat({ open, onToggle }) {
 }
 
 /* ── Glass Map Card ── */
-function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate }) {
+function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef }) {
   const [routeFrom, setRouteFrom]       = useState("");
   const [routeTo, setRouteTo]           = useState("");
   // Store resolved coord objects when user picks from map
@@ -387,7 +388,7 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate }) {
   const [routeLoading, setRouteLoading] = useState(false);
   // "from" | "to" | null — which field is waiting for a map pick
   const [pickingFor, setPickingFor]     = useState(null);
-  const crimeMapRef = useRef(null);
+  const crimeMapRef = mapRef;
 
   const handleSwap   = () => {
     setRouteFrom(routeTo); setRouteTo(routeFrom);
@@ -456,7 +457,6 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate }) {
           </div>
           <div className="flex gap-2">
             <GalaxyBtn onClick={() => crimeMapRef.current?.toggleHospitals()}>Hospitals</GalaxyBtn>
-            <GalaxyBtn onClick={() => crimeMapRef.current?.checkCrimeHere()} variant="danger">Crime Rate</GalaxyBtn>
           </div>
         </div>
 
@@ -586,8 +586,7 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate }) {
           onRiskUpdate={onRiskUpdate}
           onClickedRiskUpdate={onClickedRiskUpdate}
         />
-      </div>
-    </div>
+      </div>    </div>
   );
 }
 
@@ -609,18 +608,39 @@ function GalaxyBtn({ children, onClick, variant }) {
 }
 
 /* ── Right Panel ── */
-function RiskPanel({ liveRisk, clickedRisk }) {
+function RiskPanel({ liveRisk, clickedRisk, mapRef }) {
+  const [selected, setSelected] = useState(null); // "live" | "clicked"
+
+  const handleCardClick = (type, risk) => {
+    if (!risk || risk.error) return;
+    setSelected(type);
+    // Pan map to the location's coords if available
+    mapRef.current?.focusLocation(type, risk);
+  };
+
   return (
     <>
-      <RiskCard title="Your Location"    risk={liveRisk}    delay="card-enter-2" />
+      <RiskCard
+        title="Your Location"
+        risk={liveRisk}
+        delay="card-enter-2"
+        isSelected={selected === "live"}
+        onClick={() => handleCardClick("live", liveRisk)}
+      />
       {clickedRisk !== null && (
-        <RiskCard title="Selected Location" risk={clickedRisk} delay="card-enter-3" />
+        <RiskCard
+          title="Selected Location"
+          risk={clickedRisk}
+          delay="card-enter-3"
+          isSelected={selected === "clicked"}
+          onClick={() => handleCardClick("clicked", clickedRisk)}
+        />
       )}
     </>
   );
 }
 
-function RiskCard({ title, risk, delay = "" }) {
+function RiskCard({ title, risk, delay = "", isSelected, onClick }) {
   const level    = risk?.risk_level || "UNKNOWN";
   const colors   = RISK_COLORS[level] || RISK_COLORS.UNKNOWN;
   const district = risk?.detected_district || risk?.district;
@@ -633,12 +653,17 @@ function RiskCard({ title, risk, delay = "" }) {
 
   return (
     <div
+      onClick={onClick}
       className={`${delay} glass-card rounded-2xl p-5 relative overflow-hidden`}
       style={{
-        background: "rgba(255,255,255,0.03)",
+        background: isSelected ? "rgba(139,92,246,0.08)" : "rgba(255,255,255,0.03)",
         backdropFilter: "blur(24px)",
-        border: "1px solid rgba(255,255,255,0.07)",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+        border: isSelected ? "1px solid rgba(139,92,246,0.35)" : "1px solid rgba(255,255,255,0.07)",
+        boxShadow: isSelected
+          ? "0 10px 30px rgba(0,0,0,0.3), 0 0 0 1px rgba(139,92,246,0.15), inset 0 1px 0 rgba(139,92,246,0.1)"
+          : "0 10px 30px rgba(0,0,0,0.3)",
+        cursor: risk && !risk.error ? "pointer" : "default",
+        transition: "all 0.2s ease",
       }}
     >
       <div className="anim-glow absolute rounded-full blur-3xl pointer-events-none" style={{ width: "80px", height: "80px", top: "-20px", right: "-20px", background: colors.glow }} />
@@ -672,6 +697,16 @@ function RiskCard({ title, risk, delay = "" }) {
                 <div className="score-bar-fill h-full rounded-full" style={{ width: `${barPct}%`, background: `linear-gradient(90deg, ${colors.accent}cc, ${colors.accent})`, boxShadow: `0 0 6px ${colors.glow}` }} />
               </div>
             </div>
+          )}
+          {!isSelected && (
+            <p className="text-xs mt-3" style={{ color: "rgba(255,255,255,0.2)" }}>
+              Click to focus map
+            </p>
+          )}
+          {isSelected && (
+            <p className="text-xs mt-3" style={{ color: "rgba(139,92,246,0.6)" }}>
+              ◎ Focused on map
+            </p>
           )}
         </>
       )}

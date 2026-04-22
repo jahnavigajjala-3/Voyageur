@@ -98,8 +98,16 @@ function MapClickHandler({ onMapClick }) {
   return null;
 }
 
-function RecenterButton({ lat, lng }) {
+function FlyToLocation({ target }) {
   const map = useMap();
+  useEffect(() => {
+    if (!target) return;
+    map.flyTo([target.lat, target.lng], 13, { duration: 1.2, easeLinearity: 0.25 });
+  }, [target, map]);
+  return null;
+}
+
+function RecenterButton({ lat, lng }) {  const map = useMap();
   const [hovered, setHovered] = useState(false);
 
   const handleClick = () => {
@@ -165,6 +173,7 @@ const CrimeMap = forwardRef(function CrimeMap(
   const [clickedCrimeRisk, setClickedCrimeRisk] = useState(null);
   const [clickedHospitals, setClickedHospitals] = useState([]);
   const [showClickedHospitals, setShowClickedHospitals] = useState(false);
+  const [flyTarget, setFlyTarget] = useState(null);
 
   // Expose imperative API to parent
   useImperativeHandle(ref, () => ({
@@ -172,7 +181,6 @@ const CrimeMap = forwardRef(function CrimeMap(
       if (!fromInput || !toInput) { alert("Please enter both locations"); return; }
       try {
         const resolve = async (input) => {
-          // Already a resolved coords object (from map pick)
           if (typeof input === "object" && input.lat) return input;
           if (input === "Current Location" && location)
             return { lat: location.lat, lng: location.lng, name: "Current Location" };
@@ -204,6 +212,18 @@ const CrimeMap = forwardRef(function CrimeMap(
         if (onRiskUpdate) onRiskUpdate(riskData);
       } catch (err) {
         console.error("Crime check failed:", err);
+      }
+    },
+    // Called when a risk card is clicked — fly to that location and show hospitals
+    focusLocation: (type, risk) => {
+      if (type === "live" && location) {
+        setFlyTarget({ lat: location.lat, lng: location.lng });
+        setShowHospitals(true);
+        if (hospitals.length === 0) fetchHospitals();
+      } else if (type === "clicked" && clickedLocation) {
+        setFlyTarget({ lat: clickedLocation.lat, lng: clickedLocation.lng });
+        setShowClickedHospitals(true);
+        if (clickedHospitals.length === 0) fetchClickedHospitals(clickedLocation);
       }
     },
   }));
@@ -325,6 +345,7 @@ const CrimeMap = forwardRef(function CrimeMap(
         />
         <MapClickHandler onMapClick={handleMapClick} />
         <RecenterButton lat={location.lat} lng={location.lng} />
+        <FlyToLocation target={flyTarget} />
 
         {/* Current location marker */}
         <Marker position={[location.lat, location.lng]}>
