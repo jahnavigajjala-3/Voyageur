@@ -26,6 +26,7 @@ export default function Dashboard() {
   const [liveRisk, setLiveRisk]       = useState(null);
   const [clickedRisk, setClickedRisk] = useState(null);
   const [chatOpen, setChatOpen]       = useState(false);
+  const [hospitalsFor, setHospitalsFor] = useState(null); // "live" | "selected" | null
   const mapRef = useRef(null);
 
   const handleLogout = () => { logout(); navigate("/login"); };
@@ -132,11 +133,10 @@ export default function Dashboard() {
         {/* Content */}
         <div className="flex flex-1 gap-5 p-6 overflow-auto">
           <div className="flex-1 flex flex-col" style={{ minWidth: 0 }}>
-            <GlassMapCard onRiskUpdate={setLiveRisk} onClickedRiskUpdate={setClickedRisk} mapRef={mapRef} />
+            <GlassMapCard onRiskUpdate={setLiveRisk} onClickedRiskUpdate={setClickedRisk} mapRef={mapRef} onHospitalsChange={setHospitalsFor} />
           </div>
           <aside className="flex flex-col gap-4" style={{ width: "255px", flexShrink: 0 }}>
-            <RiskPanel liveRisk={liveRisk} clickedRisk={clickedRisk} mapRef={mapRef} />
-          </aside>
+            <RiskPanel liveRisk={liveRisk} clickedRisk={clickedRisk} mapRef={mapRef} hospitalsFor={hospitalsFor} onClearSelection={() => { setClickedRisk(null); setHospitalsFor(null); }} />          </aside>
         </div>
       </main>
 
@@ -378,15 +378,12 @@ function FloatingChat({ open, onToggle }) {
   );
 }
 
-/* ── Glass Map Card ── */
-function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef }) {
+function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsChange }) {
   const [routeFrom, setRouteFrom]       = useState("");
   const [routeTo, setRouteTo]           = useState("");
-  // Store resolved coord objects when user picks from map
   const [routeFromCoords, setRouteFromCoords] = useState(null);
   const [routeToCoords, setRouteToCoords]     = useState(null);
   const [routeLoading, setRouteLoading] = useState(false);
-  // "from" | "to" | null — which field is waiting for a map pick
   const [pickingFor, setPickingFor]     = useState(null);
   const crimeMapRef = mapRef;
 
@@ -454,9 +451,6 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef }) {
           <div>
             <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>Live Map</p>
             <p className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>Crime risk · Hospitals · Routes</p>
-          </div>
-          <div className="flex gap-2">
-            <GalaxyBtn onClick={() => crimeMapRef.current?.toggleHospitals()}>Hospitals</GalaxyBtn>
           </div>
         </div>
 
@@ -585,6 +579,7 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef }) {
           onRoutePick={handleRoutePick}
           onRiskUpdate={onRiskUpdate}
           onClickedRiskUpdate={onClickedRiskUpdate}
+          onHospitalsChange={onHospitalsChange}
         />
       </div>    </div>
   );
@@ -608,14 +603,13 @@ function GalaxyBtn({ children, onClick, variant }) {
 }
 
 /* ── Right Panel ── */
-function RiskPanel({ liveRisk, clickedRisk, mapRef }) {
-  const [selected, setSelected] = useState(null); // "live" | "clicked"
+function RiskPanel({ liveRisk, clickedRisk, mapRef, hospitalsFor, onClearSelection }) {
+  const [showModal, setShowModal] = useState(false);
 
-  const handleCardClick = (type, risk) => {
-    if (!risk || risk.error) return;
-    setSelected(type);
-    // Pan map to the location's coords if available
-    mapRef.current?.focusLocation(type, risk);
+  const handleClearConfirm = () => {
+    setShowModal(false);
+    mapRef.current?.clearAll();
+    onClearSelection();
   };
 
   return (
@@ -624,53 +618,136 @@ function RiskPanel({ liveRisk, clickedRisk, mapRef }) {
         title="Your Location"
         risk={liveRisk}
         delay="card-enter-2"
-        isSelected={selected === "live"}
-        onClick={() => handleCardClick("live", liveRisk)}
+        onFocus={() => mapRef.current?.focusMap("live")}
+        onHospitals={() => mapRef.current?.showHospitalsFor("live")}
+        hospitalsActive={hospitalsFor === "live"}
       />
       {clickedRisk !== null && (
         <RiskCard
           title="Selected Location"
           risk={clickedRisk}
           delay="card-enter-3"
-          isSelected={selected === "clicked"}
-          onClick={() => handleCardClick("clicked", clickedRisk)}
+          onFocus={() => mapRef.current?.focusMap("selected")}
+          onHospitals={() => mapRef.current?.showHospitalsFor("selected")}
+          onClear={() => setShowModal(true)}
+          hospitalsActive={hospitalsFor === "selected"}
+        />
+      )}
+      {showModal && (
+        <ClearModal
+          onCancel={() => setShowModal(false)}
+          onConfirm={handleClearConfirm}
         />
       )}
     </>
   );
 }
 
-function RiskCard({ title, risk, delay = "", isSelected, onClick }) {
+/* ── Confirmation Modal ── */
+function ClearModal({ onCancel, onConfirm }) {
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center"
+      style={{ zIndex: 99999, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)" }}
+      onClick={onCancel}
+    >
+      <div
+        className="anim-fade-up rounded-2xl p-6"
+        style={{
+          width: "290px",
+          background: "rgba(8,8,20,0.96)",
+          backdropFilter: "blur(24px)",
+          border: "1px solid rgba(255,255,255,0.1)",
+          boxShadow: "0 30px 60px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p className="text-sm font-semibold mb-1.5" style={{ color: "rgba(255,255,255,0.9)" }}>
+          Clear selected location?
+        </p>
+        <p className="text-xs mb-5" style={{ color: "rgba(255,255,255,0.38)", lineHeight: 1.7 }}>
+          This will remove:<br />
+          · Selected location marker<br />
+          · Hospitals on map<br />
+          · Any active routes
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-2 rounded-xl text-xs font-medium transition-all duration-150"
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              color: "rgba(255,255,255,0.5)",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-2 rounded-xl text-xs font-semibold transition-all duration-150"
+            style={{
+              background: "rgba(239,68,68,0.15)",
+              border: "1px solid rgba(239,68,68,0.3)",
+              color: "#fca5a5",
+            }}
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Risk Card ── */
+function RiskCard({ title, risk, delay = "", onFocus, onHospitals, onClear, hospitalsActive }) {
   const level    = risk?.risk_level || "UNKNOWN";
   const colors   = RISK_COLORS[level] || RISK_COLORS.UNKNOWN;
   const district = risk?.detected_district || risk?.district;
   const state    = risk?.detected_state    || risk?.state;
   const score    = risk?.risk_score;
-  // Normalise raw score (0–3000 range) to a 0–10 display score
   const MAX_RAW  = 3000;
   const score10  = score != null ? Math.min((score / MAX_RAW) * 10, 10).toFixed(1) : null;
   const barPct   = score != null ? Math.min((score / MAX_RAW) * 100, 100) : 0;
+  const hasData  = risk && !risk.error;
 
   return (
     <div
-      onClick={onClick}
       className={`${delay} glass-card rounded-2xl p-5 relative overflow-hidden`}
       style={{
-        background: isSelected ? "rgba(139,92,246,0.08)" : "rgba(255,255,255,0.03)",
+        background: "rgba(255,255,255,0.03)",
         backdropFilter: "blur(24px)",
-        border: isSelected ? "1px solid rgba(139,92,246,0.35)" : "1px solid rgba(255,255,255,0.07)",
-        boxShadow: isSelected
-          ? "0 10px 30px rgba(0,0,0,0.3), 0 0 0 1px rgba(139,92,246,0.15), inset 0 1px 0 rgba(139,92,246,0.1)"
-          : "0 10px 30px rgba(0,0,0,0.3)",
-        cursor: risk && !risk.error ? "pointer" : "default",
-        transition: "all 0.2s ease",
+        border: "1px solid rgba(255,255,255,0.07)",
+        boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+        transition: "border-color 0.2s ease",
       }}
     >
-      <div className="anim-glow absolute rounded-full blur-3xl pointer-events-none" style={{ width: "80px", height: "80px", top: "-20px", right: "-20px", background: colors.glow }} />
+      <div className="anim-glow absolute rounded-full blur-3xl pointer-events-none"
+        style={{ width: "80px", height: "80px", top: "-20px", right: "-20px", background: colors.glow }} />
 
-      <p className="text-xs font-medium mb-3" style={{ color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em" }}>
-        {title.toUpperCase()}
-      </p>
+      {/* Title row with optional ✕ */}
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em" }}>
+          {title.toUpperCase()}
+        </p>
+        {onClear && (
+          <button
+            onClick={onClear}
+            title="Clear selection"
+            className="flex items-center justify-center rounded-lg"
+            style={{
+              width: "20px", height: "20px", fontSize: "10px",
+              background: "rgba(239,68,68,0.08)",
+              border: "1px solid rgba(239,68,68,0.18)",
+              color: "rgba(252,165,165,0.55)",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.2)"; e.currentTarget.style.color = "#fca5a5"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.08)"; e.currentTarget.style.color = "rgba(252,165,165,0.55)"; }}
+          >✕</button>
+        )}
+      </div>
 
       {!risk ? (
         <div className="flex flex-col gap-2">
@@ -681,32 +758,57 @@ function RiskCard({ title, risk, delay = "", isSelected, onClick }) {
         <p className="text-xs" style={{ color: "#fca5a5" }}>{risk.error}</p>
       ) : (
         <>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl mb-3" style={{ background: colors.bg, border: `1px solid ${colors.border}` }}>
-            <span className="pulse-ring relative w-2 h-2 rounded-full flex-shrink-0" style={{ background: colors.accent, color: colors.accent }} />
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl mb-3"
+            style={{ background: colors.bg, border: `1px solid ${colors.border}` }}>
+            <span className="pulse-ring relative w-2 h-2 rounded-full flex-shrink-0"
+              style={{ background: colors.accent, color: colors.accent }} />
             <span className="text-sm font-bold" style={{ color: colors.text }}>{level} RISK</span>
           </div>
+
           {district && <p className="text-sm font-medium mb-0.5" style={{ color: "rgba(255,255,255,0.8)" }}>{district}</p>}
-          {state    && <p className="text-xs mb-4" style={{ color: "rgba(255,255,255,0.35)" }}>{state}</p>}
+          {state    && <p className="text-xs mb-3" style={{ color: "rgba(255,255,255,0.35)" }}>{state}</p>}
+
           {score !== undefined && (
-            <div>
-              <div className="flex justify-between items-center mb-2">
+            <div className="mb-4">
+              <div className="flex justify-between items-center mb-1.5">
                 <span className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>Crime Score</span>
                 <span className="text-xs font-bold tabular-nums" style={{ color: colors.text }}>{score10} / 10</span>
               </div>
               <div className="rounded-full overflow-hidden" style={{ height: "3px", background: "rgba(255,255,255,0.06)" }}>
-                <div className="score-bar-fill h-full rounded-full" style={{ width: `${barPct}%`, background: `linear-gradient(90deg, ${colors.accent}cc, ${colors.accent})`, boxShadow: `0 0 6px ${colors.glow}` }} />
+                <div className="score-bar-fill h-full rounded-full"
+                  style={{ width: `${barPct}%`, background: `linear-gradient(90deg, ${colors.accent}cc, ${colors.accent})`, boxShadow: `0 0 6px ${colors.glow}` }} />
               </div>
             </div>
           )}
-          {!isSelected && (
-            <p className="text-xs mt-3" style={{ color: "rgba(255,255,255,0.2)" }}>
-              Click to focus map
-            </p>
-          )}
-          {isSelected && (
-            <p className="text-xs mt-3" style={{ color: "rgba(139,92,246,0.6)" }}>
-              ◎ Focused on map
-            </p>
+
+          {/* Explicit action buttons */}
+          {hasData && (
+            <div className="flex gap-2">
+              <button
+                onClick={onFocus}
+                className="ctrl-btn flex-1 py-1.5 rounded-xl text-xs font-medium"
+                style={{
+                  background: "rgba(139,92,246,0.1)",
+                  border: "1px solid rgba(139,92,246,0.2)",
+                  color: "rgba(167,139,250,0.85)",
+                }}
+              >
+                Focus on Map
+              </button>
+              <button
+                onClick={onHospitals}
+                className="ctrl-btn flex-1 py-1.5 rounded-xl text-xs font-medium"
+                style={{
+                  background: hospitalsActive ? "rgba(22,163,74,0.25)" : "rgba(34,197,94,0.08)",
+                  border: hospitalsActive ? "1px solid rgba(22,163,74,0.5)" : "1px solid rgba(34,197,94,0.18)",
+                  color: hospitalsActive ? "#4ade80" : "rgba(134,239,172,0.55)",
+                  boxShadow: hospitalsActive ? "0 0 8px rgba(34,197,94,0.2)" : "none",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {hospitalsActive ? "Hide Hospitals" : "Show Hospitals"}
+              </button>
+            </div>
           )}
         </>
       )}
