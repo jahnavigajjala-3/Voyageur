@@ -30,41 +30,109 @@ const routeIcon = new L.Icon({
   iconSize: [25,41], iconAnchor: [12,41], popupAnchor: [1,-34], shadowSize: [41,41],
 });
 
+const stepIcon = new L.DivIcon({
+  className: "",
+  html: `<div style="
+    width:14px;height:14px;border-radius:50%;
+    background:rgba(139,92,246,0.9);
+    border:2px solid #fff;
+    box-shadow:0 0 10px rgba(139,92,246,0.8);
+  "></div>`,
+  iconSize: [14, 14],
+  iconAnchor: [7, 7],
+});
+
 const RISK_CIRCLE_COLORS = {
   HIGH: "#ef4444", MEDIUM: "#eab308", LOW: "#22c55e", UNKNOWN: "#64748b",
 };
 
-// ── Internal helpers ──────────────────────────────────────────────────────────
-
-function RoutingMachine({ waypoints, isActive }) {
+function RoutingMachine({ waypoints, isActive, onRouteDirections, onStepCoords }) {
   const map = useMap();
   const layerRef = useRef(null);
+
   useEffect(() => {
     if (!waypoints || waypoints.length < 2 || !isActive || !map) return;
     let cancelled = false;
+
+    const formatInstruction = (step) => {
+      const { maneuver = {}, name = "" } = step;
+      const road = name ? ` onto ${name}` : "";
+      const modifier = maneuver.modifier ? ` ${maneuver.modifier}` : "";
+      const type = maneuver.type || "continue";
+      if (type === "turn")        return `Turn${modifier}${road}`;
+      if (type === "depart")      return `Depart${road}`;
+      if (type === "arrive")      return `Arrive at${road}`;
+      if (type === "merge")       return `Merge${modifier}${road}`;
+      if (type === "roundabout")  return `Enter roundabout${road}`;
+      if (type === "rotary")      return `rotary${modifier}${road}`;
+      if (type === "exit rotary") return `exit rotary${modifier}${road}`;
+      if (type === "fork")        return `Take the fork${modifier}${road}`;
+      if (type === "end of road") return `end of road${modifier}${road}`;
+      return `${type.replace(/_/g, " ")}${modifier}${road}`.trim();
+    };
+
     const run = async () => {
       try {
         const coords = waypoints.map(w => `${w.lng},${w.lat}`).join(";");
-        const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`);
+        const res = await fetch(
+          `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson&steps=true`
+        );
         if (!res.ok) throw new Error(`OSRM ${res.status}`);
         const data = await res.json();
         if (cancelled) return;
+
         if (data.routes?.length > 0) {
-          layerRef.current = L.geoJSON(data.routes[0].geometry, {
-            style: { color: "#16a34a", weight: 4, opacity: 0.85 },
+          const route = data.routes[0];
+          const instructions = [];
+          const stepCoords = [];
+
+          route.legs.forEach((leg) => {
+            leg.steps.forEach((step) => {
+              instructions.push({
+                text:     formatInstruction(step),
+                distance: step.distance,
+                duration: step.duration,
+              });
+              const [lng, lat] = step.maneuver.location;
+              stepCoords.push({ lat, lng });
+            });
+          });
+
+          if (onRouteDirections) onRouteDirections(instructions);
+          if (onStepCoords)      onStepCoords(stepCoords);
+
+          layerRef.current = L.geoJSON(route.geometry, {
+            style: { color: "#818cf8", weight: 5, opacity: 0.9 },
           }).addTo(map);
+
+          try {
+            const bounds = layerRef.current.getBounds();
+            if (bounds.isValid()) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+          } catch (_) {}
+
+        } else {
+          if (onRouteDirections) onRouteDirections([]);
+          if (onStepCoords)      onStepCoords([]);
         }
-      } catch (e) { console.error("Route error:", e); }
+      } catch (e) {
+        console.error("Route error:", e);
+        if (!cancelled) {
+          if (onRouteDirections) onRouteDirections([]);
+          if (onStepCoords)      onStepCoords([]);
+        }
+      }
     };
+
     run();
     return () => {
       cancelled = true;
       if (layerRef.current && map) {
-        try { map.removeLayer(layerRef.current); } catch (_) { /* ignore */ }
+        try { map.removeLayer(layerRef.current); } catch (_) {}
         layerRef.current = null;
       }
     };
-  }, [waypoints, isActive, map]);
+  }, [waypoints, isActive, map, onRouteDirections, onStepCoords]);
+
   return null;
 }
 
@@ -83,7 +151,7 @@ function FlyToLocation({ target }) {
   const map = useMap();
   useEffect(() => {
     if (!target) return;
-    map.flyTo([target.lat, target.lng], 13, { duration: 1.2, easeLinearity: 0.25 });
+    map.flyTo([target.lat, target.lng], target.zoom || 15, { duration: 1.0, easeLinearity: 0.25 });
   }, [target, map]);
   return null;
 }
@@ -113,35 +181,25 @@ function RecenterButton({ lat, lng }) {
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
-
 const CrimeMap = forwardRef(function CrimeMap(
-  { onRiskUpdate, onClickedRiskUpdate, pickingFor, onRoutePick, onHospitalsChange },
+  { onRiskUpdate, onClickedRiskUpdate, pickingFor, onRoutePick, onHospitalsChange, onRouteDirections },
   ref
 ) {
   const { location, error } = useLocation();
-  const [crimeRisk, setCrimeRisk]   = useState(null);
-  const [hasFetched, setHasFetched] = useState(false);
-
-  // Route state
+  const [crimeRisk, setCrimeRisk]     = useState(null);
+  const [hasFetched, setHasFetched]   = useState(false);
   const [routeWaypoints, setRouteWaypoints] = useState([]);
   const [routeActive, setRouteActive]       = useState(false);
-
-  // Fly-to trigger (timestamp ensures re-trigger on same coords)
-  const [flyTarget, setFlyTarget] = useState(null);
-
-  // Selected location — fully explicit, no implicit side effects
+  const [stepCoords, setStepCoords]         = useState([]);
+  const [activeStepIdx, setActiveStepIdx]   = useState(null);
+  const [flyTarget, setFlyTarget]           = useState(null);
   const [selectedLocation, setSelectedLocation]   = useState(null);
   const [selectedCrimeRisk, setSelectedCrimeRisk] = useState(null);
+  const [hospitals, setHospitals]           = useState([]);
+  const [showHospitals, setShowHospitals]   = useState(false);
+  const [hospitalCenter, setHospitalCenter] = useState(null);
 
-  // Hospitals — only shown when explicitly requested
-  const [hospitals, setHospitals]         = useState([]);
-  const [showHospitals, setShowHospitals] = useState(false);
-  const [hospitalCenter, setHospitalCenter] = useState(null); // {lat,lng} for radius circle
-
-  // ── Imperative API ──────────────────────────────────────────────────────────
   useImperativeHandle(ref, () => ({
-    // Route planning
     triggerRoute: async (fromInput, toInput) => {
       if (!fromInput || !toInput) { alert("Please enter both locations"); return; }
       try {
@@ -152,24 +210,42 @@ const CrimeMap = forwardRef(function CrimeMap(
           return await geocode(input);
         };
         const [from, to] = await Promise.all([resolve(fromInput), resolve(toInput)]);
-        if (from && to) { setRouteWaypoints([from, to]); setRouteActive(true); }
-        else alert("Could not find one or both locations.");
+        if (from && to) {
+          setStepCoords([]);
+          setActiveStepIdx(null);
+          setRouteWaypoints([from, to]);
+          setRouteActive(true);
+        } else {
+          alert("Could not find one or both locations.");
+        }
       } catch (e) {
         console.error("Route error:", e);
         alert("Error finding locations. Check your connection and try again.");
       }
     },
-    clearRoute: () => { setRouteActive(false); setRouteWaypoints([]); },
 
-    // Focus map on a location — NO hospital side effects
+    clearRoute: () => {
+      setRouteActive(false);
+      setRouteWaypoints([]);
+      setStepCoords([]);
+      setActiveStepIdx(null);
+      if (onRouteDirections) onRouteDirections([]);
+    },
+
+    focusStep: (index) => {
+      if (!stepCoords || stepCoords.length === 0) return;
+      const coord = stepCoords[index];
+      if (!coord) return;
+      setActiveStepIdx(index);
+      setFlyTarget({ lat: coord.lat, lng: coord.lng, zoom: 16, _ts: Date.now() });
+    },
+
     focusMap: (type) => {
       const target = type === "live" ? location : selectedLocation;
       if (target) setFlyTarget({ lat: target.lat, lng: target.lng, _ts: Date.now() });
     },
 
-    // Show/hide hospitals for a location — toggle behavior
     showHospitalsFor: async (type) => {
-      // If already showing for this same type, hide them
       if (showHospitals) {
         setShowHospitals(false);
         setHospitals([]);
@@ -177,7 +253,6 @@ const CrimeMap = forwardRef(function CrimeMap(
         if (onHospitalsChange) onHospitalsChange(null);
         return;
       }
-      // Otherwise show them for the requested type
       const loc = type === "live" ? location : selectedLocation;
       if (!loc) return;
       setHospitalCenter({ lat: loc.lat, lng: loc.lng });
@@ -189,7 +264,6 @@ const CrimeMap = forwardRef(function CrimeMap(
       } catch (e) { console.error("Hospital fetch failed:", e); }
     },
 
-    // Clear everything — called from confirmation modal
     clearAll: () => {
       setSelectedLocation(null);
       setSelectedCrimeRisk(null);
@@ -198,11 +272,12 @@ const CrimeMap = forwardRef(function CrimeMap(
       setHospitalCenter(null);
       setRouteActive(false);
       setRouteWaypoints([]);
+      setStepCoords([]);
+      setActiveStepIdx(null);
       if (onHospitalsChange) onHospitalsChange(null);
     },
   }));
 
-  // Auto-fetch crime risk for current location on mount
   useEffect(() => {
     if (!location || hasFetched) return;
     const run = async () => {
@@ -228,12 +303,10 @@ const CrimeMap = forwardRef(function CrimeMap(
   };
 
   const handleMapClick = async (lat, lng) => {
-    // Route pick mode — fill field, skip crime lookup
     if (pickingFor && onRoutePick) {
       onRoutePick({ lat, lng, name: `${lat.toFixed(5)}, ${lng.toFixed(5)}` });
       return;
     }
-    // Normal click — set selected location, reset hospitals (never auto-show)
     const loc = { lat, lng };
     setSelectedLocation(loc);
     setSelectedCrimeRisk(null);
@@ -254,6 +327,7 @@ const CrimeMap = forwardRef(function CrimeMap(
   const displayState    = crimeRisk?.detected_state    || crimeRisk?.state    || "";
   const selDistrict     = selectedCrimeRisk?.detected_district || selectedCrimeRisk?.district || "Unknown";
   const selState        = selectedCrimeRisk?.detected_state    || selectedCrimeRisk?.state    || "";
+  const activeStepCoord = activeStepIdx !== null ? stepCoords[activeStepIdx] : null;
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -270,7 +344,6 @@ const CrimeMap = forwardRef(function CrimeMap(
         <RecenterButton lat={location.lat} lng={location.lng} />
         <FlyToLocation target={flyTarget} />
 
-        {/* Current location + risk circle */}
         <Marker position={[location.lat, location.lng]}>
           <Popup>
             <strong>You are here</strong>
@@ -291,7 +364,6 @@ const CrimeMap = forwardRef(function CrimeMap(
           />
         )}
 
-        {/* Selected location marker */}
         {selectedLocation && (
           <Marker position={[selectedLocation.lat, selectedLocation.lng]} icon={clickedIcon}>
             <Popup>
@@ -303,7 +375,6 @@ const CrimeMap = forwardRef(function CrimeMap(
           </Marker>
         )}
 
-        {/* Hospital markers — ONLY when showHospitals = true */}
         {showHospitals && hospitals
           .filter(h => h.latitude != null && h.longitude != null)
           .map((h, i) => (
@@ -311,8 +382,6 @@ const CrimeMap = forwardRef(function CrimeMap(
               <Popup><strong>{h.city}</strong><br />{h.district}, {h.state}<br />Distance: {h.distance_km} km</Popup>
             </Marker>
           ))}
-
-        {/* Hospital radius circle — ONLY when hospitals are shown */}
         {showHospitals && hospitalCenter && (
           <Circle
             center={[hospitalCenter.lat, hospitalCenter.lng]}
@@ -324,10 +393,14 @@ const CrimeMap = forwardRef(function CrimeMap(
           />
         )}
 
-        {/* Route */}
         {routeActive && routeWaypoints.length >= 2 && (
           <>
-            <RoutingMachine waypoints={routeWaypoints} isActive={routeActive} />
+            <RoutingMachine
+              waypoints={routeWaypoints}
+              isActive={routeActive}
+              onRouteDirections={onRouteDirections}
+              onStepCoords={setStepCoords}
+            />
             <Marker position={[routeWaypoints[0].lat, routeWaypoints[0].lng]} icon={routeIcon}>
               <Popup>Start: {routeWaypoints[0].name}</Popup>
             </Marker>
@@ -336,8 +409,13 @@ const CrimeMap = forwardRef(function CrimeMap(
             </Marker>
           </>
         )}
-      </MapContainer>
 
+        {activeStepCoord && (
+          <Marker position={[activeStepCoord.lat, activeStepCoord.lng]} icon={stepIcon}>
+            <Popup>Step {activeStepIdx + 1}</Popup>
+          </Marker>
+        )}
+      </MapContainer>
     </div>
   );
 });
