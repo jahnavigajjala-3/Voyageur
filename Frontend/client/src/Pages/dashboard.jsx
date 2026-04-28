@@ -2,7 +2,7 @@ import { useContext, useRef, useState, useEffect } from "react";
 import { AuthContext } from "../context/AuthContext";
 import CrimeMap from "../components/CrimeMap";
 import { useNavigate } from "react-router-dom";
-import { sendChatMessage } from "../api/api";
+import { sendChatMessage, createTrip } from "../api/api";
 import useLocation from "../hooks/useLocation";
 
 const NAV_ITEMS = [
@@ -193,7 +193,7 @@ export default function Dashboard() {
 
         <div className="flex flex-1 gap-5 p-6 overflow-auto">
           <div className="flex-1 flex flex-col" style={{ minWidth: 0 }}>
-            <GlassMapCard onRiskUpdate={setLiveRisk} onClickedRiskUpdate={setClickedRisk} mapRef={mapRef} onHospitalsChange={setHospitalsFor} />
+            <GlassMapCard onRiskUpdate={setLiveRisk} onClickedRiskUpdate={setClickedRisk} mapRef={mapRef} onHospitalsChange={setHospitalsFor} user={user} />
           </div>
           <aside className="flex flex-col gap-4" style={{ width: "255px", flexShrink: 0 }}>
             {/* Weather card in right sidebar */}
@@ -374,17 +374,20 @@ function FloatingChat({ open, onToggle, weather }) {
 }
 
 // ─── GlassMapCard (unchanged) ─────────────────────────────────────────────
-function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsChange }) {
+function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsChange, user }) {
   const [routeFrom, setRouteFrom]             = useState("");
   const [routeTo, setRouteTo]                 = useState("");
   const [routeFromCoords, setRouteFromCoords] = useState(null);
   const [routeToCoords, setRouteToCoords]     = useState(null);
+  const [startDate, setStartDate]             = useState("");
+  const [endDate, setEndDate]                 = useState("");
   const [routeLoading, setRouteLoading]       = useState(false);
   const [pickingFor, setPickingFor]           = useState(null);
   const [routeDirections, setRouteDirections] = useState([]);
   const [activeStep, setActiveStep]           = useState(null);
   const [routeSummary, setRouteSummary]       = useState(null);
   const [directionsOpen, setDirectionsOpen]   = useState(false);
+  const [savingTrip, setSavingTrip]           = useState(false);
   const stepRefs  = useRef([]);
   const crimeMapRef = mapRef;
 
@@ -428,6 +431,7 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
 
   const handleClear = () => {
     setRouteFrom(""); setRouteTo("");
+    setStartDate(""); setEndDate("");
     setRouteFromCoords(null); setRouteToCoords(null);
     setPickingFor(null);
     setRouteDirections([]);
@@ -435,6 +439,39 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
     setRouteSummary(null);
     setDirectionsOpen(false);
     crimeMapRef.current?.clearRoute();
+  };
+
+  const handleSaveTrip = async () => {
+    if (!routeFrom || !routeTo || !routeDirections.length) return;
+    setSavingTrip(true);
+    try {
+      const dist = routeSummary?.dist || "";
+      const time = routeSummary?.time || "";
+      let planned_route = `Route from ${routeFrom} to ${routeTo}. Distance: ${dist}, ETA: ${time}.`;
+      if (startDate) {
+        const [year, month, day] = startDate.split("-");
+        planned_route += ` Departure: ${day}/${month}/${year}.`;
+      }
+      if (endDate) {
+        const [year, month, day] = endDate.split("-");
+        planned_route += ` Return: ${day}/${month}/${year}.`;
+      }
+      
+      await createTrip({
+        user_id: user?.id,
+        destination: routeTo,
+        start_date: startDate ? new Date(startDate).toISOString() : new Date().toISOString(),
+        end_date: endDate ? new Date(endDate).toISOString() : new Date().toISOString(),
+        planned_route: planned_route,
+        notes: "Planned via Live Map",
+      });
+      alert("Trip saved successfully! The AI will now have access to your planned route.");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save trip.");
+    } finally {
+      setSavingTrip(false);
+    }
   };
 
   const handleRoutePick = (coords) => {
@@ -483,51 +520,81 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="flex items-center gap-2">
-          <div className="flex flex-col gap-1.5 flex-1" style={{ position: "relative", minWidth: 0 }}>
-            <div style={{
-              position: "absolute", left: "13px", top: "32px", bottom: "32px", width: "2px",
-              background: "linear-gradient(to bottom, rgba(34,197,94,0.6), rgba(239,68,68,0.6))",
-              zIndex: 1, borderRadius: "2px",
-            }} />
-            <div className="flex gap-1.5 items-center">
-              <div style={{ width: "28px", height: "28px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}>
-                <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 8px rgba(34,197,94,0.6)" }} />
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-1.5 flex-1" style={{ position: "relative", minWidth: 0 }}>
+              <div style={{
+                position: "absolute", left: "13px", top: "32px", bottom: "32px", width: "2px",
+                background: "linear-gradient(to bottom, rgba(34,197,94,0.6), rgba(239,68,68,0.6))",
+                zIndex: 1, borderRadius: "2px",
+              }} />
+              <div className="flex gap-1.5 items-center">
+                <div style={{ width: "28px", height: "28px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}>
+                  <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 8px rgba(34,197,94,0.6)" }} />
+                </div>
+                <input value={routeFrom} onChange={(e) => { setRouteFrom(e.target.value); setRouteFromCoords(null); }}
+                  placeholder={pickingFor === "from" ? "Click on map..." : "From"}
+                  className="glass-input flex-1 px-3 py-2 rounded-xl text-xs"
+                  style={{ background: pickingFor === "from" ? "rgba(139,92,246,0.08)" : "rgba(255,255,255,0.05)", border: pickingFor === "from" ? "1px solid rgba(139,92,246,0.35)" : "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.8)", minWidth: 0 }} />
+                <button type="button" title="Pick from map" onClick={() => setPickingFor((p) => p === "from" ? null : "from")} style={pinBtnStyle("from")}>◎</button>
+                <button type="button" onClick={() => { setRouteFrom("Current Location"); setPickingFor(null); }}
+                  className="ctrl-btn px-2.5 py-2 rounded-xl text-xs whitespace-nowrap"
+                  style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.18)", color: "rgba(134,239,172,0.8)" }}>Current</button>
               </div>
-              <input value={routeFrom} onChange={(e) => { setRouteFrom(e.target.value); setRouteFromCoords(null); }}
-                placeholder={pickingFor === "from" ? "Click on map..." : "From"}
-                className="glass-input flex-1 px-3 py-2 rounded-xl text-xs"
-                style={{ background: pickingFor === "from" ? "rgba(139,92,246,0.08)" : "rgba(255,255,255,0.05)", border: pickingFor === "from" ? "1px solid rgba(139,92,246,0.35)" : "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.8)", minWidth: 0 }} />
-              <button type="button" title="Pick from map" onClick={() => setPickingFor((p) => p === "from" ? null : "from")} style={pinBtnStyle("from")}>◎</button>
-              <button type="button" onClick={() => { setRouteFrom("Current Location"); setPickingFor(null); }}
-                className="ctrl-btn px-2.5 py-2 rounded-xl text-xs whitespace-nowrap"
-                style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.18)", color: "rgba(134,239,172,0.8)" }}>Current</button>
+              <div className="flex gap-1.5 items-center">
+                <div style={{ width: "28px", height: "28px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}>
+                  <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#ef4444", boxShadow: "0 0 8px rgba(239,68,68,0.6)" }} />
+                </div>
+                <input value={routeTo} onChange={(e) => { setRouteTo(e.target.value); setRouteToCoords(null); }}
+                  placeholder={pickingFor === "to" ? "Click on map..." : "To"}
+                  className="glass-input flex-1 px-3 py-2 rounded-xl text-xs"
+                  style={{ background: pickingFor === "to" ? "rgba(139,92,246,0.08)" : "rgba(255,255,255,0.05)", border: pickingFor === "to" ? "1px solid rgba(139,92,246,0.35)" : "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.8)", minWidth: 0 }} />
+                <button type="button" title="Pick from map" onClick={() => setPickingFor((p) => p === "to" ? null : "to")} style={pinBtnStyle("to")}>◎</button>
+              </div>
             </div>
-            <div className="flex gap-1.5 items-center">
-              <div style={{ width: "28px", height: "28px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}>
-                <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#ef4444", boxShadow: "0 0 8px rgba(239,68,68,0.6)" }} />
+
+            <button type="button" onClick={handleSwap}
+              className="ctrl-btn flex items-center justify-center rounded-xl flex-shrink-0"
+              style={{ width: "30px", height: "30px", fontSize: "13px", background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)", color: "rgba(167,139,250,0.8)" }}>⇄</button>
+
+            <div className="flex flex-col gap-1.5 flex-shrink-0">
+              <button type="submit" disabled={routeLoading}
+                className="ctrl-btn px-4 py-2 rounded-xl text-xs font-semibold"
+                style={{ background: routeLoading ? "rgba(139,92,246,0.2)" : "linear-gradient(135deg, rgba(139,92,246,0.7), rgba(59,130,246,0.7))", border: "1px solid rgba(139,92,246,0.3)", color: "#fff", opacity: routeLoading ? 0.7 : 1 }}>
+                {routeLoading ? "..." : "Route"}
+              </button>
+              <div className="flex gap-1.5">
+                <button type="button" onClick={handleClear}
+                  className="ctrl-btn flex-1 px-3 py-2 rounded-xl text-xs"
+                  style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }}>Clear</button>
+                {routeDirections.length > 0 && (
+                  <button type="button" onClick={handleSaveTrip} disabled={savingTrip}
+                    className="ctrl-btn flex-1 px-3 py-2 rounded-xl text-xs font-medium"
+                    style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", color: "#86efac", opacity: savingTrip ? 0.7 : 1 }}>
+                    {savingTrip ? "..." : "Save"}
+                  </button>
+                )}
               </div>
-              <input value={routeTo} onChange={(e) => { setRouteTo(e.target.value); setRouteToCoords(null); }}
-                placeholder={pickingFor === "to" ? "Click on map..." : "To"}
-                className="glass-input flex-1 px-3 py-2 rounded-xl text-xs"
-                style={{ background: pickingFor === "to" ? "rgba(139,92,246,0.08)" : "rgba(255,255,255,0.05)", border: pickingFor === "to" ? "1px solid rgba(139,92,246,0.35)" : "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.8)", minWidth: 0 }} />
-              <button type="button" title="Pick from map" onClick={() => setPickingFor((p) => p === "to" ? null : "to")} style={pinBtnStyle("to")}>◎</button>
             </div>
           </div>
-
-          <button type="button" onClick={handleSwap}
-            className="ctrl-btn flex items-center justify-center rounded-xl flex-shrink-0"
-            style={{ width: "30px", height: "30px", fontSize: "13px", background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)", color: "rgba(167,139,250,0.8)" }}>⇄</button>
-
-          <div className="flex flex-col gap-1.5 flex-shrink-0">
-            <button type="submit" disabled={routeLoading}
-              className="ctrl-btn px-4 py-2 rounded-xl text-xs font-semibold"
-              style={{ background: routeLoading ? "rgba(139,92,246,0.2)" : "linear-gradient(135deg, rgba(139,92,246,0.7), rgba(59,130,246,0.7))", border: "1px solid rgba(139,92,246,0.3)", color: "#fff", opacity: routeLoading ? 0.7 : 1 }}>
-              {routeLoading ? "..." : "Route"}
-            </button>
-            <button type="button" onClick={handleClear}
-              className="ctrl-btn px-3 py-2 rounded-xl text-xs"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }}>Clear</button>
+          
+          <div className="flex gap-3 items-center">
+            <div className="flex-1">
+              <p className="text-[10px] mb-1" style={{ color: "rgba(255,255,255,0.4)", paddingLeft: "4px" }}>Departure (Optional)</p>
+              <input type="date" 
+                value={startDate} onChange={(e) => setStartDate(e.target.value)}
+                className="glass-input w-full px-3 py-2 rounded-xl text-xs"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.8)" }}
+              />
+            </div>
+            <div className="flex-1">
+              <p className="text-[10px] mb-1" style={{ color: "rgba(255,255,255,0.4)", paddingLeft: "4px" }}>Return (Optional)</p>
+              <input type="date" 
+                value={endDate} onChange={(e) => setEndDate(e.target.value)}
+                className="glass-input w-full px-3 py-2 rounded-xl text-xs"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.8)" }}
+              />
+            </div>
           </div>
         </form>
 
