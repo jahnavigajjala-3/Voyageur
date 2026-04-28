@@ -7,12 +7,12 @@ from app.models import user
 from app.api.v1.routes import user as user_routes, trip as trip_routes
 from app.api.v1.routes import ai as ai_routes
 from app.api.v1.routes import travel as travel_routes
+from app.api.v1.routes import weather
 from dotenv import load_dotenv
 
 load_dotenv()
 
 app = FastAPI()
-
 
 origins = [
     "http://localhost:5173",
@@ -41,6 +41,7 @@ app.include_router(user_routes.router, prefix=API_PREFIX)
 app.include_router(trip_routes.router, prefix=API_PREFIX)
 app.include_router(ai_routes.router, prefix=API_PREFIX + "/ai")
 app.include_router(travel_routes.router, prefix=API_PREFIX + "/travel")
+app.include_router(weather.router, prefix=API_PREFIX)  # ✅ FIXED
 
 @app.get("/")
 def home():
