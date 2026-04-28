@@ -8,6 +8,7 @@ from app.api.v1.routes import user as user_routes, trip as trip_routes
 from app.api.v1.routes import ai as ai_routes
 from app.api.v1.routes import travel as travel_routes
 from app.api.v1.routes import weather
+from app.api.v1.routes import auth as auth_routes
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -39,9 +40,10 @@ API_PREFIX = "/api/v1"
 # Route Registration
 app.include_router(user_routes.router, prefix=API_PREFIX)
 app.include_router(trip_routes.router, prefix=API_PREFIX)
-app.include_router(ai_routes.router, prefix=API_PREFIX + "/ai")
+app.include_router(ai_routes.router,   prefix=API_PREFIX + "/ai")
 app.include_router(travel_routes.router, prefix=API_PREFIX + "/travel")
-app.include_router(weather.router, prefix=API_PREFIX)  # ✅ FIXED
+app.include_router(weather.router,     prefix=API_PREFIX)
+app.include_router(auth_routes.router, prefix=API_PREFIX)  # Google OAuth
 
 @app.get("/")
 def home():
