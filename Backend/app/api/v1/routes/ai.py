@@ -19,14 +19,19 @@ class ChatRequest(BaseModel):
     history: List[Message]
     message: str
     trip_context: str
+    planned_route: Optional[str] = None
     
 @router.post("/chat")
 async def chat(request: ChatRequest):
     try:
+        full_context = request.trip_context
+        if request.planned_route:
+            full_context += f"\nPlanned Route: {request.planned_route}"
+
         response = await get_ai_response(
             history=request.history,
             new_message=request.message,
-            trip_context=request.trip_context
+            trip_context=full_context
         )
         return {"response": response}
 
