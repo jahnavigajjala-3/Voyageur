@@ -102,3 +102,10 @@ export const getTripById = async (id) => {
   });
   return handleResponse(res);
 };
+// Weather
+export const getWeather = async (lat, lng) => {
+  const res = await fetch(
+    `${API_V1}/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`
+  );
+  return handleResponse(res);
+};
