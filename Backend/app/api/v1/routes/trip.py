@@ -88,6 +88,8 @@ def update_trip(
         trip.end_date = trip_update.end_date
     if trip_update.notes is not None:
         trip.notes = trip_update.notes
+    if trip_update.planned_route is not None:
+        trip.planned_route = trip_update.planned_route
 
     db.commit()
     db.refresh(trip)
