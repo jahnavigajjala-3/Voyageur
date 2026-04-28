@@ -1,16 +1,19 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useGoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 
 export default function Login() {
-  const { login }  = useAuth();
-  const navigate   = useNavigate();
-  const [form, setForm]       = useState({ email: "", password: "" });
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState("");
-  const [exiting, setExiting] = useState(false);
+  const { login, googleAuth } = useAuth();
+  const navigate = useNavigate();
+  const [form, setForm]           = useState({ email: "", password: "" });
+  const [loading, setLoading]     = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [error, setError]         = useState("");
+  const [exiting, setExiting]     = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -24,10 +27,31 @@ export default function Login() {
       setTimeout(() => navigate("/dashboard"), 550);
     } catch (err) {
       console.error("LOGIN ERROR:", err);
-      setError("Invalid email or password.");
+      setError(err?.response?.data?.detail || "Invalid email or password.");
       setLoading(false);
     }
   };
+
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setError("");
+      setGoogleLoading(true);
+      try {
+        await googleAuth(tokenResponse.access_token);
+        setExiting(true);
+        setTimeout(() => navigate("/dashboard"), 550);
+      } catch (err) {
+        console.error("GOOGLE LOGIN ERROR:", err);
+        setError(err?.response?.data?.detail || "Google sign-in failed. Please try again.");
+      } finally {
+        setGoogleLoading(false);
+      }
+    },
+    onError: (err) => {
+      console.error("Google OAuth error:", err);
+      setError("Google sign-in was cancelled or failed.");
+    },
+  });
 
   return (
     <AuthLayout exiting={exiting}>
@@ -74,11 +98,34 @@ export default function Login() {
             Sign in to your account
           </p>
 
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <AuthInput type="email"    name="email"    placeholder="Email address" value={form.email}    onChange={handleChange} autoComplete="email" />
-            <AuthInput type="password" name="password" placeholder="Password"      value={form.password} onChange={handleChange} autoComplete="current-password" />
+          {/* Google Button */}
+          <GoogleButton loading={googleLoading} onClick={() => handleGoogleLogin()} />
 
-            {error && <p style={{ fontSize: "12px", color: "#fca5a5", marginTop: "-2px" }}>{error}</p>}
+          {/* Divider */}
+          <Divider />
+
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <AuthInput
+              type="email"
+              name="email"
+              placeholder="Email address"
+              value={form.email}
+              onChange={handleChange}
+              autoComplete="email"
+            />
+            <PasswordInput
+              name="password"
+              placeholder="Password"
+              value={form.password}
+              onChange={handleChange}
+              autoComplete="current-password"
+              show={showPassword}
+              onToggle={() => setShowPassword((v) => !v)}
+            />
+
+            {error && (
+              <p style={{ fontSize: "12px", color: "#fca5a5", marginTop: "-2px" }}>{error}</p>
+            )}
 
             <SubmitButton loading={loading} exiting={exiting} label="Sign In" loadingLabel="Signing in..." />
           </form>
@@ -92,6 +139,69 @@ export default function Login() {
         </div>
       </motion.div>
     </AuthLayout>
+  );
+}
+
+// ─── Shared sub-components ────────────────────────────────────────────────
+
+function GoogleButton({ loading, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={loading}
+      style={{
+        width: "100%", height: "44px", borderRadius: "12px",
+        background: loading ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.06)",
+        border: "1px solid rgba(255,255,255,0.12)",
+        color: loading ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.85)",
+        fontSize: "13px", fontWeight: "500",
+        cursor: loading ? "not-allowed" : "pointer",
+        display: "flex", alignItems: "center", justifyContent: "center", gap: "10px",
+        transition: "all 0.2s ease",
+        boxSizing: "border-box",
+      }}
+      onMouseEnter={(e) => {
+        if (!loading) {
+          e.currentTarget.style.background = "rgba(255,255,255,0.09)";
+          e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
+        }
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+        e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
+      }}
+    >
+      {loading ? (
+        <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)" }}>Connecting...</span>
+      ) : (
+        <>
+          <GoogleIcon />
+          Continue with Google
+        </>
+      )}
+    </button>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+      <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+      <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+    </svg>
+  );
+}
+
+function Divider() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "12px", margin: "20px 0" }}>
+      <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.08)" }} />
+      <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.2)", letterSpacing: "0.05em" }}>OR</span>
+      <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.08)" }} />
+    </div>
   );
 }
 
@@ -140,5 +250,70 @@ function AuthInput({ type, name, placeholder, value, onChange, autoComplete }) {
         boxSizing: "border-box",
       }}
     />
+  );
+}
+
+function PasswordInput({ name, placeholder, value, onChange, autoComplete, show, onToggle }) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <div style={{ position: "relative", width: "100%" }}>
+      <input
+        type={show ? "text" : "password"}
+        name={name}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        autoComplete={autoComplete}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={{
+          width: "100%", height: "44px",
+          padding: "0 44px 0 14px",   /* right padding reserves space for the eye icon */
+          borderRadius: "12px",
+          background: "rgba(255,255,255,0.05)",
+          border: focused ? "1px solid rgba(139,92,246,0.5)" : "1px solid rgba(255,255,255,0.08)",
+          boxShadow: focused ? "0 0 0 3px rgba(139,92,246,0.1), 0 0 12px rgba(139,92,246,0.08)" : "none",
+          color: "rgba(255,255,255,0.85)", fontSize: "13px", outline: "none",
+          transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+          boxSizing: "border-box",
+        }}
+      />
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-label={show ? "Hide password" : "Show password"}
+        style={{
+          position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)",
+          background: "none", border: "none", padding: "4px",
+          cursor: "pointer", color: "rgba(255,255,255,0.3)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "color 0.15s ease",
+          lineHeight: 0,
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = "rgba(167,139,250,0.8)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.3)"; }}
+      >
+        {show ? <EyeOffIcon /> : <EyeIcon />}
+      </button>
+    </div>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+      <line x1="1" y1="1" x2="23" y2="23"/>
+    </svg>
   );
 }
