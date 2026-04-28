@@ -19,6 +19,7 @@ class Trip(Base):
     notes = Column(Text, nullable=True)
 
     ai_recommendation = Column(Text, nullable=True)  
+    planned_route = Column(Text, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
