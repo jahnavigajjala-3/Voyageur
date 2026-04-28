@@ -35,19 +35,73 @@ function getStepIcon(text = "") {
   return "•";
 }
 
+// ─── Weather helpers ────────────────────────────────────────────────────────
+function getWeatherIcon(code) {
+  if (code === 0) return "☀️";
+  if ([1, 2, 3].includes(code)) return "⛅";
+  if ([45, 48].includes(code)) return "🌫️";
+  if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code)) return "🌧️";
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return "🌨️";
+  if ([95, 96, 99].includes(code)) return "⛈️";
+  return "🌤️";
+}
+
+function getWeatherLabel(code) {
+  if (code === 0) return "Clear";
+  if ([1, 2, 3].includes(code)) return "Cloudy";
+  if ([45, 48].includes(code)) return "Foggy";
+  if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code)) return "Rain";
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return "Snow";
+  if ([95, 96, 99].includes(code)) return "Storm";
+  return "Unknown";
+}
+// ────────────────────────────────────────────────────────────────────────────
+
 export default function Dashboard() {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  const { location } = useLocation(); // ← needed for weather
+
   const [activeNav, setActiveNav]       = useState("Home");
   const [liveRisk, setLiveRisk]         = useState(null);
   const [clickedRisk, setClickedRisk]   = useState(null);
   const [chatOpen, setChatOpen]         = useState(false);
   const [hospitalsFor, setHospitalsFor] = useState(null);
+
+  // ─── Weather state ────────────────────────────────────────────────────────
+  const [weather, setWeather]               = useState(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  // ─────────────────────────────────────────────────────────────────────────
+
   const mapRef = useRef(null);
 
   const handleLogout = () => { logout(); navigate("/login"); };
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
+
+  // ─── Fetch weather whenever location changes ──────────────────────────────
+  useEffect(() => {
+    if (!location?.lat || !location?.lng) return;
+
+    const fetchWeather = async () => {
+      try {
+        setWeatherLoading(true);
+        const res = await fetch(
+          `http://localhost:8000/api/v1/weather?lat=${location.lat}&lon=${location.lng}`
+        );
+        if (!res.ok) throw new Error("weather fetch failed");
+        const data = await res.json();
+        setWeather(data);
+      } catch (err) {
+        console.error("Weather fetch failed:", err);
+      } finally {
+        setWeatherLoading(false);
+      }
+    };
+
+    fetchWeather();
+  }, [location]);
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex min-h-screen w-full"
@@ -55,6 +109,8 @@ export default function Dashboard() {
         background: "radial-gradient(ellipse at 20% 50%, rgba(88,28,135,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(30,58,138,0.08) 0%, transparent 60%), #05050f",
         fontFamily: "'Inter','Segoe UI',sans-serif",
       }}>
+
+      {/* ── SIDEBAR ── */}
       <aside className="flex flex-col items-center py-8 px-3 gap-5"
         style={{
           width: "68px", background: "rgba(255,255,255,0.025)", backdropFilter: "blur(24px)",
@@ -88,9 +144,13 @@ export default function Dashboard() {
           style={{ width: "42px", height: "42px", fontSize: "13px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)", color: "rgba(252,165,165,0.6)" }}>⏻</button>
       </aside>
 
+      {/* ── MAIN ── */}
       <main className="flex-1 flex flex-col overflow-hidden" style={{ minWidth: 0 }}>
+
+        {/* ── HEADER (greeting + weather badge) ── */}
         <header className="flex items-center justify-between px-8 py-5"
           style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+
           <div className="card-enter-1">
             <h1 className="text-2xl font-bold"
               style={{ background: "linear-gradient(90deg, #e2e8f0 0%, #a5b4fc 50%, #818cf8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
@@ -100,6 +160,35 @@ export default function Dashboard() {
               {user?.name ? `Welcome back, ${user.name}` : "Your AI travel companion is ready"}
             </p>
           </div>
+
+          {/* ── WEATHER BADGE ── */}
+          <div className="flex items-center gap-2.5 px-4 py-2 rounded-xl"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              backdropFilter: "blur(12px)",
+              minWidth: "120px",
+            }}>
+            {weatherLoading ? (
+              <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>Loading...</span>
+            ) : weather ? (
+              <>
+                <span style={{ fontSize: "18px" }}>{getWeatherIcon(weather.weathercode)}</span>
+                <div>
+                  <p className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>
+                    {weather.temperature}°C
+                  </p>
+                  <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.35)" }}>
+                    {getWeatherLabel(weather.weathercode)} · {weather.windspeed} km/h
+                  </p>
+                </div>
+              </>
+            ) : (
+              <span className="text-xs" style={{ color: "rgba(255,255,255,0.2)" }}>No weather</span>
+            )}
+          </div>
+          {/* ── END WEATHER BADGE ── */}
+
         </header>
 
         <div className="flex flex-1 gap-5 p-6 overflow-auto">
@@ -107,18 +196,45 @@ export default function Dashboard() {
             <GlassMapCard onRiskUpdate={setLiveRisk} onClickedRiskUpdate={setClickedRisk} mapRef={mapRef} onHospitalsChange={setHospitalsFor} />
           </div>
           <aside className="flex flex-col gap-4" style={{ width: "255px", flexShrink: 0 }}>
+            {/* Weather card in right sidebar */}
+            {weather && (
+              <div className="rounded-2xl p-4 relative overflow-hidden"
+                style={{
+                  background: "rgba(255,255,255,0.03)", backdropFilter: "blur(24px)",
+                  border: "1px solid rgba(255,255,255,0.07)", boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+                }}>
+                <p className="text-xs font-medium mb-3" style={{ color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em" }}>WEATHER</p>
+                <div className="flex items-center gap-3">
+                  <span style={{ fontSize: "28px" }}>{getWeatherIcon(weather.weathercode)}</span>
+                  <div>
+                    <p className="text-xl font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>{weather.temperature}°C</p>
+                    <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>{getWeatherLabel(weather.weathercode)}</p>
+                  </div>
+                </div>
+                <div className="flex gap-3 mt-3">
+                  <div className="flex-1 px-2 py-1.5 rounded-lg text-center"
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>Wind</p>
+                    <p className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.7)" }}>{weather.windspeed} km/h</p>
+                  </div>
+                  {/* add more weather fields here if your API returns them */}
+                </div>
+              </div>
+            )}
+
             <RiskPanel liveRisk={liveRisk} clickedRisk={clickedRisk} mapRef={mapRef} hospitalsFor={hospitalsFor}
               onClearSelection={() => { setClickedRisk(null); setHospitalsFor(null); }} />
           </aside>
         </div>
       </main>
 
-      <FloatingChat open={chatOpen} onToggle={() => setChatOpen((v) => !v)} />
+      <FloatingChat open={chatOpen} onToggle={() => setChatOpen((v) => !v)} weather={weather} />
     </div>
   );
 }
 
-function FloatingChat({ open, onToggle }) {
+// ─── FloatingChat (weather passed in for AI context) ──────────────────────
+function FloatingChat({ open, onToggle, weather }) {
   const { location } = useLocation();
   const [messages, setMessages] = useState([
     { role: "assistant", content: "Hi! I'm your AI travel companion. Ask me anything about safety, routes, or destinations." },
@@ -139,9 +255,15 @@ function FloatingChat({ open, onToggle }) {
     setInput("");
     setLoading(true);
     try {
+      // ── Weather context injected into AI ──
+      const weatherCtx = weather
+        ? ` Current weather: ${getWeatherLabel(weather.weathercode)}, ${weather.temperature}°C, wind ${weather.windspeed} km/h.`
+        : "";
+
       const tripCtx = location
-        ? `User's current location: lat=${location.lat}, lng=${location.lng}`
-        : "User location not available.";
+        ? `User's current location: lat=${location.lat}, lng=${location.lng}.${weatherCtx}`
+        : `User location not available.${weatherCtx}`;
+
       const data = await sendChatMessage({
         history: messages.slice(-5).filter((m) => m.content && m.role),
         message: input,
@@ -251,6 +373,7 @@ function FloatingChat({ open, onToggle }) {
   );
 }
 
+// ─── GlassMapCard (unchanged) ─────────────────────────────────────────────
 function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsChange }) {
   const [routeFrom, setRouteFrom]             = useState("");
   const [routeTo, setRouteTo]                 = useState("");
@@ -344,7 +467,6 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
         boxShadow: "0 30px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)",
       }}>
 
-      {/* Top bar */}
       <div className="px-5 py-4 flex flex-col gap-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
         <div className="flex items-center justify-between">
           <div>
@@ -361,16 +483,13 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
           )}
         </div>
 
-        {/* Route form */}
         <form onSubmit={handleSubmit} className="flex items-center gap-2">
           <div className="flex flex-col gap-1.5 flex-1" style={{ position: "relative", minWidth: 0 }}>
-            {/* Connector line */}
             <div style={{
               position: "absolute", left: "13px", top: "32px", bottom: "32px", width: "2px",
               background: "linear-gradient(to bottom, rgba(34,197,94,0.6), rgba(239,68,68,0.6))",
               zIndex: 1, borderRadius: "2px",
             }} />
-            {/* From */}
             <div className="flex gap-1.5 items-center">
               <div style={{ width: "28px", height: "28px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}>
                 <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 8px rgba(34,197,94,0.6)" }} />
@@ -384,7 +503,6 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
                 className="ctrl-btn px-2.5 py-2 rounded-xl text-xs whitespace-nowrap"
                 style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.18)", color: "rgba(134,239,172,0.8)" }}>Current</button>
             </div>
-            {/* To */}
             <div className="flex gap-1.5 items-center">
               <div style={{ width: "28px", height: "28px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}>
                 <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#ef4444", boxShadow: "0 0 8px rgba(239,68,68,0.6)" }} />
@@ -424,7 +542,6 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
         )}
       </div>
 
-      {/* Map */}
       <div style={{ height: mapHeight, transition: "height 0.35s cubic-bezier(0.4,0,0.2,1)", flexShrink: 0 }}>
         <CrimeMap
           ref={crimeMapRef}
@@ -438,7 +555,6 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
         />
       </div>
 
-      {/* Directions panel */}
       {directionsOpen && routeDirections.length > 0 && (
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", background: "rgba(0,0,0,0.25)", maxHeight: "260px", display: "flex", flexDirection: "column" }}>
           <div className="flex items-center justify-between px-4 py-2.5"
@@ -526,6 +642,7 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
   );
 }
 
+// ─── RiskPanel ────────────────────────────────────────────────────────────
 function RiskPanel({ liveRisk, clickedRisk, mapRef, hospitalsFor, onClearSelection }) {
   const [showModal, setShowModal] = useState(false);
   const handleClearConfirm = () => { setShowModal(false); mapRef.current?.clearAll(); onClearSelection(); };
@@ -547,6 +664,7 @@ function RiskPanel({ liveRisk, clickedRisk, mapRef, hospitalsFor, onClearSelecti
   );
 }
 
+// ─── ClearModal ───────────────────────────────────────────────────────────
 function ClearModal({ onCancel, onConfirm }) {
   return (
     <div className="fixed inset-0 flex items-center justify-center"
@@ -570,6 +688,7 @@ function ClearModal({ onCancel, onConfirm }) {
   );
 }
 
+// ─── RiskCard ─────────────────────────────────────────────────────────────
 function RiskCard({ title, risk, delay = "", onFocus, onHospitals, onClear, hospitalsActive }) {
   const level    = risk?.risk_level || "UNKNOWN";
   const colors   = RISK_COLORS[level] || RISK_COLORS.UNKNOWN;
