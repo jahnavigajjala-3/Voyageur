@@ -1,9 +1,10 @@
-import { useEffect, useState, useRef, forwardRef, useImperativeHandle } from "react";
+import { useEffect, useState, useRef, forwardRef, useImperativeHandle, useContext } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import useLocation from "../hooks/useLocation";
-import { getCrimeRiskByCoords, getNearbyHospitals } from "../api/api";
+import { getCrimeRiskByCoords, getNearbyHospitals, getSafeRoutes, getSafeRoutesDebounced } from "../api/api";
+import { useRouteContext } from "../context/RouteContext";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -136,6 +137,115 @@ function RoutingMachine({ waypoints, isActive, onRouteDirections, onStepCoords }
   return null;
 }
 
+function MultiRouteMachine({ routes, activeRouteId, onRouteSelect }) {
+  const map = useMap();
+  const layerRefs = useRef([]);
+
+  useEffect(() => {
+    if (!routes || routes.length === 0 || !map) return;
+    
+    // Clear previous layers
+    layerRefs.current.forEach(layer => {
+      if (layer && map) {
+        try { map.removeLayer(layer); } catch (_) {}
+      }
+    });
+    layerRefs.current = [];
+
+    // Add each route to the map
+    routes.forEach((route, index) => {
+      if (!route.geometry) return;
+      
+      // Determine route styling based on type and selection
+      const isSafest = route.type === "safest";
+      const isFastest = route.type === "fastest";
+      const isActive = route.id === activeRouteId;
+      
+      let color = "#64748b"; // Default grey for alternatives
+      let weight = 4;
+      let opacity = 0.7;
+      
+      if (isSafest) {
+        color = "#22c55e"; // Green for safest
+        weight = 6;
+        opacity = 0.9;
+      } else if (isFastest) {
+        color = "#3b82f6"; // Blue for fastest
+        weight = 5;
+        opacity = 0.8;
+      }
+      
+      if (isActive) {
+        weight += 1;
+        opacity = 1.0;
+      }
+
+      // Create the route layer
+      const layer = L.geoJSON(route.geometry, {
+        style: { 
+          color, 
+          weight, 
+          opacity,
+          dashArray: isActive ? null : "5, 5"
+        }
+      }).addTo(map);
+
+      // Add click handler for route selection
+      layer.on('click', () => {
+        if (onRouteSelect) onRouteSelect(route.id);
+      });
+
+      // Add popup with safety information
+      layer.bindPopup(`
+        <div style="font-family: sans-serif; padding: 8px; min-width: 200px;">
+          <strong>${route.type.toUpperCase()} ROUTE</strong><br/>
+          <div style="margin-top: 8px;">
+            <div><strong>Safety Score:</strong> ${route.safety_score.toFixed(0)}/100</div>
+            <div><strong>Risk Level:</strong> <span style="color: ${
+              route.risk_level === 'low' ? '#22c55e' : 
+              route.risk_level === 'medium' ? '#eab308' : '#ef4444'
+            }">${route.risk_level.toUpperCase()}</span></div>
+            <div><strong>Distance:</strong> ${(route.distance / 1000).toFixed(1)} km</div>
+            <div><strong>Duration:</strong> ${Math.round(route.duration / 60)} min</div>
+            ${route.summary ? `<div style="margin-top: 8px; font-style: italic;">${route.summary}</div>` : ''}
+          </div>
+        </div>
+      `);
+
+      layerRefs.current[index] = layer;
+    });
+
+    // Fit map to show all routes
+    try {
+      const bounds = L.latLngBounds([]);
+      routes.forEach(route => {
+        if (route.geometry?.coordinates) {
+          route.geometry.coordinates.forEach(coord => {
+            if (Array.isArray(coord) && coord.length >= 2) {
+              bounds.extend([coord[1], coord[0]]); // Convert GeoJSON [lng, lat] to Leaflet [lat, lng]
+            }
+          });
+        }
+      });
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+      }
+    } catch (_) {}
+
+    return () => {
+      // Cleanup layers
+      layerRefs.current.forEach(layer => {
+        if (layer && map) {
+          try { map.removeLayer(layer); } catch (_) {}
+        }
+      });
+      layerRefs.current = [];
+    };
+  }, [routes, activeRouteId, map, onRouteSelect]);
+
+  return null;
+}
+
 function MapClickHandler({ onMapClick }) {
   const map = useMap();
   useEffect(() => {
@@ -198,9 +308,23 @@ const CrimeMap = forwardRef(function CrimeMap(
   const [hospitals, setHospitals]           = useState([]);
   const [showHospitals, setShowHospitals]   = useState(false);
   const [hospitalCenter, setHospitalCenter] = useState(null);
+  
+  // Use route context for state management
+  const {
+    selectedRouteId,
+    routes: safeRoutes,
+    isLoadingRoutes,
+    setSelectedRouteId,
+    setRoutes: setSafeRoutes,
+    setIsLoadingRoutes,
+    addToHistory,
+    getCachedRoutes,
+    cacheRoutes,
+    userPreferences
+  } = useRouteContext();
 
   useImperativeHandle(ref, () => ({
-    triggerRoute: async (fromInput, toInput) => {
+    triggerRoute: async (fromInput, toInput, useSafeRoutes = true) => {
       if (!fromInput || !toInput) { alert("Please enter both locations"); return; }
       try {
         const resolve = async (input) => {
@@ -214,7 +338,89 @@ const CrimeMap = forwardRef(function CrimeMap(
           setStepCoords([]);
           setActiveStepIdx(null);
           setRouteWaypoints([from, to]);
-          setRouteActive(true);
+          
+          if (useSafeRoutes) {
+            // Use the new safe routes API with caching
+            setIsLoadingRoutes(true);
+            setSafeRoutes([]);
+            setSelectedRouteId(null);
+            
+            // Check cache first
+            const cached = getCachedRoutes(from, to);
+            if (cached && cached.expiresAt > Date.now()) {
+              // Use cached routes
+              const routesWithIds = cached.routes.map((route, index) => ({
+                ...route,
+                id: `route-${index}-${Date.now()}`
+              }));
+              setSafeRoutes(routesWithIds);
+              // Auto-select based on user preference
+              let preferredRoute = null;
+              if (routesWithIds.length > 0) {
+                preferredRoute = routesWithIds.find(r => r.type === userPreferences.preference) || 
+                                 routesWithIds.find(r => r.type === "safest") || 
+                                 routesWithIds[0];
+                setSelectedRouteId(preferredRoute.id);
+              }
+              setRouteActive(true);
+              setIsLoadingRoutes(false);
+              
+              // Add to history
+              addToHistory({
+                origin: from,
+                destination: to,
+                selectedRouteId: preferredRoute?.id,
+                routes: routesWithIds
+              });
+            } else {
+              // Fetch fresh routes
+              try {
+                const response = await getSafeRoutesDebounced(
+                  from, 
+                  to, 
+                  userPreferences.alternatives, 
+                  userPreferences.preference
+                );
+                // Add unique IDs to routes for selection
+                const routesWithIds = response.routes.map((route, index) => ({
+                  ...route,
+                  id: `route-${index}-${Date.now()}`
+                }));
+                setSafeRoutes(routesWithIds);
+                
+                // Cache the routes
+                cacheRoutes(from, to, routesWithIds);
+                
+                // Auto-select based on user preference
+                let preferredRoute = null;
+                if (routesWithIds.length > 0) {
+                  preferredRoute = routesWithIds.find(r => r.type === userPreferences.preference) || 
+                                   routesWithIds.find(r => r.type === "safest") || 
+                                   routesWithIds[0];
+                  setSelectedRouteId(preferredRoute.id);
+                }
+                setRouteActive(true);
+                
+                // Add to history
+                addToHistory({
+                  origin: from,
+                  destination: to,
+                  selectedRouteId: preferredRoute?.id,
+                  routes: routesWithIds
+                });
+              } catch (e) {
+                console.error("Safe routes API error:", e);
+                alert("Error computing safe routes. Falling back to basic routing.");
+                // Fall back to basic routing
+                setRouteActive(true);
+              } finally {
+                setIsLoadingRoutes(false);
+              }
+            }
+          } else {
+            // Use basic routing (backward compatibility)
+            setRouteActive(true);
+          }
         } else {
           alert("Could not find one or both locations.");
         }
@@ -229,6 +435,9 @@ const CrimeMap = forwardRef(function CrimeMap(
       setRouteWaypoints([]);
       setStepCoords([]);
       setActiveStepIdx(null);
+      setSafeRoutes([]);
+      setSelectedRouteId(null);
+      setIsLoadingRoutes(false);
       if (onRouteDirections) onRouteDirections([]);
     },
 
@@ -274,7 +483,14 @@ const CrimeMap = forwardRef(function CrimeMap(
       setRouteWaypoints([]);
       setStepCoords([]);
       setActiveStepIdx(null);
+      setSafeRoutes([]);
+      setSelectedRouteId(null);
+      setIsLoadingRoutes(false);
       if (onHospitalsChange) onHospitalsChange(null);
+    },
+
+    selectRoute: (routeId) => {
+      setSelectedRouteId(routeId);
     },
   }));
 
@@ -328,6 +544,10 @@ const CrimeMap = forwardRef(function CrimeMap(
   const selDistrict     = selectedCrimeRisk?.detected_district || selectedCrimeRisk?.district || "Unknown";
   const selState        = selectedCrimeRisk?.detected_state    || selectedCrimeRisk?.state    || "";
   const activeStepCoord = activeStepIdx !== null ? stepCoords[activeStepIdx] : null;
+
+  const handleRouteSelect = (routeId) => {
+    setSelectedRouteId(routeId);
+  };
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -395,18 +615,54 @@ const CrimeMap = forwardRef(function CrimeMap(
 
         {routeActive && routeWaypoints.length >= 2 && (
           <>
-            <RoutingMachine
-              waypoints={routeWaypoints}
-              isActive={routeActive}
-              onRouteDirections={onRouteDirections}
-              onStepCoords={setStepCoords}
-            />
-            <Marker position={[routeWaypoints[0].lat, routeWaypoints[0].lng]} icon={routeIcon}>
-              <Popup>Start: {routeWaypoints[0].name}</Popup>
-            </Marker>
-            <Marker position={[routeWaypoints[routeWaypoints.length - 1].lat, routeWaypoints[routeWaypoints.length - 1].lng]} icon={routeIcon}>
-              <Popup>Destination: {routeWaypoints[routeWaypoints.length - 1].name}</Popup>
-            </Marker>
+            {safeRoutes.length > 0 ? (
+              // Display multiple safe routes
+              <>
+                <MultiRouteMachine
+                  routes={safeRoutes}
+                  activeRouteId={selectedRouteId}
+                  onRouteSelect={handleRouteSelect}
+                />
+                <Marker position={[routeWaypoints[0].lat, routeWaypoints[0].lng]} icon={routeIcon}>
+                  <Popup>Start: {routeWaypoints[0].name}</Popup>
+                </Marker>
+                <Marker position={[routeWaypoints[routeWaypoints.length - 1].lat, routeWaypoints[routeWaypoints.length - 1].lng]} icon={routeIcon}>
+                  <Popup>Destination: {routeWaypoints[routeWaypoints.length - 1].name}</Popup>
+                </Marker>
+                {isLoadingRoutes && (
+                  <div style={{
+                    position: "absolute",
+                    top: "10px",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    background: "rgba(0,0,0,0.7)",
+                    color: "white",
+                    padding: "8px 16px",
+                    borderRadius: "4px",
+                    zIndex: 1000,
+                    fontSize: "14px"
+                  }}>
+                    Computing safe routes...
+                  </div>
+                )}
+              </>
+            ) : (
+              // Fall back to basic single route (backward compatibility)
+              <>
+                <RoutingMachine
+                  waypoints={routeWaypoints}
+                  isActive={routeActive}
+                  onRouteDirections={onRouteDirections}
+                  onStepCoords={setStepCoords}
+                />
+                <Marker position={[routeWaypoints[0].lat, routeWaypoints[0].lng]} icon={routeIcon}>
+                  <Popup>Start: {routeWaypoints[0].name}</Popup>
+                </Marker>
+                <Marker position={[routeWaypoints[routeWaypoints.length - 1].lat, routeWaypoints[routeWaypoints.length - 1].lng]} icon={routeIcon}>
+                  <Popup>Destination: {routeWaypoints[routeWaypoints.length - 1].name}</Popup>
+                </Marker>
+              </>
+            )}
           </>
         )}
 
