@@ -1,3 +1,5 @@
+import axiosInstance from "../services/axiosInstance";
+
 const BASE_URL = import.meta.env.VITE_API_URL || "https://voyageur-1i0h.onrender.com";
 const API_V1 = `${BASE_URL}/api/v1`;
 
@@ -109,3 +111,54 @@ export const getWeather = async (lat, lng) => {
   );
   return handleResponse(res);
 };
+
+// Safe Routes — uses axiosInstance so the 401→refresh interceptor fires automatically
+export const getSafeRoutes = async (origin, destination, alternatives = 3, preference = "safety", signal = null) => {
+  const response = await axiosInstance.post(
+    "/routes/safe",
+    {
+      origin:       { lat: origin.lat, lng: origin.lng },
+      destination:  { lat: destination.lat, lng: destination.lng },
+      alternatives,
+      preference,
+    },
+    { signal: signal?.signal ?? signal ?? undefined }
+  );
+  return response.data;
+};
+
+// Create a debounced version for rapid user input
+export const getSafeRoutesDebounced = (() => {
+  let currentController = null;
+  let timeoutId = null;
+
+  return (origin, destination, alternatives = 3, preference = "safety", debounceMs = 300) => {
+    // Cancel previous in-flight request
+    if (currentController) {
+      currentController.abort();
+    }
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+
+    currentController = new AbortController();
+    const controller = currentController;
+
+    return new Promise((resolve, reject) => {
+      timeoutId = setTimeout(async () => {
+        try {
+          const result = await getSafeRoutes(origin, destination, alternatives, preference, controller);
+          resolve(result);
+        } catch (error) {
+          if (error.name === "CanceledError" || error.name === "AbortError" || error.message === "Request was cancelled") {
+            // Silently ignore cancellations
+            return;
+          }
+          reject(error);
+        } finally {
+          timeoutId = null;
+        }
+      }, debounceMs);
+    });
+  };
+})();
