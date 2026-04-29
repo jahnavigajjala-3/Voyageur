@@ -484,25 +484,22 @@ class RouteScoringService:
                 penalties_applied={}
             )
 
-        # ── Weighted average of base scores (already on 1–10 scale) ─────────
-        # base_score = safety_data.normalized_score  (1–10, inverted: 10=safest)
-        # We want final score: 1 = safest, 10 = most dangerous
-        # So we invert: risk_score = 11 - safety_score
+        # ── Weighted average → safety score (higher = safer) ───────────────
+        # base_score is 0–100 where 100 = safest (from safety_data.normalized_score * 10)
+        # We keep it as a 1–10 safety score: 10 = safest, 1 = most dangerous
         total_weight = 0.0
         weighted_sum = 0.0
         for ss in segment_scores:
             w = max(ss.segment.length_km, 0.1)
-            # base_score is on 0–100 scale internally; convert back to 1–10
-            safety_1_10 = ss.base_score / 10.0   # 0–100 → 0–10
-            risk_1_10 = 11.0 - safety_1_10        # invert: high safety → low risk
-            risk_1_10 = max(1.0, min(10.0, risk_1_10))
-            weighted_sum += risk_1_10 * w
+            # base_score is 0–100; convert to 1–10 safety scale (10 = safest)
+            safety_1_10 = max(1.0, min(10.0, ss.base_score / 10.0))
+            weighted_sum += safety_1_10 * w
             total_weight += w
 
-        risk_score = weighted_sum / total_weight if total_weight > 0 else 5.0
-        risk_score = round(max(1.0, min(10.0, risk_score)), 1)
+        safety_score = weighted_sum / total_weight if total_weight > 0 else 5.0
+        safety_score = round(max(1.0, min(10.0, safety_score)), 1)
 
-        risk_level = self._determine_risk_level_1_10(risk_score)
+        risk_level = self._determine_risk_level_safety(safety_score)
 
         high_risk_count = sum(1 for ss in segment_scores if ss.is_high_risk)
         uncertain_count = sum(1 for ss in segment_scores if ss.is_uncertain)
@@ -513,8 +510,8 @@ class RouteScoringService:
               f"high-risk: {high_risk_count}, uncertain: {uncertain_count}")
 
         return RouteScore(
-            raw_score=risk_score,
-            normalized_score=risk_score,   # 1–10 scale
+            raw_score=safety_score,
+            normalized_score=safety_score,   # 1–10 safety scale (10 = safest)
             risk_level=risk_level,
             segment_scores=segment_scores,
             total_distance_km=total_distance,
@@ -524,8 +521,8 @@ class RouteScoringService:
             penalties_applied={}
         )
 
-    def _determine_risk_level_1_10(self, score: float) -> str:
-        """1–10 scale: 1–3 = low risk, 4–6 = medium, 7–10 = high"""
+    def _determine_risk_level_safety(self, score: float) -> str:
+        """1–10 risk scale: 1–3.5 = low risk, 3.5–6.5 = medium, 6.5–10 = high"""
         if score <= 3.5:
             return "low"
         elif score <= 6.5:
