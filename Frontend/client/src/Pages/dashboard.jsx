@@ -503,8 +503,9 @@ const ROUTE_TAB = {
 };
 
 function getScoreColor(s) {
-  if (s <= 3.5) return "#22c55e";
-  if (s <= 6.5) return "#eab308";
+  // 1–10 safety scale: 10 = safest (green), 1 = most dangerous (red)
+  if (s >= 7.0) return "#22c55e";
+  if (s >= 4.0) return "#eab308";
   return "#ef4444";
 }
 
@@ -696,6 +697,7 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
                 {r && (
                   <span style={{ fontSize: "10px", fontWeight: 700, color: isActive ? getScoreColor(r.safety_score) : "rgba(255,255,255,0.3)" }}>
                     {r.safety_score?.toFixed ? r.safety_score.toFixed(1) : r.safety_score}
+                    <span style={{ fontSize: "8px", fontWeight: 400, opacity: 0.7 }}> risk</span>
                   </span>
                 )}
               </button>
@@ -716,7 +718,7 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
               <span style={{ fontSize: "11px", fontWeight: 700, color: scoreColor, lineHeight: 1 }}>
                 {current.safety_score?.toFixed ? current.safety_score.toFixed(1) : current.safety_score}
               </span>
-              <span style={{ fontSize: "7px", color: "rgba(255,255,255,0.3)", lineHeight: 1 }}>/10</span>
+              <span style={{ fontSize: "7px", color: "rgba(255,255,255,0.3)", lineHeight: 1 }}>risk/10</span>
             </div>
 
             <div style={{ display: "flex", gap: "14px", flex: 1, minWidth: 0 }}>

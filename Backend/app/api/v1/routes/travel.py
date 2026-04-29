@@ -188,16 +188,17 @@ async def compute_safe_routes(
                 }
             )
         
-        # ── Two routes: Normal (fastest from OSRM) + Safest (lowest risk) ──
-        # Sort by risk score ascending so index 0 = lowest risk
+        # ── Two routes: Normal (fastest from OSRM) + Safest (lowest risk score) ──
+        # Score is 1–10: 1 = lowest risk (safest), 10 = highest risk
+        # Sort ascending: lowest risk score first
         scored_routes.sort(key=lambda x: x.safety_score)
 
-        # Normal route = the one OSRM marked as fastest (shortest duration)
+        # Normal route = shortest duration
         normal_route = min(scored_routes, key=lambda r: r.duration)
         normal_route.type = "alternative"
         normal_route.summary = f"Normal route ({normal_route.duration / 60:.1f} min)"
 
-        # Safest route = lowest risk score
+        # Safest route = lowest risk score (first after ascending sort)
         safest_route = scored_routes[0]
         safest_route.type = "safest"
         safest_route.summary = f"Safest route (risk: {safest_route.safety_score}/10)"
