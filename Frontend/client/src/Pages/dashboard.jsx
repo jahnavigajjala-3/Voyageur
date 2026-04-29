@@ -1,8 +1,9 @@
-import { useContext, useRef, useState, useEffect } from "react";
+import { useContext, useRef, useState, useEffect, useMemo } from "react";
 import { AuthContext } from "../context/AuthContext";
+import { useRouteContext } from "../context/RouteContext";
 import CrimeMap from "../components/CrimeMap";
 import { useNavigate } from "react-router-dom";
-import { sendChatMessage } from "../api/api";
+import { sendChatMessage, createTrip } from "../api/api";
 import useLocation from "../hooks/useLocation";
 
 const NAV_ITEMS = [
@@ -59,6 +60,14 @@ function getWeatherLabel(code) {
 
 export default function Dashboard() {
   const { user, logout } = useContext(AuthContext);
+  const {
+    routes: safeRoutes,
+    selectedRouteId,
+    isLoadingRoutes,
+    routeHistory,
+    setSelectedRouteId,
+    clearHistory
+  } = useRouteContext();
   const navigate = useNavigate();
   const { location } = useLocation(); // ← needed for weather
 
@@ -67,6 +76,7 @@ export default function Dashboard() {
   const [clickedRisk, setClickedRisk]   = useState(null);
   const [chatOpen, setChatOpen]         = useState(false);
   const [hospitalsFor, setHospitalsFor] = useState(null);
+  const [showRouteHistory, setShowRouteHistory] = useState(false);
 
   // ─── Weather state ────────────────────────────────────────────────────────
   const [weather, setWeather]               = useState(null);
@@ -193,7 +203,18 @@ export default function Dashboard() {
 
         <div className="flex flex-1 gap-5 p-6 overflow-auto">
           <div className="flex-1 flex flex-col" style={{ minWidth: 0 }}>
-            <GlassMapCard onRiskUpdate={setLiveRisk} onClickedRiskUpdate={setClickedRisk} mapRef={mapRef} onHospitalsChange={setHospitalsFor} />
+            <GlassMapCard
+              onRiskUpdate={setLiveRisk}
+              onClickedRiskUpdate={setClickedRisk}
+              mapRef={mapRef}
+              onHospitalsChange={setHospitalsFor}
+              safeRoutes={safeRoutes}
+              selectedRouteId={selectedRouteId}
+              onRouteSelect={setSelectedRouteId}
+              isLoadingRoutes={isLoadingRoutes}
+              user={user}
+              userLocation={location}
+            />
           </div>
           <aside className="flex flex-col gap-4" style={{ width: "255px", flexShrink: 0 }}>
             {/* Weather card in right sidebar */}
@@ -219,6 +240,108 @@ export default function Dashboard() {
                   </div>
                   {/* add more weather fields here if your API returns them */}
                 </div>
+              </div>
+            )}
+
+            {/* Route History Panel */}
+            {routeHistory.length > 0 && (
+              <div className="rounded-2xl p-4 relative overflow-hidden"
+                style={{
+                  background: "rgba(255,255,255,0.03)", backdropFilter: "blur(24px)",
+                  border: "1px solid rgba(255,255,255,0.07)", boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+                }}>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em" }}>RECENT ROUTES</p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setShowRouteHistory(!showRouteHistory)}
+                      className="text-xs px-2 py-1 rounded-lg"
+                      style={{
+                        background: "rgba(139,92,246,0.1)",
+                        border: "1px solid rgba(139,92,246,0.2)",
+                        color: "rgba(167,139,250,0.8)"
+                      }}
+                    >
+                      {showRouteHistory ? "Hide" : "Show"}
+                    </button>
+                    <button
+                      onClick={clearHistory}
+                      className="text-xs px-2 py-1 rounded-lg"
+                      style={{
+                        background: "rgba(239,68,68,0.1)",
+                        border: "1px solid rgba(239,68,68,0.2)",
+                        color: "rgba(252,165,165,0.8)"
+                      }}
+                      title="Clear history"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+                
+                {showRouteHistory && (
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {routeHistory.slice(0, 5).map((historyItem, index) => (
+                      <div
+                        key={historyItem.id}
+                        className="p-3 rounded-xl cursor-pointer hover:bg-white/5 transition-colors"
+                        style={{
+                          background: "rgba(255,255,255,0.02)",
+                          border: "1px solid rgba(255,255,255,0.05)"
+                        }}
+                        onClick={() => {
+                          // Re-run this route
+                          if (mapRef.current) {
+                            mapRef.current.triggerRoute(
+                              historyItem.origin,
+                              historyItem.destination,
+                              true // use safe routes
+                            );
+                          }
+                        }}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
+                            Route {index + 1}
+                          </span>
+                          <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
+                            {new Date(historyItem.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <div className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
+                          <div className="truncate">
+                            <span style={{ color: "#22c55e" }}>●</span> {historyItem.origin.lat.toFixed(4)}, {historyItem.origin.lng.toFixed(4)}
+                          </div>
+                          <div className="truncate">
+                            <span style={{ color: "#ef4444" }}>●</span> {historyItem.destination.lat.toFixed(4)}, {historyItem.destination.lng.toFixed(4)}
+                          </div>
+                        </div>
+                        {historyItem.routes && historyItem.routes.length > 0 && (
+                          <div className="mt-2 flex items-center gap-1">
+                            <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>Best:</span>
+                            <span className="text-xs font-medium" style={{ 
+                              color: historyItem.routes[0].type === 'safest' ? '#22c55e' : 
+                                     historyItem.routes[0].type === 'fastest' ? '#3b82f6' : '#64748b'
+                            }}>
+                              {historyItem.routes[0].type.toUpperCase()}
+                            </span>
+                            <span className="text-xs ml-auto" style={{ color: "rgba(255,255,255,0.3)" }}>
+                              {Math.round(historyItem.routes[0].safety_score)}/100
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {!showRouteHistory && routeHistory.length > 0 && (
+                  <div className="text-center py-2">
+                    <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
+                      {routeHistory.length} saved route{routeHistory.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -373,18 +496,396 @@ function FloatingChat({ open, onToggle, weather }) {
   );
 }
 
+// ─── RouteSafetyBar — horizontal strip + directions dropdown ─────────────
+const ROUTE_TAB = {
+  safest:      { icon: "🛡️", label: "Safest",  color: "#22c55e", bg: "rgba(34,197,94,0.15)",  border: "rgba(34,197,94,0.35)"  },
+  alternative: { icon: "🗺️", label: "Normal",  color: "#60a5fa", bg: "rgba(59,130,246,0.15)", border: "rgba(59,130,246,0.35)" },
+};
+
+function getScoreColor(s) {
+  if (s <= 3.5) return "#22c55e";
+  if (s <= 6.5) return "#eab308";
+  return "#ef4444";
+}
+
+function stepIcon(text = "") {
+  const t = text.toLowerCase();
+  if (t.includes("arrive") || t.includes("destination")) return "🏁";
+  if (t.includes("roundabout") || t.includes("rotary"))  return "🔄";
+  if (t.includes("slight left"))  return "↖";
+  if (t.includes("slight right")) return "↗";
+  if (t.includes("sharp left"))   return "⬅";
+  if (t.includes("sharp right"))  return "➡";
+  if (t.includes("left"))  return "←";
+  if (t.includes("right")) return "→";
+  if (t.includes("straight") || t.includes("continue") || t.includes("head")) return "↑";
+  if (t.includes("ferry")) return "⛴";
+  return "•";
+}
+
+function fmtDist(m) {
+  return m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`;
+}
+
+// Parse OSRM steps from a route object (steps are already embedded from backend)
+function parseStepsFromRoute(route) {
+  const rawSteps = route?.steps;
+  if (!rawSteps?.length) return [];
+  const steps = [];
+  rawSteps.forEach(step => {
+    const { maneuver = {}, name = "", distance = 0, duration = 0 } = step;
+    const road = name ? ` onto ${name}` : "";
+    const mod  = maneuver.modifier ? ` ${maneuver.modifier}` : "";
+    const type = maneuver.type || "continue";
+    let text = `${type.replace(/_/g, " ")}${mod}${road}`.trim();
+    if (type === "turn")        text = `Turn${mod}${road}`;
+    else if (type === "depart") text = `Depart${road}`;
+    else if (type === "arrive") text = "Arrive at destination";
+    steps.push({ text, distance, duration, location: maneuver.location });
+  });
+  return steps;
+}
+
+// Fallback: fetch steps from OSRM using sampled waypoints along the route geometry
+async function fetchStepsForRoute(route) {
+  // Use embedded steps if available (from backend)
+  if (route?.steps?.length) {
+    return parseStepsFromRoute(route);
+  }
+  // Fallback using geometry
+  const coords = route?.geometry?.coordinates;
+  if (!coords?.length) return [];
+  // Sample ~10 waypoints evenly for better accuracy than just first/last
+  const step = Math.max(1, Math.floor(coords.length / 10));
+  const waypoints = [];
+  for (let i = 0; i < coords.length; i += step) waypoints.push(coords[i]);
+  if (waypoints[waypoints.length - 1] !== coords[coords.length - 1]) {
+    waypoints.push(coords[coords.length - 1]);
+  }
+  const coordStr = waypoints.map(c => `${c[0]},${c[1]}`).join(";");
+  try {
+    const res = await fetch(
+      `https://router.project-osrm.org/route/v1/driving/${coordStr}?overview=full&geometries=geojson&steps=true`
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (data.code !== "Ok" || !data.routes?.length) return [];
+    const steps = [];
+    data.routes[0].legs.forEach(leg => {
+      leg.steps.forEach(s => {
+        const { maneuver = {}, name = "", distance, duration } = s;
+        const road = name ? ` onto ${name}` : "";
+        const mod  = maneuver.modifier ? ` ${maneuver.modifier}` : "";
+        const type = maneuver.type || "continue";
+        let text = `${type.replace(/_/g, " ")}${mod}${road}`.trim();
+        if (type === "turn")        text = `Turn${mod}${road}`;
+        else if (type === "depart") text = `Depart${road}`;
+        else if (type === "arrive") text = "Arrive at destination";
+        steps.push({ text, distance, duration, location: maneuver.location });
+      });
+    });
+    return steps;
+  } catch { return []; }
+}
+
+function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, userLocation }) {
+  const [activeTab, setActiveTab]         = useState("safest");
+  const [directionsOpen, setDirectionsOpen] = useState(false);
+  const [stepsMap, setStepsMap]           = useState({});   // routeId → steps[]
+  const [loadingSteps, setLoadingSteps]   = useState({});   // routeId → bool
+  const [currentStepIdx, setCurrentStepIdx] = useState(0);
+  const stepRefs = useRef({});
+
+  const byType = useMemo(() => {
+    const find = (t) => routes.find((r) => r.type === t);
+    return {
+      safest:      find("safest")      || routes[0],
+      alternative: find("alternative") || routes[routes.length - 1],
+    };
+  }, [routes]);
+
+  const current = byType[activeTab];
+
+  // Fetch steps whenever a route becomes active and we don't have them yet
+  useEffect(() => {
+    if (!current?.id || stepsMap[current.id] || loadingSteps[current.id]) return;
+    setLoadingSteps(prev => ({ ...prev, [current.id]: true }));
+    fetchStepsForRoute(current).then(steps => {
+      setStepsMap(prev => ({ ...prev, [current.id]: steps }));
+      setLoadingSteps(prev => ({ ...prev, [current.id]: false }));
+      setCurrentStepIdx(0);
+    });
+  }, [current?.id]);
+
+  // Real-time: advance step based on user location proximity
+  useEffect(() => {
+    if (!userLocation || !current?.id) return;
+    const steps = stepsMap[current.id];
+    if (!steps?.length) return;
+    const { lat, lng } = userLocation;
+    let closest = 0;
+    let minDist = Infinity;
+    steps.forEach((step, i) => {
+      if (!step.location) return;
+      const [sLng, sLat] = step.location;
+      const d = Math.hypot(lat - sLat, lng - sLng);
+      if (d < minDist) { minDist = d; closest = i; }
+    });
+    // Only advance, never go back
+    setCurrentStepIdx(prev => Math.max(prev, closest));
+  }, [userLocation, current?.id, stepsMap]);
+
+  // Scroll active step into view
+  useEffect(() => {
+    const key = `${current?.id}-${currentStepIdx}`;
+    stepRefs.current[key]?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [currentStepIdx, current?.id]);
+
+  const handleTab = (tab) => {
+    setActiveTab(tab);
+    setCurrentStepIdx(0);
+    const r = byType[tab];
+    if (r) onRouteSelect?.(r.id);
+  };
+
+  if (isLoading) {
+    return (
+      <div style={{
+        borderTop: "1px solid rgba(255,255,255,0.06)",
+        padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px",
+        background: "rgba(0,0,0,0.2)",
+      }}>
+        <div style={{
+          width: "14px", height: "14px", borderRadius: "50%",
+          border: "2px solid rgba(139,92,246,0.3)", borderTopColor: "rgba(139,92,246,0.9)",
+          animation: "spin 0.8s linear infinite", flexShrink: 0,
+        }} />
+        <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)" }}>Computing safe routes…</span>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    );
+  }
+
+  if (!routes || routes.length === 0) return null;
+
+  const scoreColor = current ? getScoreColor(current.safety_score) : "#64748b";
+  const riskColor  = current?.risk_level === "low" ? "#22c55e" : current?.risk_level === "medium" ? "#eab308" : "#ef4444";
+  const steps      = current?.id ? (stepsMap[current.id] || []) : [];
+  const isLoadingSteps = current?.id ? !!loadingSteps[current.id] : false;
+
+  return (
+    <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(0,0,0,0.25)" }}>
+      {/* ── Route bar ── */}
+      <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+        {/* Tabs */}
+        <div style={{ display: "flex", gap: "5px", flexShrink: 0 }}>
+          {Object.entries(ROUTE_TAB).map(([key, cfg]) => {
+            const r = byType[key];
+            const isActive = activeTab === key;
+            return (
+              <button key={key} onClick={() => handleTab(key)} style={{
+                display: "flex", alignItems: "center", gap: "5px",
+                padding: "5px 10px", borderRadius: "8px", cursor: "pointer",
+                background: isActive ? cfg.bg : "rgba(255,255,255,0.04)",
+                border: `1px solid ${isActive ? cfg.border : "rgba(255,255,255,0.07)"}`,
+                color: isActive ? cfg.color : "rgba(255,255,255,0.4)",
+                fontSize: "11px", fontWeight: isActive ? 600 : 400, transition: "all 0.15s ease",
+              }}>
+                <span>{cfg.icon}</span>
+                <span>{cfg.label}</span>
+                {r && (
+                  <span style={{ fontSize: "10px", fontWeight: 700, color: isActive ? getScoreColor(r.safety_score) : "rgba(255,255,255,0.3)" }}>
+                    {r.safety_score?.toFixed ? r.safety_score.toFixed(1) : r.safety_score}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ width: "1px", height: "28px", background: "rgba(255,255,255,0.08)", flexShrink: 0 }} />
+
+        {current && (
+          <>
+            <div style={{
+              width: "36px", height: "36px", borderRadius: "50%", flexShrink: 0,
+              border: `2px solid ${scoreColor}`,
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+              background: `${scoreColor}15`,
+            }}>
+              <span style={{ fontSize: "11px", fontWeight: 700, color: scoreColor, lineHeight: 1 }}>
+                {current.safety_score?.toFixed ? current.safety_score.toFixed(1) : current.safety_score}
+              </span>
+              <span style={{ fontSize: "7px", color: "rgba(255,255,255,0.3)", lineHeight: 1 }}>/10</span>
+            </div>
+
+            <div style={{ display: "flex", gap: "14px", flex: 1, minWidth: 0 }}>
+              {[
+                { label: "RISK",     val: current.risk_level?.toUpperCase() || "—", color: riskColor },
+                { label: "DISTANCE", val: `${(current.distance / 1000).toFixed(1)} km`, color: "rgba(255,255,255,0.75)" },
+                { label: "DURATION", val: `${Math.round(current.duration / 60)} min`,   color: "rgba(255,255,255,0.75)" },
+              ].map(({ label, val, color }) => (
+                <div key={label}>
+                  <p style={{ fontSize: "9px", color: "rgba(255,255,255,0.3)", marginBottom: "1px" }}>{label}</p>
+                  <p style={{ fontSize: "11px", fontWeight: 600, color }}>{val}</p>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ width: "80px", flexShrink: 0 }}>
+              <div style={{ height: "4px", background: "rgba(255,255,255,0.08)", borderRadius: "2px", overflow: "hidden" }}>
+                <div style={{
+                  height: "100%", borderRadius: "2px",
+                  width: `${((current.safety_score - 1) / 9) * 100}%`,
+                  background: scoreColor, boxShadow: `0 0 4px ${scoreColor}80`,
+                  transition: "width 0.4s ease",
+                }} />
+              </div>
+              <p style={{ fontSize: "9px", color: "rgba(255,255,255,0.25)", marginTop: "3px", textAlign: "right" }}>Risk score</p>
+            </div>
+
+            <button onClick={() => onRouteSelect?.(current.id)} style={{
+              padding: "5px 12px", borderRadius: "8px", cursor: "pointer", flexShrink: 0,
+              background: selectedRouteId === current.id ? "rgba(139,92,246,0.25)" : "rgba(139,92,246,0.1)",
+              border: `1px solid ${selectedRouteId === current.id ? "rgba(139,92,246,0.5)" : "rgba(139,92,246,0.2)"}`,
+              color: selectedRouteId === current.id ? "#c4b5fd" : "rgba(167,139,250,0.7)",
+              fontSize: "11px", fontWeight: 500, transition: "all 0.15s ease",
+            }}>
+              {selectedRouteId === current.id ? "✓ Selected" : "Select"}
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* ── Directions toggle ── */}
+      <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+        <button
+          onClick={() => {
+            setDirectionsOpen(v => !v);
+            // Trigger step fetch if not yet loaded
+            if (!directionsOpen && current?.id && !stepsMap[current.id] && !loadingSteps[current.id]) {
+              setLoadingSteps(prev => ({ ...prev, [current.id]: true }));
+              fetchStepsForRoute(current).then(steps => {
+                setStepsMap(prev => ({ ...prev, [current.id]: steps }));
+                setLoadingSteps(prev => ({ ...prev, [current.id]: false }));
+              });
+            }
+          }}
+          style={{
+            width: "100%", padding: "8px 14px",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            background: "transparent", border: "none", cursor: "pointer",
+            color: "rgba(255,255,255,0.5)", fontSize: "11px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span>🗺️</span>
+            <span style={{ fontWeight: 500 }}>
+              Directions
+              {steps.length > 0 && (
+                <span style={{ marginLeft: "6px", fontSize: "10px", color: "rgba(255,255,255,0.3)" }}>
+                  ({steps.length} steps)
+                </span>
+              )}
+            </span>
+            {userLocation && steps.length > 0 && (
+              <span style={{
+                fontSize: "9px", padding: "1px 6px", borderRadius: "4px",
+                background: "rgba(34,197,94,0.15)", color: "#86efac", fontWeight: 600,
+              }}>LIVE</span>
+            )}
+          </div>
+          <span style={{ fontSize: "10px", transition: "transform 0.2s", transform: directionsOpen ? "rotate(180deg)" : "none" }}>▼</span>
+        </button>
+
+        {directionsOpen && (
+          <div style={{ maxHeight: "260px", overflowY: "auto", padding: "4px 8px 8px" }}>
+            {isLoadingSteps ? (
+              <div style={{ padding: "16px", textAlign: "center" }}>
+                <div style={{
+                  display: "inline-block", width: "16px", height: "16px", borderRadius: "50%",
+                  border: "2px solid rgba(139,92,246,0.3)", borderTopColor: "rgba(139,92,246,0.9)",
+                  animation: "spin 0.8s linear infinite",
+                }} />
+                <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.3)", marginTop: "8px" }}>Loading directions…</p>
+              </div>
+            ) : steps.length === 0 ? (
+              <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.3)", padding: "12px", textAlign: "center" }}>
+                No directions available
+              </p>
+            ) : (
+              steps.map((step, idx) => {
+                const isActive = idx === currentStepIdx;
+                const isFirst  = idx === 0;
+                const isLast   = idx === steps.length - 1;
+                const refKey   = `${current.id}-${idx}`;
+                return (
+                  <div
+                    key={idx}
+                    ref={el => stepRefs.current[refKey] = el}
+                    onClick={() => setCurrentStepIdx(idx)}
+                    style={{
+                      display: "flex", alignItems: "flex-start", gap: "10px",
+                      padding: "8px 10px", borderRadius: "10px", cursor: "pointer",
+                      marginBottom: "2px",
+                      background: isActive ? "rgba(139,92,246,0.15)" : "transparent",
+                      border: isActive ? "1px solid rgba(139,92,246,0.3)" : "1px solid transparent",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    {/* Step icon */}
+                    <div style={{
+                      width: "26px", height: "26px", borderRadius: "8px", flexShrink: 0,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: "13px",
+                      background: isFirst ? "rgba(34,197,94,0.2)" : isLast ? "rgba(239,68,68,0.2)" : isActive ? "rgba(139,92,246,0.3)" : "rgba(255,255,255,0.06)",
+                      border: isFirst ? "1px solid rgba(34,197,94,0.4)" : isLast ? "1px solid rgba(239,68,68,0.4)" : isActive ? "1px solid rgba(139,92,246,0.4)" : "1px solid rgba(255,255,255,0.08)",
+                    }}>
+                      {stepIcon(step.text)}
+                    </div>
+
+                    {/* Text */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{
+                        fontSize: "11px", lineHeight: 1.4,
+                        color: isActive ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.65)",
+                        fontWeight: isActive ? 600 : 400,
+                      }}>{step.text}</p>
+                      <p style={{ fontSize: "10px", color: isActive ? "rgba(167,139,250,0.8)" : "rgba(255,255,255,0.3)", marginTop: "2px" }}>
+                        {fmtDist(step.distance)}
+                      </p>
+                    </div>
+
+                    {/* Live indicator */}
+                    {isActive && userLocation && (
+                      <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 6px #22c55e", flexShrink: 0, alignSelf: "center" }} />
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── GlassMapCard (unchanged) ─────────────────────────────────────────────
-function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsChange }) {
+function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsChange, safeRoutes = [], selectedRouteId, onRouteSelect, isLoadingRoutes = false, user, userLocation }) {
   const [routeFrom, setRouteFrom]             = useState("");
   const [routeTo, setRouteTo]                 = useState("");
   const [routeFromCoords, setRouteFromCoords] = useState(null);
   const [routeToCoords, setRouteToCoords]     = useState(null);
+  const [startDate, setStartDate]             = useState("");
+  const [endDate, setEndDate]                 = useState("");
   const [routeLoading, setRouteLoading]       = useState(false);
   const [pickingFor, setPickingFor]           = useState(null);
   const [routeDirections, setRouteDirections] = useState([]);
   const [activeStep, setActiveStep]           = useState(null);
   const [routeSummary, setRouteSummary]       = useState(null);
   const [directionsOpen, setDirectionsOpen]   = useState(false);
+  const [savingTrip, setSavingTrip]           = useState(false);
   const stepRefs  = useRef([]);
   const crimeMapRef = mapRef;
 
@@ -422,12 +923,13 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
     setPickingFor(null);
     setRouteLoading(true);
     setActiveStep(null);
-    await crimeMapRef.current?.triggerRoute(routeFromCoords || routeFrom, routeToCoords || routeTo);
+    await crimeMapRef.current?.triggerRoute(routeFromCoords || routeFrom, routeToCoords || routeTo, true);
     setRouteLoading(false);
   };
 
   const handleClear = () => {
     setRouteFrom(""); setRouteTo("");
+    setStartDate(""); setEndDate("");
     setRouteFromCoords(null); setRouteToCoords(null);
     setPickingFor(null);
     setRouteDirections([]);
@@ -435,6 +937,38 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
     setRouteSummary(null);
     setDirectionsOpen(false);
     crimeMapRef.current?.clearRoute();
+  };
+
+  const handleSaveTrip = async () => {
+    if (!routeFrom || !routeTo) return;
+    setSavingTrip(true);
+    try {
+      const dist = routeSummary?.dist || "";
+      const time = routeSummary?.time || "";
+      let planned_route = `Route from ${routeFrom} to ${routeTo}. Distance: ${dist}, ETA: ${time}.`;
+      if (startDate) {
+        const [year, month, day] = startDate.split("-");
+        planned_route += ` Departure: ${day}/${month}/${year}.`;
+      }
+      if (endDate) {
+        const [year, month, day] = endDate.split("-");
+        planned_route += ` Return: ${day}/${month}/${year}.`;
+      }
+      await createTrip({
+        user_id: user?.id,
+        destination: routeTo,
+        start_date: startDate ? new Date(startDate).toISOString() : new Date().toISOString(),
+        end_date:   endDate   ? new Date(endDate).toISOString()   : new Date().toISOString(),
+        planned_route,
+        notes: "Planned via Live Map",
+      });
+      alert("Trip saved! The AI now has access to your planned route.");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save trip.");
+    } finally {
+      setSavingTrip(false);
+    }
   };
 
   const handleRoutePick = (coords) => {
@@ -525,11 +1059,36 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
               style={{ background: routeLoading ? "rgba(139,92,246,0.2)" : "linear-gradient(135deg, rgba(139,92,246,0.7), rgba(59,130,246,0.7))", border: "1px solid rgba(139,92,246,0.3)", color: "#fff", opacity: routeLoading ? 0.7 : 1 }}>
               {routeLoading ? "..." : "Route"}
             </button>
-            <button type="button" onClick={handleClear}
-              className="ctrl-btn px-3 py-2 rounded-xl text-xs"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }}>Clear</button>
+            <div className="flex gap-1.5">
+              <button type="button" onClick={handleClear}
+                className="ctrl-btn flex-1 px-3 py-2 rounded-xl text-xs"
+                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }}>Clear</button>
+              {(routeFrom && routeTo) && (
+                <button type="button" onClick={handleSaveTrip} disabled={savingTrip}
+                  className="ctrl-btn flex-1 px-3 py-2 rounded-xl text-xs font-medium"
+                  style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", color: "#86efac", opacity: savingTrip ? 0.7 : 1 }}>
+                  {savingTrip ? "..." : "Save"}
+                </button>
+              )}
+            </div>
           </div>
         </form>
+
+        {/* Date pickers */}
+        <div className="flex gap-3 items-center">
+          <div className="flex-1">
+            <p className="text-[10px] mb-1" style={{ color: "rgba(255,255,255,0.4)", paddingLeft: "4px" }}>Departure (Optional)</p>
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+              className="glass-input w-full px-3 py-2 rounded-xl text-xs"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.8)" }} />
+          </div>
+          <div className="flex-1">
+            <p className="text-[10px] mb-1" style={{ color: "rgba(255,255,255,0.4)", paddingLeft: "4px" }}>Return (Optional)</p>
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+              className="glass-input w-full px-3 py-2 rounded-xl text-xs"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.8)" }} />
+          </div>
+        </div>
 
         {pickingFor && (
           <div className="anim-fade-in flex items-center gap-2 px-3 py-2 rounded-xl text-xs"
@@ -554,6 +1113,17 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
           onHospitalsChange={onHospitalsChange}
         />
       </div>
+
+      {/* ── Route Safety Bar (below map) ── */}
+      {(safeRoutes.length > 0 || isLoadingRoutes) && (
+        <RouteSafetyBar
+          routes={safeRoutes}
+          selectedRouteId={selectedRouteId}
+          onRouteSelect={onRouteSelect}
+          isLoading={isLoadingRoutes}
+          userLocation={userLocation}
+        />
+      )}
 
       {directionsOpen && routeDirections.length > 0 && (
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", background: "rgba(0,0,0,0.25)", maxHeight: "260px", display: "flex", flexDirection: "column" }}>
