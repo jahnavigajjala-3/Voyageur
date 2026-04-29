@@ -3,6 +3,8 @@ import os
 import json
 import httpx
 import asyncio
+from typing import Optional, List, Any, Dict
+from dataclasses import dataclass
 
 # Telangana districts that were part of Andhra Pradesh in the dataset
 TELANGANA_DISTRICTS = [
@@ -14,6 +16,21 @@ TELANGANA_DISTRICTS = [
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CSV_PATH = os.path.join(BASE_DIR, "../../data/processed_crime_data.csv")
 DISTRICT_CENTROIDS_PATH = os.path.join(BASE_DIR, "../../data/district_centroids.json")
+
+# Safety Data Index for spatial queries
+SAFETY_INDEX_AVAILABLE = False
+try:
+    # Try relative import first
+    from .safety_data_index import get_safety_data_index
+    SAFETY_INDEX_AVAILABLE = True
+except ImportError:
+    try:
+        # Try absolute import
+        from safety_data_index import get_safety_data_index
+        SAFETY_INDEX_AVAILABLE = True
+    except ImportError as e:
+        SAFETY_INDEX_AVAILABLE = False
+        print(f"[TRAVEL SERVICE] Warning: safety_data_index module not available: {e}")
 
 
 def load_district_centroids(path: str) -> dict:
@@ -39,6 +56,12 @@ try:
     
     print(f"[TRAVEL SERVICE] Crime data loaded: {len(crime_df)} districts")
     print(f"[TRAVEL SERVICE] Risk score range: {RISK_SCORE_MIN:.2f} - {RISK_SCORE_MAX:.2f}")
+    
+    # Build safety data index if available
+    if SAFETY_INDEX_AVAILABLE:
+        safety_index = get_safety_data_index(crime_df)
+        stats = safety_index.get_stats()
+        print(f"[TRAVEL SERVICE] Safety data index built: {stats}")
 except Exception as e:
     crime_df = None
     RISK_SCORE_MIN = 0
@@ -413,3 +436,350 @@ async def get_districts_in_state(lat: float, lng: float) -> list:
         })
     
     return sorted(result, key=lambda x: x['risk_score'], reverse=True)
+
+
+# ============================================================================
+# New functions for spatial safety data queries using SafetyDataIndex
+# ============================================================================
+
+def get_safety_index() -> Optional[Any]:
+    """Get the safety data index instance if available"""
+    if not SAFETY_INDEX_AVAILABLE or crime_df is None:
+        return None
+    
+    try:
+        return get_safety_data_index(crime_df)
+    except Exception as e:
+        print(f"[TRAVEL SERVICE] Failed to get safety index: {e}")
+        return None
+
+
+async def find_nearest_safety_data(lat: float, lng: float, max_distance_km: float = 50.0) -> Optional[dict]:
+    """
+    Find nearest safety data point using spatial index.
+    
+    Args:
+        lat: Latitude
+        lng: Longitude
+        max_distance_km: Maximum search distance in kilometers
+        
+    Returns:
+        Dictionary with safety data if found, None otherwise
+    """
+    safety_index = get_safety_index()
+    if safety_index is None:
+        return None
+    
+    try:
+        point, distance = safety_index.find_nearest_with_distance(lat, lng, max_distance_km)
+        
+        if point:
+            return {
+                "district": point.district,
+                "state": point.state,
+                "lat": point.lat,
+                "lng": point.lng,
+                "risk_score": point.risk_score,
+                "normalized_score": point.normalized_score,
+                "risk_level": point.risk_level,
+                "marker_color": point.marker_color,
+                "distance_km": round(distance, 2),
+                "source": "spatial_index"
+            }
+    except Exception as e:
+        print(f"[TRAVEL SERVICE] Error finding nearest safety data: {e}")
+    
+    return None
+
+
+async def find_all_safety_data_within(lat: float, lng: float, radius_km: float = 50.0) -> List[dict]:
+    """
+    Find all safety data points within a given radius.
+    
+    Args:
+        lat: Latitude
+        lng: Longitude
+        radius_km: Search radius in kilometers
+        
+    Returns:
+        List of safety data points within radius
+    """
+    safety_index = get_safety_index()
+    if safety_index is None:
+        return []
+    
+    try:
+        results = safety_index.find_all_within(lat, lng, radius_km)
+        
+        formatted_results = []
+        for point, distance in results:
+            formatted_results.append({
+                "district": point.district,
+                "state": point.state,
+                "lat": point.lat,
+                "lng": point.lng,
+                "risk_score": point.risk_score,
+                "normalized_score": point.normalized_score,
+                "risk_level": point.risk_level,
+                "marker_color": point.marker_color,
+                "distance_km": round(distance, 2)
+            })
+        
+        return formatted_results
+    except Exception as e:
+        print(f"[TRAVEL SERVICE] Error finding safety data within radius: {e}")
+        return []
+
+
+async def get_safety_data_for_coordinates(lat: float, lng: float) -> dict:
+    """
+    Get safety data for coordinates using spatial index as primary method,
+    with fallback to traditional district lookup.
+    
+    This is the recommended function for route scoring.
+    """
+    # First try spatial index lookup
+    spatial_result = await find_nearest_safety_data(lat, lng)
+    
+    if spatial_result:
+        return {
+            **spatial_result,
+            "detected_district": spatial_result["district"],
+            "detected_state": spatial_result["state"],
+            "method": "spatial_index"
+        }
+    
+    # Fallback to traditional district-based lookup
+    print(f"[TRAVEL SERVICE] Spatial index found no data for ({lat}, {lng}), falling back to district lookup")
+    return await get_crime_risk_by_coords(lat, lng)
+
+
+def get_safety_index_stats() -> dict:
+    """Get statistics about the safety data index"""
+    safety_index = get_safety_index()
+    if safety_index is None:
+        return {"available": False, "error": "Safety index not available"}
+    
+    try:
+        stats = safety_index.get_stats()
+        return {
+            "available": True,
+            **stats
+        }
+    except Exception as e:
+        return {"available": False, "error": str(e)}
+# ============================================================================
+# Multi-Route Generation Functions for OSRM Integration
+# ============================================================================
+
+@dataclass
+class RouteAlternative:
+    """Represents a route alternative from OSRM"""
+    geometry: dict  # GeoJSON geometry
+    distance: float  # meters
+    duration: float  # seconds
+    polyline: List[List[float]]  # List of [lng, lat] coordinates
+    is_fastest: bool = False  # Whether this is the fastest route
+    steps: List[dict] = None  # OSRM step objects
+
+    def __post_init__(self):
+        if self.steps is None:
+            self.steps = []
+
+    def to_dict(self) -> dict:
+        """Convert to dictionary for API response"""
+        return {
+            "geometry": self.geometry,
+            "distance": self.distance,
+            "duration": self.duration,
+            "polyline": self.polyline,
+            "is_fastest": self.is_fastest,
+            "steps": self.steps,
+        }
+
+
+async def _fetch_osrm_route(
+    origin_lng: float, origin_lat: float,
+    dest_lng: float, dest_lat: float,
+    via_lng: float = None, via_lat: float = None,
+    timeout: float = 10.0
+) -> Optional["RouteAlternative"]:
+    """Fetch a single OSRM route, optionally via a waypoint."""
+    if via_lng is not None and via_lat is not None:
+        coords = f"{origin_lng},{origin_lat};{via_lng},{via_lat};{dest_lng},{dest_lat}"
+    else:
+        coords = f"{origin_lng},{origin_lat};{dest_lng},{dest_lat}"
+
+    url = f"https://router.project-osrm.org/route/v1/driving/{coords}"
+    params = {"overview": "full", "geometries": "geojson", "steps": "true"}
+
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(url, params=params)
+            if response.status_code != 200:
+                return None
+            data = response.json()
+            if data.get("code") != "Ok":
+                return None
+            routes_data = data.get("routes", [])
+            if not routes_data:
+                return None
+            route_data = routes_data[0]
+            geometry = route_data.get("geometry", {})
+            coordinates = geometry.get("coordinates", [])
+            polyline = [[float(c[0]), float(c[1])] for c in coordinates if len(c) >= 2]
+            return RouteAlternative(
+                geometry=geometry,
+                distance=float(route_data.get("distance", 0)),
+                duration=float(route_data.get("duration", 0)),
+                polyline=polyline,
+                is_fastest=False,
+            )
+    except Exception as e:
+        print(f"[TRAVEL SERVICE] OSRM fetch error: {e}")
+        return None
+
+
+async def get_multiple_routes(
+    origin_lat: float, 
+    origin_lng: float,
+    dest_lat: float, 
+    dest_lng: float,
+    alternatives: int = 3,
+    timeout: float = 10.0
+) -> List[RouteAlternative]:
+    """
+    Get exactly 2 route alternatives from OSRM:
+      - Route 0: OSRM's fastest (direct)
+      - Route 1: OSRM alternative (if available) OR a via-point detour
+    Both routes include full step data.
+    """
+    print(f"[TRAVEL SERVICE] Requesting 2 route alternatives from OSRM")
+    print(f"  Origin: ({origin_lat}, {origin_lng})")
+    print(f"  Destination: ({dest_lat}, {dest_lng})")
+
+    routes: List[RouteAlternative] = []
+
+    # ── Request OSRM with alternatives=true ──────────────────────────────
+    coords = f"{origin_lng},{origin_lat};{dest_lng},{dest_lat}"
+    url = f"https://router.project-osrm.org/route/v1/driving/{coords}"
+    params = {
+        "overview": "full",
+        "geometries": "geojson",
+        "steps": "true",
+        "alternatives": "true",
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(url, params=params)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("code") == "Ok":
+                    for i, route_data in enumerate(data.get("routes", [])):
+                        if len(routes) >= 2:
+                            break
+                        geometry = route_data.get("geometry", {})
+                        coordinates = geometry.get("coordinates", [])
+                        polyline = [[float(c[0]), float(c[1])] for c in coordinates if len(c) >= 2]
+                        # Extract steps from legs
+                        steps = []
+                        for leg in route_data.get("legs", []):
+                            for step in leg.get("steps", []):
+                                steps.append(step)
+                        route = RouteAlternative(
+                            geometry=geometry,
+                            distance=float(route_data.get("distance", 0)),
+                            duration=float(route_data.get("duration", 0)),
+                            polyline=polyline,
+                            is_fastest=(i == 0),
+                        )
+                        route.steps = steps  # attach steps directly
+                        routes.append(route)
+    except Exception as e:
+        print(f"[TRAVEL SERVICE] OSRM alternatives request failed: {e}")
+
+    if not routes:
+        raise ValueError("No routes returned from OSRM")
+
+    # ── If only 1 route, generate a via-point alternative ────────────────
+    if len(routes) < 2:
+        mid_lat = (origin_lat + dest_lat) / 2
+        mid_lng = (origin_lng + dest_lng) / 2
+        dlat = dest_lat - origin_lat
+        dlng = dest_lng - origin_lng
+        length = (dlat ** 2 + dlng ** 2) ** 0.5
+
+        if length > 0:
+            perp_lat = -dlng / length
+            perp_lng =  dlat / length
+            for offset in [0.045, -0.045, 0.09, -0.09]:
+                via_lat = mid_lat + perp_lat * offset
+                via_lng = mid_lng + perp_lng * offset
+                via_route = await _fetch_osrm_route(
+                    origin_lng, origin_lat,
+                    dest_lng, dest_lat,
+                    via_lng=via_lng, via_lat=via_lat,
+                    timeout=timeout,
+                )
+                if via_route:
+                    is_dup = abs(routes[0].distance - via_route.distance) / max(routes[0].distance, 1) < 0.05
+                    if not is_dup:
+                        via_route.steps = []  # no steps for via-point routes
+                        routes.append(via_route)
+                        break
+
+    # Mark fastest
+    if routes:
+        fastest = min(routes, key=lambda r: r.duration)
+        for r in routes:
+            r.is_fastest = (r is fastest)
+
+    # Cap at 2
+    routes = routes[:2]
+
+    print(f"[TRAVEL SERVICE] Retrieved {len(routes)} route alternatives")
+    for i, route in enumerate(routes):
+        print(f"  Route {i+1}: {route.distance:.0f}m, {route.duration:.0f}s, fastest: {route.is_fastest}")
+
+    return routes
+
+
+async def get_single_route(
+    origin_lat: float, 
+    origin_lng: float,
+    dest_lat: float, 
+    dest_lng: float,
+    timeout: float = 10.0
+) -> Optional[RouteAlternative]:
+    """
+    Get a single route from OSRM (preserves existing functionality).
+    
+    This function maintains backward compatibility with existing code
+    that expects single-route functionality.
+    
+    Args:
+        origin_lat: Origin latitude
+        origin_lng: Origin longitude
+        dest_lat: Destination latitude
+        dest_lng: Destination longitude
+        timeout: Request timeout in seconds
+        
+    Returns:
+        Single RouteAlternative or None if no route found
+    """
+    try:
+        routes = await get_multiple_routes(
+            origin_lat, origin_lng,
+            dest_lat, dest_lng,
+            alternatives=1,
+            timeout=timeout
+        )
+        
+        if routes:
+            return routes[0]
+        return None
+        
+    except Exception as e:
+        print(f"[TRAVEL SERVICE] Failed to get single route: {e}")
+        return None
