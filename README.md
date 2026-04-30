@@ -100,7 +100,7 @@ A full-stack travel safety app that gives real-time crime risk analysis, hospita
 | Database | PostgreSQL (Supabase) |
 | Routing | OSRM (open-source routing) |
 | Geocoding | Nominatim (OpenStreetMap) |
-| Data | Pandas, custom crime + hospital CSVs |
+| Data | Pandas, crime + hospital CSVs |
 
 ---
 
