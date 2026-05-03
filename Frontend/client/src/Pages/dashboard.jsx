@@ -91,7 +91,7 @@ export default function Dashboard() {
 
   // ─── Fetch weather whenever location changes ──────────────────────────────
   useEffect(() => {
-    if (!location?.lat || !location?.lng) return;
+    if (location?.lat == null || location?.lng == null) return;
 
     const fetchWeather = async () => {
       try {
