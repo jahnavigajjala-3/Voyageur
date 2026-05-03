@@ -83,12 +83,8 @@ export const getNearbyHospitals = async (lat, lng, radius = 30, limit = 5) => {
 
 // Trips
 export const createTrip = async (tripData) => {
-  const res = await fetch(`${API_V1}/trips`, {
-    method: "POST",
-    headers: getAuthHeaders(),
-    body: JSON.stringify(tripData),
-  });
-  return handleResponse(res);
+  const response = await axiosInstance.post("/trips", tripData);
+  return response.data;
 };
 
 export const getTrips = async () => {

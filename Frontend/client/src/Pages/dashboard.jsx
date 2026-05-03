@@ -945,9 +945,20 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
     if (!routeFrom || !routeTo) return;
     setSavingTrip(true);
     try {
-      const dist = routeSummary?.dist || "";
-      const time = routeSummary?.time || "";
-      let planned_route = `Route from ${routeFrom} to ${routeTo}. Distance: ${dist}, ETA: ${time}.`;
+      // Build route summary from safe routes if available, else fall back to directions summary
+      let dist = routeSummary?.dist || "";
+      let time = routeSummary?.time || "";
+
+      if (!dist && safeRoutes?.length > 0) {
+        const selected = safeRoutes.find(r => r.id === selectedRouteId) || safeRoutes[0];
+        if (selected) {
+          dist = `${(selected.distance / 1000).toFixed(1)} km`;
+          time = `${Math.round(selected.duration / 60)} min`;
+        }
+      }
+
+      let planned_route = `Route from ${routeFrom} to ${routeTo}.`;
+      if (dist) planned_route += ` Distance: ${dist}, ETA: ${time}.`;
       if (startDate) {
         const [year, month, day] = startDate.split("-");
         planned_route += ` Departure: ${day}/${month}/${year}.`;
@@ -956,8 +967,8 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
         const [year, month, day] = endDate.split("-");
         planned_route += ` Return: ${day}/${month}/${year}.`;
       }
+
       await createTrip({
-        user_id: user?.id,
         destination: routeTo,
         start_date: startDate ? new Date(startDate).toISOString() : new Date().toISOString(),
         end_date:   endDate   ? new Date(endDate).toISOString()   : new Date().toISOString(),
@@ -966,8 +977,8 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
       });
       alert("Trip saved! The AI now has access to your planned route.");
     } catch (err) {
-      console.error(err);
-      alert("Failed to save trip.");
+      console.error("Save trip error:", err);
+      alert(`Failed to save trip: ${err?.response?.data?.detail || err.message || "Unknown error"}`);
     } finally {
       setSavingTrip(false);
     }
