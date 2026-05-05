@@ -2,8 +2,8 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 
+
 class TripCreate(BaseModel):
-    user_id: int
     destination: str
     start_date: datetime
     end_date: datetime
@@ -28,6 +28,4 @@ class TripResponse(BaseModel):
     notes: Optional[str] = None
     planned_route: Optional[str] = None
 
-    model_config = {
-    "from_attributes": True
-}
+    model_config = {"from_attributes": True}

@@ -3,7 +3,7 @@ import { AuthContext } from "../context/AuthContext";
 import { useRouteContext } from "../context/RouteContext";
 import CrimeMap from "../components/CrimeMap";
 import { useNavigate } from "react-router-dom";
-import { sendChatMessage, createTrip } from "../api/api";
+import { sendChatMessage, createTrip, getWeather } from "../api/api";
 import useLocation from "../hooks/useLocation";
 
 const NAV_ITEMS = [
@@ -96,11 +96,7 @@ export default function Dashboard() {
     const fetchWeather = async () => {
       try {
         setWeatherLoading(true);
-        const res = await fetch(
-          `http://localhost:8000/api/v1/weather?lat=${location.lat}&lon=${location.lng}`
-        );
-        if (!res.ok) throw new Error("weather fetch failed");
-        const data = await res.json();
+        const data = await getWeather(location.lat, location.lng);
         setWeather(data);
       } catch (err) {
         console.error("Weather fetch failed:", err);
@@ -978,7 +974,8 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
       alert("Trip saved! The AI now has access to your planned route.");
     } catch (err) {
       console.error("Save trip error:", err);
-      alert(`Failed to save trip: ${err?.response?.data?.detail || err.message || "Unknown error"}`);
+      const msg = err?.message || String(err) || "Unknown error";
+      alert(`Failed to save trip: ${msg}`);
     } finally {
       setSavingTrip(false);
     }
