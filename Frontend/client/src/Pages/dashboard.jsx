@@ -349,13 +349,20 @@ export default function Dashboard() {
         </div>
       </main>
 
-      <FloatingChat open={chatOpen} onToggle={() => setChatOpen((v) => !v)} weather={weather} />
+      <FloatingChat
+        open={chatOpen}
+        onToggle={() => setChatOpen((v) => !v)}
+        weather={weather}
+        safeRoutes={safeRoutes}
+        selectedRouteId={selectedRouteId}
+        liveRisk={liveRisk}
+      />
     </div>
   );
 }
 
 // ─── FloatingChat (weather passed in for AI context) ──────────────────────
-function FloatingChat({ open, onToggle, weather }) {
+function FloatingChat({ open, onToggle, weather, safeRoutes = [], selectedRouteId = null, liveRisk = null }) {
   const { location } = useLocation();
   const [messages, setMessages] = useState([
     { role: "assistant", content: "Hi! I'm your AI travel companion. Ask me anything about safety, routes, or destinations." },
@@ -376,19 +383,45 @@ function FloatingChat({ open, onToggle, weather }) {
     setInput("");
     setLoading(true);
     try {
-      // ── Weather context injected into AI ──
+      // ── Build trip_context: weather only ─────────────────────────────
+      // Location risk is fetched fresh on the backend using current_lat/lng.
+      // We do NOT pass liveRisk here — it can be stale (fetched once on page
+      // load, may reflect IP-based geolocation before GPS locked).
       const weatherCtx = weather
-        ? ` Current weather: ${getWeatherLabel(weather.weathercode)}, ${weather.temperature}°C, wind ${weather.windspeed} km/h.`
+        ? `Weather: ${getWeatherLabel(weather.weathercode)}, ${weather.temperature}°C, wind ${weather.windspeed} km/h.`
         : "";
 
-      const tripCtx = location
-        ? `User's current location: lat=${location.lat}, lng=${location.lng}.${weatherCtx}`
-        : `User location not available.${weatherCtx}`;
+      const tripContext = weatherCtx;
+
+      // ── Build route_context from the currently selected/safest route ──
+      const activeRoute =
+        safeRoutes.find((r) => r.id === selectedRouteId) ||
+        safeRoutes.find((r) => r.type === "safest") ||
+        safeRoutes[0] ||
+        null;
+
+      // Serialise just what the backend needs: summary fields + geometry coords
+      const routePayload = activeRoute
+        ? JSON.stringify({
+            summary:    activeRoute.summary  || "",
+            distance:   activeRoute.distance || 0,
+            duration:   activeRoute.duration || 0,
+            risk_level: activeRoute.risk_level || "",
+            safety_score: activeRoute.safety_score ?? null,
+            // geometry.coordinates is [[lng,lat], ...] — same format the backend expects
+            polyline: activeRoute.geometry?.coordinates || [],
+          })
+        : null;
 
       const data = await sendChatMessage({
         history: messages.slice(-5).filter((m) => m.content && m.role),
         message: input,
-        trip_context: tripCtx,
+        trip_context: tripContext,
+        current_lat: location?.lat ?? null,
+        current_lng: location?.lng ?? null,
+        // Pass route inline via trip_context extension; backend reads planned_route
+        // We piggyback it through the existing planned_route field added to ChatRequest
+        planned_route: routePayload,
       });
       setMessages([...history, { role: "assistant", content: data.response }]);
     } catch {
