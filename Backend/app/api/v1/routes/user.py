@@ -225,8 +225,17 @@ def delete_user(
 
 
 @router.get("/users/{user_id}", response_model=UserResponse)
-def get_user(user_id: int, db: Session = Depends(get_db)):
-    """Get user by ID (public endpoint)"""
+def get_user(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get user by ID (requires auth — users can only fetch their own profile)"""
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot access other users",
+        )
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(
@@ -234,9 +243,3 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
             detail="User not found",
         )
     return UserResponse.from_orm(user)
-
-
-@router.get("/users", response_model=list[UserResponse])
-def get_users(db: Session = Depends(get_db)):
-    """Get all users (public endpoint, consider restricting)"""
-    return [UserResponse.from_orm(u) for u in db.query(User).all()]
