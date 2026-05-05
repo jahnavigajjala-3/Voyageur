@@ -112,7 +112,7 @@ export const getWeather = async (lat, lng) => {
 // Safe Routes — uses axiosInstance so the 401→refresh interceptor fires automatically
 export const getSafeRoutes = async (origin, destination, alternatives = 3, preference = "safety", signal = null) => {
   const response = await axiosInstance.post(
-    "/routes/safe",
+    "/travel/routes/safe",
     {
       origin:       { lat: origin.lat, lng: origin.lng },
       destination:  { lat: destination.lat, lng: destination.lng },
