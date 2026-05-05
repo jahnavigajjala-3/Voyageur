@@ -81,7 +81,7 @@ export const getNearbyHospitals = async (lat, lng, radius = 30, limit = 5) => {
   return handleResponse(res);
 };
 
-// Trips
+// Trips — FIX: was using axiosInstance (pointing to localhost in production), now uses fetch with correct API_V1
 export const createTrip = async (tripData) => {
   const res = await fetch(`${API_V1}/trips`, {
     method: "POST",
@@ -104,7 +104,8 @@ export const getTripById = async (id) => {
   });
   return handleResponse(res);
 };
-// Weather
+
+// Weather — FIX: was using hardcoded localhost, now uses API_V1
 export const getWeather = async (lat, lng) => {
   const res = await fetch(
     `${API_V1}/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`

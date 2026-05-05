@@ -3,7 +3,7 @@ import { AuthContext } from "../context/AuthContext";
 import { useRouteContext } from "../context/RouteContext";
 import CrimeMap from "../components/CrimeMap";
 import { useNavigate } from "react-router-dom";
-import { sendChatMessage, createTrip } from "../api/api";
+import { sendChatMessage, createTrip, getWeather } from "../api/api";
 import useLocation from "../hooks/useLocation";
 
 const NAV_ITEMS = [
@@ -96,11 +96,7 @@ export default function Dashboard() {
     const fetchWeather = async () => {
       try {
         setWeatherLoading(true);
-        const res = await fetch(
-          `http://localhost:8000/api/v1/weather?lat=${location.lat}&lon=${location.lng}`
-        );
-        if (!res.ok) throw new Error("weather fetch failed");
-        const data = await res.json();
+        const data = await getWeather(location.lat, location.lng);
         setWeather(data);
       } catch (err) {
         console.error("Weather fetch failed:", err);
@@ -945,9 +941,20 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
     if (!routeFrom || !routeTo) return;
     setSavingTrip(true);
     try {
-      const dist = routeSummary?.dist || "";
-      const time = routeSummary?.time || "";
-      let planned_route = `Route from ${routeFrom} to ${routeTo}. Distance: ${dist}, ETA: ${time}.`;
+      // Build route summary from safe routes if available, else fall back to directions summary
+      let dist = routeSummary?.dist || "";
+      let time = routeSummary?.time || "";
+
+      if (!dist && safeRoutes?.length > 0) {
+        const selected = safeRoutes.find(r => r.id === selectedRouteId) || safeRoutes[0];
+        if (selected) {
+          dist = `${(selected.distance / 1000).toFixed(1)} km`;
+          time = `${Math.round(selected.duration / 60)} min`;
+        }
+      }
+
+      let planned_route = `Route from ${routeFrom} to ${routeTo}.`;
+      if (dist) planned_route += ` Distance: ${dist}, ETA: ${time}.`;
       if (startDate) {
         const [year, month, day] = startDate.split("-");
         planned_route += ` Departure: ${day}/${month}/${year}.`;
@@ -956,8 +963,8 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
         const [year, month, day] = endDate.split("-");
         planned_route += ` Return: ${day}/${month}/${year}.`;
       }
+
       await createTrip({
-        user_id: user?.id,
         destination: routeTo,
         start_date: startDate ? new Date(startDate).toISOString() : new Date().toISOString(),
         end_date:   endDate   ? new Date(endDate).toISOString()   : new Date().toISOString(),
@@ -966,8 +973,9 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
       });
       alert("Trip saved! The AI now has access to your planned route.");
     } catch (err) {
-      console.error(err);
-      alert("Failed to save trip.");
+      console.error("Save trip error:", err);
+      const msg = err?.message || String(err) || "Unknown error";
+      alert(`Failed to save trip: ${msg}`);
     } finally {
       setSavingTrip(false);
     }
