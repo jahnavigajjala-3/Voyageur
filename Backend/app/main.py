@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.db.session import engine
 from app.db.base import Base
-from app.models import user
+from app.models import user, chat_message
 from app.api.v1.routes import user as user_routes, trip as trip_routes
 from app.api.v1.routes import ai as ai_routes
 from app.api.v1.routes import travel as travel_routes
