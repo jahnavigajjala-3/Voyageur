@@ -3,15 +3,16 @@ from pydantic import BaseModel
 from typing import List, Optional
 from app.services.ai_service import get_ai_response
 from app.services.travel_service import get_crime_risk
-from app.services.ai_service import analyze_crime
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.chat_message import ChatMessage
 from app.schemas.chat import ChatMessageCreate, ChatMessageResponse
+
 router = APIRouter()
 
+
 class Message(BaseModel):
-    role: str   # "user" or "assistant"
+    role: str
     content: str
 
 
@@ -20,24 +21,24 @@ class ChatRequest(BaseModel):
     message: str
     trip_context: str
     planned_route: Optional[str] = None
-    
+
+
 @router.post("/chat")
 async def chat(request: ChatRequest):
     try:
         full_context = request.trip_context
         if request.planned_route:
             full_context += f"\nPlanned Route: {request.planned_route}"
-
         response = await get_ai_response(
             history=request.history,
             new_message=request.message,
             trip_context=full_context
         )
         return {"response": response}
-
     except Exception as e:
         print("[ROUTE ERROR]", e)
         return {"response": "Server error. Try again."}
+
 
 @router.post("/chat-messages", response_model=ChatMessageResponse)
 def create_chat_message(message: ChatMessageCreate, db: Session = Depends(get_db)):
@@ -59,10 +60,4 @@ def get_chat_messages(trip_id: Optional[int] = None, db: Session = Depends(get_d
 @router.get("/crime-warning/{state}")
 async def get_crime_warning(state: str):
     crime_data = await get_crime_risk(state)
-    warning = await analyze_crime(state, crime_data)
-
-    return {
-        "state": state,
-        "crime_data": crime_data,
-        "ai_warning": warning
-    }
+    return {"state": state, "crime_data": crime_data}
