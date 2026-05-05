@@ -9,9 +9,14 @@ from app.api.v1.routes import ai as ai_routes
 from app.api.v1.routes import travel as travel_routes
 from app.api.v1.routes import weather
 from app.api.v1.routes import auth as auth_routes
+from app.core.logging import configure_logging, get_logger
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# Configure structured logging before anything else
+configure_logging(level=os.getenv("LOG_LEVEL", "INFO"))
+logger = get_logger(__name__)
 
 app = FastAPI()
 
@@ -47,4 +52,5 @@ app.include_router(auth_routes.router, prefix=API_PREFIX)  # Google OAuth
 
 @app.get("/")
 def home():
+    logger.info("Health check endpoint called")
     return {"message": "Voyageur API is Live 🚀"}
