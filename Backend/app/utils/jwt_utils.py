@@ -70,15 +70,3 @@ def verify_token(token: str, expected_type: str = "access") -> Optional[TokenDat
 
     except JWTError:
         return None
-
-
-def decode_token_without_validation(token: str) -> Optional[dict]:
-    """
-    Decode token WITHOUT verification (use only for debugging).
-    NEVER use this in production auth logic.
-    """
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_exp": False})
-        return payload
-    except JWTError:
-        return None

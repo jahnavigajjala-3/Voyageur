@@ -1,25 +1,55 @@
+"""
+AI Service — Amigo travel companion powered by Gemini.
+
+Context pipeline (request → Gemini):
+  1. Location context  — current lat/lng + live crime risk at that point
+  2. Trip context      — destination, dates, notes from the DB trip record
+  3. Route context     — planned_route summary (distance, duration, waypoints)
+  4. Safety context    — route safety score + risk level from scoring service
+  5. Prompt assembly   — all four blocks merged into a clean system instruction
+"""
+
 from google import genai
 from google.genai import types
 import os
 import re
+import json
+import asyncio
+from typing import Optional
 from dotenv import load_dotenv
+
+from app.core.logging import get_logger
 from app.services.travel_service import get_crime_risk_by_coords
+from app.services.route_scoring_service import get_route_scoring_service, Coordinate
 
 load_dotenv()
 
+logger = get_logger(__name__)
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
+# ---------------------------------------------------------------------------
+# System prompt — instructs Gemini on its persona and rules
+# ---------------------------------------------------------------------------
 SYSTEM_PROMPT = """
-You are Amigo, a real-time travel companion AI for India.
+You are Amigo, a real-time travel safety companion AI for India.
 
-- Warn about safety concerns or high crime areas using the crime data provided in context
-- Be concise, friendly, and proactive
-- If the user provides a Planned Route in the trip context, refer to it and provide relevant suggestions or feedback
-- Always use the safety data provided in the trip context — do not guess or make up numbers
+Rules:
+- The user's current location and crime risk data are provided in the CONTEXT section below — use them as background knowledge only
+- NEVER proactively announce the crime risk score or safety score of the user's current location unless they explicitly ask about it
+- Only mention location risk if the user asks "is it safe here?", "what's the risk?", or similar direct questions
+- Always use the safety data provided in context — never guess or invent numbers
+- Be concise, friendly, and helpful
+- If a planned route is present, focus on route safety feedback — mention high-risk segments along the route if relevant
+- Suggest safer alternatives when the route passes through high-risk districts
+- If no location context is available, say so briefly and continue helping
 """
 
 WORKING_MODEL = None
 
+
+# ===========================================================================
+# Gemini call with model fallback
+# ===========================================================================
 
 def generate_with_fallback(client, contents, config):
     global WORKING_MODEL
@@ -39,15 +69,19 @@ def generate_with_fallback(client, contents, config):
                 config=config,
             )
             WORKING_MODEL = m
-            print(f"[AI] Using model: {m}")
+            logger.info("AI using model: %s", m)
             if not response:
                 raise Exception("Empty response from Gemini")
             return response
         except Exception as e:
-            print(f"[AI] Failed {m}: {e}")
+            logger.warning("AI model %s failed: %s", m, e)
 
     raise Exception("All Gemini models failed")
 
+
+# ===========================================================================
+# Context builders — each returns a plain string block or empty string
+# ===========================================================================
 
 def extract_coords_from_context(trip_context: str):
     """Parse lat/lng from trip_context string e.g. 'lat=12.34, lng=77.56'"""
@@ -61,39 +95,276 @@ def extract_coords_from_context(trip_context: str):
     return None, None
 
 
-async def get_ai_response(history, new_message, trip_context):
+async def build_location_context(lat: Optional[float], lng: Optional[float]) -> str:
+    """
+    Fetch live crime risk for the user's current GPS position.
+    Called with the coordinates sent by the frontend on every message,
+    so the result is always fresh and matches the user's actual location.
+    Returns a formatted string block, or empty string on failure.
+    """
+    if lat is None or lng is None:
+        return ""
+
     try:
-        crime_info_text = ""
+        crime_data = await get_crime_risk_by_coords(lat, lng)
+        if "error" in crime_data:
+            logger.warning("Crime lookup error: %s", crime_data.get("error"))
+            return ""
 
-        # Step 1: Extract coords from trip_context
-        lat, lng = extract_coords_from_context(trip_context)
+        district   = crime_data.get("detected_district") or crime_data.get("district", "")
+        state_name = crime_data.get("detected_state")    or crime_data.get("state", "")
+        risk_level = crime_data.get("risk_level", "UNKNOWN")
+        norm_score = crime_data.get("normalized_score", "N/A")
 
-        if lat is not None and lng is not None:
-            # Step 2: Auto-fetch crime risk via reverse geocoding
-            try:
-                crime_data = await get_crime_risk_by_coords(lat, lng)
-                if "error" not in crime_data:
-                    district   = crime_data.get("detected_district") or crime_data.get("district", "")
-                    state_name = crime_data.get("detected_state")    or crime_data.get("state", "")
-                    risk_level = crime_data.get("risk_level", "UNKNOWN")
-                    norm_score = crime_data.get("normalized_score", "N/A")
-                    risk_score = crime_data.get("risk_score", "N/A")
-                    crime_info_text = (
-                        f"\n[Live Crime Data] Location: {district}, {state_name} | "
-                        f"Risk Level: {risk_level} | Safety Score: {norm_score}/10 "
-                        f"(raw score: {risk_score})\n"
-                    )
-                    print(f"[AI] Crime data -> {district}, {state_name} | {risk_level}")
-                else:
-                    print(f"[AI] Crime lookup error: {crime_data.get('error')}")
-            except Exception as e:
-                print(f"[AI] Crime lookup failed: {e}")
+        logger.info("Location context → %s, %s | %s", district, state_name, risk_level)
+        return (
+            f"[User Location — background context only, do not announce unprompted]\n"
+            f"District: {district}, {state_name}\n"
+            f"Crime Risk Level: {risk_level}\n"
+            f"Safety Score: {norm_score}/10 (10 = safest)\n"
+        )
+    except Exception as e:
+        logger.error("build_location_context failed: %s", e, exc_info=True)
+        return ""
+
+
+def build_trip_context(trip) -> str:
+    """
+    Format a Trip ORM object (or dict) into a context block.
+    Accepts None gracefully — returns empty string.
+    """
+    if trip is None:
+        return ""
+
+    try:
+        # Support both ORM objects and plain dicts
+        if isinstance(trip, dict):
+            destination = trip.get("destination", "Unknown")
+            start_date  = trip.get("start_date", "")
+            end_date    = trip.get("end_date", "")
+            notes       = trip.get("notes") or ""
         else:
-            print("[AI] No coords in trip_context — skipping crime lookup")
+            destination = getattr(trip, "destination", "Unknown")
+            start_date  = getattr(trip, "start_date", "")
+            end_date    = getattr(trip, "end_date", "")
+            notes       = getattr(trip, "notes", "") or ""
 
-        # Step 3: Build conversation history
+        lines = [
+            "[Trip Details]",
+            f"Destination: {destination}",
+            f"Travel Dates: {start_date} → {end_date}",
+        ]
+        if notes:
+            lines.append(f"Notes: {notes}")
+
+        return "\n".join(lines) + "\n"
+    except Exception as e:
+        logger.error("build_trip_context failed: %s", e, exc_info=True)
+        return ""
+
+
+def build_route_context(planned_route: Optional[str]) -> str:
+    """
+    Parse the planned_route field (stored as JSON string from the OSRM response)
+    and extract a human-readable summary for the prompt.
+
+    planned_route is expected to be a JSON string with keys like:
+      { "distance": 12345, "duration": 3600, "summary": "...", "steps": [...] }
+    Falls back to treating it as a plain text description if JSON parsing fails.
+    """
+    if not planned_route:
+        return ""
+
+    try:
+        route_data = json.loads(planned_route)
+
+        distance_m  = route_data.get("distance", 0)
+        duration_s  = route_data.get("duration", 0)
+        summary     = route_data.get("summary", "")
+
+        distance_km = round(distance_m / 1000, 1) if distance_m else None
+        duration_min = round(duration_s / 60, 0) if duration_s else None
+
+        lines = ["[Planned Route]"]
+        if summary:
+            lines.append(f"Summary: {summary}")
+        if distance_km is not None:
+            lines.append(f"Distance: {distance_km} km")
+        if duration_min is not None:
+            lines.append(f"Estimated Duration: {int(duration_min)} minutes")
+
+        # Include first few step names as waypoints if available
+        steps = route_data.get("steps", [])
+        if steps:
+            waypoint_names = [
+                s.get("name") or s.get("ref", "")
+                for s in steps[:5]
+                if s.get("name") or s.get("ref")
+            ]
+            if waypoint_names:
+                lines.append(f"Key Roads: {', '.join(waypoint_names)}")
+
+        return "\n".join(lines) + "\n"
+
+    except (json.JSONDecodeError, TypeError):
+        # planned_route is a plain text description — use it directly
+        return f"[Planned Route]\n{planned_route}\n"
+    except Exception as e:
+        logger.error("build_route_context failed: %s", e, exc_info=True)
+        return ""
+
+
+async def build_safety_context(planned_route: Optional[str]) -> str:
+    """
+    Score the planned route using the existing RouteScoringService and return
+    a formatted safety summary block.
+
+    Expects planned_route to be a JSON string containing a 'polyline' key
+    (list of [lng, lat] coordinate pairs from OSRM).
+    """
+    if not planned_route:
+        return ""
+
+    try:
+        route_data = json.loads(planned_route)
+        raw_coords = route_data.get("polyline") or route_data.get("coordinates")
+
+        if not raw_coords:
+            return ""
+
+        # Convert [lng, lat] pairs → Coordinate(lat, lng) objects
+        scoring_coords = [
+            Coordinate(lat=float(c[1]), lng=float(c[0]))
+            for c in raw_coords
+            if len(c) >= 2
+        ]
+
+        if not scoring_coords:
+            return ""
+
+        # Encode to polyline string and score
+        scoring_service = get_route_scoring_service()
+        polyline_str    = scoring_service.encode_polyline(scoring_coords)
+        route_score     = await scoring_service.score_route(polyline_str)
+
+        risk_level   = route_score.risk_level
+        safety_score = route_score.normalized_score
+        high_risk_n  = route_score.high_risk_segments
+        total_n      = route_score.segment_count
+        distance_km  = round(route_score.total_distance_km, 1)
+
+        lines = [
+            "[Route Safety Analysis]",
+            f"Overall Safety Score: {safety_score}/10 (10 = safest)",
+            f"Risk Level: {risk_level.upper()}",
+            f"Route Length: {distance_km} km ({total_n} segments analysed)",
+        ]
+
+        if high_risk_n > 0:
+            lines.append(
+                f"⚠️  High-Risk Segments: {high_risk_n} out of {total_n} "
+                f"({round(high_risk_n / total_n * 100)}% of route)"
+            )
+
+            # Pull district names from high-risk segments for the AI to reference
+            high_risk_districts = []
+            for ss in route_score.segment_scores:
+                if ss.is_high_risk and ss.segment.safety_data:
+                    d = ss.segment.safety_data.district
+                    if d and d not in high_risk_districts:
+                        high_risk_districts.append(d)
+
+            if high_risk_districts:
+                lines.append(f"High-Risk Districts: {', '.join(high_risk_districts)}")
+        else:
+            lines.append("✅ No high-risk segments detected on this route.")
+
+        logger.info(
+            "Safety context → score=%s/10, risk=%s, high_risk_segments=%s",
+            safety_score, risk_level, high_risk_n,
+        )
+        return "\n".join(lines) + "\n"
+
+    except (json.JSONDecodeError, TypeError):
+        return ""
+    except Exception as e:
+        logger.error("build_safety_context failed: %s", e, exc_info=True)
+        return ""
+
+
+# ===========================================================================
+# Prompt assembler
+# ===========================================================================
+
+def assemble_system_prompt(
+    location_ctx: str,
+    trip_ctx: str,
+    route_ctx: str,
+    safety_ctx: str,
+) -> str:
+    """
+    Combine all context blocks into a single, structured system instruction.
+    Empty blocks are omitted cleanly.
+    """
+    sections = [SYSTEM_PROMPT.strip()]
+
+    context_blocks = [location_ctx, trip_ctx, route_ctx, safety_ctx]
+    filled = [b.strip() for b in context_blocks if b and b.strip()]
+
+    if filled:
+        sections.append("\n--- CONTEXT ---\n" + "\n\n".join(filled))
+
+    return "\n\n".join(sections)
+
+
+# ===========================================================================
+# Main entry point
+# ===========================================================================
+
+async def get_ai_response(
+    history,
+    new_message: str,
+    trip_context: str,           # legacy plain-text context (kept for compatibility)
+    trip=None,                   # Trip ORM object or dict (optional)
+    planned_route: Optional[str] = None,  # JSON string from OSRM (optional)
+    current_lat: Optional[float] = None,
+    current_lng: Optional[float] = None,
+) -> str:
+    """
+    Build full context, assemble the prompt, and call Gemini.
+
+    Parameters
+    ----------
+    history       : list of Message objects (role + content)
+    new_message   : the user's latest chat message
+    trip_context  : legacy free-text context string (still supported)
+    trip          : Trip ORM object or dict — used for structured trip context
+    planned_route : JSON string of the OSRM route (distance, duration, polyline)
+    current_lat   : user's current latitude
+    current_lng   : user's current longitude
+    """
+    try:
+        # ── 1. Extract coords (new explicit params take priority over legacy string) ──
+        lat, lng = current_lat, current_lng
+        if lat is None or lng is None:
+            lat, lng = extract_coords_from_context(trip_context)
+
+        # ── 2. Gather all context blocks concurrently ──────────────────────
+        location_ctx, safety_ctx = await asyncio.gather(
+            build_location_context(lat, lng),
+            build_safety_context(planned_route),
+        )
+
+        trip_ctx  = build_trip_context(trip)
+        route_ctx = build_route_context(planned_route)
+
+        # ── 3. Assemble system prompt ──────────────────────────────────────
+        system_instruction = assemble_system_prompt(
+            location_ctx, trip_ctx, route_ctx, safety_ctx
+        )
+
+        # ── 4. Build conversation history for Gemini ───────────────────────
         contents = []
-
         if history:
             for msg in history:
                 if not msg or not msg.content:
@@ -106,24 +377,16 @@ async def get_ai_response(history, new_message, trip_context):
                     )
                 )
 
-        # Inject crime data into the user message
-        user_message_with_context = new_message
-        if crime_info_text:
-            user_message_with_context = (
-                f"{new_message}\n"
-                f"{crime_info_text}"
-            ).strip()
-
         contents.append(
             types.Content(
                 role="user",
-                parts=[types.Part(text=user_message_with_context)],
+                parts=[types.Part(text=new_message)],
             )
         )
 
-        # Step 4: Generate AI response
+        # ── 5. Call Gemini ─────────────────────────────────────────────────
         config = types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT + "\n\nTrip context:\n" + trip_context
+            system_instruction=system_instruction
         )
 
         response = generate_with_fallback(client, contents, config)
@@ -134,5 +397,5 @@ async def get_ai_response(history, new_message, trip_context):
             return str(response)
 
     except Exception as e:
-        print("[FATAL AI ERROR]", e)
+        logger.error("FATAL AI ERROR: %s", e, exc_info=True)
         return "Sorry, something went wrong. Please try again."

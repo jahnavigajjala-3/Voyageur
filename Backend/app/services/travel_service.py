@@ -6,6 +6,10 @@ import asyncio
 from typing import Optional, List, Any, Dict
 from dataclasses import dataclass
 
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 # Telangana districts that were part of Andhra Pradesh in the dataset
 TELANGANA_DISTRICTS = [
     "Adilabad", "Hyderabad City", "Karimnagar", "Khammam",
@@ -20,27 +24,25 @@ DISTRICT_CENTROIDS_PATH = os.path.join(BASE_DIR, "../../data/district_centroids.
 # Safety Data Index for spatial queries
 SAFETY_INDEX_AVAILABLE = False
 try:
-    # Try relative import first
     from .safety_data_index import get_safety_data_index
     SAFETY_INDEX_AVAILABLE = True
 except ImportError:
     try:
-        # Try absolute import
         from safety_data_index import get_safety_data_index
         SAFETY_INDEX_AVAILABLE = True
     except ImportError as e:
         SAFETY_INDEX_AVAILABLE = False
-        print(f"[TRAVEL SERVICE] Warning: safety_data_index module not available: {e}")
+        logger.warning("safety_data_index module not available: %s", e)
 
 
 def load_district_centroids(path: str) -> dict:
     try:
         with open(path, "r", encoding="utf-8") as file:
             centroids = json.load(file)
-        print(f"[TRAVEL SERVICE] Loaded {len(centroids)} district centroids")
+        logger.info("Loaded %d district centroids", len(centroids))
         return centroids
     except Exception as e:
-        print(f"[TRAVEL SERVICE] Failed to load district centroids: {e}")
+        logger.error("Failed to load district centroids: %s", e)
         return {}
 
 DISTRICT_CENTROIDS = load_district_centroids(DISTRICT_CENTROIDS_PATH)
@@ -49,24 +51,18 @@ try:
     crime_df = pd.read_csv(CSV_PATH)
     crime_df['STATE']    = crime_df['STATE'].str.title().str.strip()
     crime_df['DISTRICT'] = crime_df['DISTRICT'].str.title().str.strip()
-    
-    # Calculate min/max for normalization
     RISK_SCORE_MIN = crime_df['RISK_SCORE'].min()
     RISK_SCORE_MAX = crime_df['RISK_SCORE'].max()
-    
-    print(f"[TRAVEL SERVICE] Crime data loaded: {len(crime_df)} districts")
-    print(f"[TRAVEL SERVICE] Risk score range: {RISK_SCORE_MIN:.2f} - {RISK_SCORE_MAX:.2f}")
-    
-    # Build safety data index if available
+    logger.info("Crime data loaded: %d districts, risk range %.2f–%.2f",
+                len(crime_df), RISK_SCORE_MIN, RISK_SCORE_MAX)
     if SAFETY_INDEX_AVAILABLE:
         safety_index = get_safety_data_index(crime_df)
-        stats = safety_index.get_stats()
-        print(f"[TRAVEL SERVICE] Safety data index built: {stats}")
+        logger.info("Safety data index built: %s", safety_index.get_stats())
 except Exception as e:
     crime_df = None
     RISK_SCORE_MIN = 0
     RISK_SCORE_MAX = 1000
-    print(f"[TRAVEL SERVICE] Failed to load crime data: {e}")
+    logger.error("Failed to load crime data: %s", e, exc_info=True)
 
 
 def normalize_risk_score(score: float) -> float:
@@ -192,24 +188,21 @@ async def reverse_geocode(lat: float, lng: float) -> dict:
                         state = address.get("state", "").strip()
 
                         if district and state:
-                            # Clean common suffixes
                             for suffix in [" District", " Taluk", " Division"]:
                                 district = district.replace(suffix, "").strip()
-
-                            print(f"[REVERSE GEOCODE] Nominatim success → District: {district}, State: {state}")
+                            logger.debug("Nominatim → District: %s, State: %s", district, state)
                             return {"district": district.title(), "state": state.title()}
                     except Exception as parse_err:
-                        print(f"[REVERSE GEOCODE] JSON parse error on attempt {attempt + 1}: {parse_err}")
+                        logger.warning("Nominatim JSON parse error attempt %d: %s", attempt + 1, parse_err)
                         
             if attempt < max_retries - 1:
                 await asyncio.sleep(retry_delay)
         except Exception as e:
-            print(f"[REVERSE GEOCODE] Request error on attempt {attempt + 1}: {e}")
+            logger.warning("Nominatim request error attempt %d: %s", attempt + 1, e)
             if attempt < max_retries - 1:
                 await asyncio.sleep(retry_delay)
     
-    # Fallback: Use coordinate-based lookup for known districts
-    print(f"[REVERSE GEOCODE] Nominatim failed, using coordinate-based fallback for {lat}, {lng}")
+    logger.warning("Nominatim failed for %.4f, %.4f — using coordinate fallback", lat, lng)
     return find_district_by_coordinates(lat, lng)
 
 
@@ -247,11 +240,11 @@ def find_district_by_coordinates(lat: float, lng: float) -> dict:
             nearest_state = state
             nearest_csv_district = csv_district
     
-    if nearest_district and min_distance < 2.0:  # Within ~200km (increased from 1.0)
-        print(f"[REVERSE GEOCODE] Using fallback: {nearest_district}, {nearest_state} (distance: {min_distance:.2f})")
+    if nearest_district and min_distance < 2.0:
+        logger.debug("Coordinate fallback: %s, %s (dist %.2f)", nearest_district, nearest_state, min_distance)
         return {"district": nearest_csv_district, "state": nearest_state}
     
-    print(f"[REVERSE GEOCODE] Could not determine location (closest match {min_distance:.2f} degrees away)")
+    logger.warning("Could not determine location (closest %.2f degrees away)", min_distance)
     return {"district": "", "state": ""}
 
 
@@ -326,7 +319,7 @@ async def get_crime_risk_by_coords(lat: float, lng: float) -> dict:
     district = location.get("district", "")
     state    = location.get("state", "")
 
-    print(f"[TRAVEL SERVICE] Detected → District: '{district}', State: '{state}'")
+    logger.info("Detected → District: '%s', State: '%s'", district, state)
 
     if not district or not state:
         return {
@@ -337,15 +330,14 @@ async def get_crime_risk_by_coords(lat: float, lng: float) -> dict:
 
     crime_data = lookup_crime(district, state)
     
-    # If district lookup failed, try coordinate-based fallback to find nearest district
     if "error" in crime_data:
-        print(f"[TRAVEL SERVICE] District '{district}' not found, using coordinate fallback")
+        logger.warning("District '%s' not found, using coordinate fallback", district)
         fallback_location = find_district_by_coordinates(lat, lng)
         fallback_district = fallback_location.get("district", "")
         fallback_state = fallback_location.get("state", "")
         
         if fallback_district and fallback_state:
-            print(f"[TRAVEL SERVICE] Using nearest district: '{fallback_district}', State: '{fallback_state}'")
+            logger.info("Using nearest district: '%s', State: '%s'", fallback_district, fallback_state)
             crime_data = lookup_crime(fallback_district, fallback_state)
             if "error" not in crime_data:
                 crime_data["note"] = f"Using data for nearest district '{fallback_district}' (original district '{district}' not found)"
@@ -406,7 +398,7 @@ async def get_districts_in_state(lat: float, lng: float) -> list:
     if not state:
         return []
     
-    print(f"[TRAVEL SERVICE] Fetching all districts in state: {state}")
+    logger.info("Fetching all districts in state: %s", state)
     
     # Use the new function to properly handle Telangana/Andhra Pradesh split
     state_districts = get_crime_data_by_state(state, crime_df)
@@ -450,7 +442,7 @@ def get_safety_index() -> Optional[Any]:
     try:
         return get_safety_data_index(crime_df)
     except Exception as e:
-        print(f"[TRAVEL SERVICE] Failed to get safety index: {e}")
+        logger.error("Failed to get safety index: %s", e)
         return None
 
 
@@ -487,7 +479,7 @@ async def find_nearest_safety_data(lat: float, lng: float, max_distance_km: floa
                 "source": "spatial_index"
             }
     except Exception as e:
-        print(f"[TRAVEL SERVICE] Error finding nearest safety data: {e}")
+        logger.error("Error finding nearest safety data: %s", e)
     
     return None
 
@@ -574,7 +566,7 @@ async def _fetch_osrm_route(
                 is_fastest=False,
             )
     except Exception as e:
-        print(f"[TRAVEL SERVICE] OSRM fetch error: {e}")
+        logger.error("OSRM fetch error: %s", e)
         return None
 
 
@@ -592,9 +584,8 @@ async def get_multiple_routes(
       - Route 1: OSRM alternative (if available) OR a via-point detour
     Both routes include full step data.
     """
-    print(f"[TRAVEL SERVICE] Requesting 2 route alternatives from OSRM")
-    print(f"  Origin: ({origin_lat}, {origin_lng})")
-    print(f"  Destination: ({dest_lat}, {dest_lng})")
+    logger.info("Requesting 2 route alternatives from OSRM: (%s,%s) → (%s,%s)",
+                origin_lat, origin_lng, dest_lat, dest_lng)
 
     routes: List[RouteAlternative] = []
 
@@ -635,12 +626,12 @@ async def get_multiple_routes(
                         route.steps = steps  # attach steps directly
                         routes.append(route)
     except Exception as e:
-        print(f"[TRAVEL SERVICE] OSRM alternatives request failed: {e}")
+        logger.error("OSRM alternatives request failed: %s", e)
 
     if not routes:
         raise ValueError("No routes returned from OSRM")
 
-    # ── If only 1 route, generate a via-point alternative ────────────────
+    # If only 1 route, generate a via-point alternative
     if len(routes) < 2:
         mid_lat = (origin_lat + dest_lat) / 2
         mid_lng = (origin_lng + dest_lng) / 2
@@ -663,21 +654,19 @@ async def get_multiple_routes(
                 if via_route:
                     is_dup = abs(routes[0].distance - via_route.distance) / max(routes[0].distance, 1) < 0.05
                     if not is_dup:
-                        via_route.steps = []  # no steps for via-point routes
+                        via_route.steps = []
                         routes.append(via_route)
                         break
 
-    # Mark fastest
     if routes:
         fastest = min(routes, key=lambda r: r.duration)
         for r in routes:
             r.is_fastest = (r is fastest)
 
-    # Cap at 2
     routes = routes[:2]
 
-    print(f"[TRAVEL SERVICE] Retrieved {len(routes)} route alternatives")
+    logger.info("Retrieved %d route alternatives", len(routes))
     for i, route in enumerate(routes):
-        print(f"  Route {i+1}: {route.distance:.0f}m, {route.duration:.0f}s, fastest: {route.is_fastest}")
+        logger.debug("  Route %d: %.0fm, %.0fs, fastest=%s", i + 1, route.distance, route.duration, route.is_fastest)
 
     return routes

@@ -5,12 +5,16 @@ import os
 from typing import Optional, Dict, List, Tuple, Any
 from dataclasses import dataclass
 
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
 try:
     from scipy.spatial import KDTree
     SCIPY_AVAILABLE = True
 except ImportError:
     SCIPY_AVAILABLE = False
-    print("[SAFETY DATA INDEX] Warning: scipy not available, using fallback distance calculation")
+    logger.warning("scipy not available — using fallback distance calculation")
 
 
 @dataclass
@@ -45,12 +49,11 @@ class SafetyDataIndex:
         try:
             base_dir = os.path.dirname(os.path.abspath(__file__))
             centroids_path = os.path.join(base_dir, "../../data/district_centroids.json")
-            
             with open(centroids_path, "r", encoding="utf-8") as file:
                 self.district_centroids = json.load(file)
-            print(f"[SAFETY DATA INDEX] Loaded {len(self.district_centroids)} district centroids")
+            logger.info("Loaded %d district centroids", len(self.district_centroids))
         except Exception as e:
-            print(f"[SAFETY DATA INDEX] Failed to load district centroids: {e}")
+            logger.error("Failed to load district centroids: %s", e)
             self.district_centroids = {}
     
     def _get_coordinates_for_district(self, district: str) -> Optional[Tuple[float, float]]:
@@ -75,19 +78,15 @@ class SafetyDataIndex:
     def build_index(self, crime_df: pd.DataFrame):
         """Build spatial index from crime data DataFrame"""
         if crime_df is None or crime_df.empty:
-            print("[SAFETY DATA INDEX] No crime data to build index")
+            logger.warning("No crime data to build index")
             return
         
-        print(f"[SAFETY DATA INDEX] Building index from {len(crime_df)} crime records")
-        
-        # Clear existing data
+        logger.info("Building index from %d crime records", len(crime_df))
         self.data_points = []
         self.grid_index = {}
-        
-        # Calculate min/max for normalization
         self._risk_score_min = crime_df['RISK_SCORE'].min()
         self._risk_score_max = crime_df['RISK_SCORE'].max()
-        print(f"[SAFETY DATA INDEX] Risk score range: {self._risk_score_min:.2f} - {self._risk_score_max:.2f}")
+        logger.info("Risk score range: %.2f – %.2f", self._risk_score_min, self._risk_score_max)
         
         # Process each row in the crime DataFrame
         for _, row in crime_df.iterrows():
@@ -110,15 +109,14 @@ class SafetyDataIndex:
                 )
                 self.data_points.append(point)
         
-        print(f"[SAFETY DATA INDEX] Built {len(self.data_points)} data points with coordinates")
+        logger.info("Built %d data points with coordinates", len(self.data_points))
         
-        # Build KD-tree if scipy is available and we have data points
         if self.data_points and SCIPY_AVAILABLE:
             points = [(p.lat, p.lng) for p in self.data_points]
             self.kd_tree = KDTree(points)
-            print(f"[SAFETY DATA INDEX] Built KD-tree with {len(points)} points")
+            logger.info("Built KD-tree with %d points", len(points))
         elif self.data_points:
-            print("[SAFETY DATA INDEX] scipy not available, using fallback distance calculation")
+            logger.warning("scipy not available — using fallback distance calculation")
         
         # Build grid index
         self._build_grid_index()
@@ -149,7 +147,7 @@ class SafetyDataIndex:
                 self.grid_index[grid_key] = []
             self.grid_index[grid_key].append(point)
         
-        print(f"[SAFETY DATA INDEX] Built grid index with {len(self.grid_index)} cells")
+        logger.info("Built grid index with %d cells", len(self.grid_index))
     
     def _get_grid_key(self, lat: float, lng: float) -> Tuple[int, int]:
         """Convert coordinates to grid cell key"""
@@ -222,7 +220,7 @@ class SafetyDataIndex:
                 if distances[0] < max_distance_deg:
                     return self.data_points[indices[0]]
             except Exception as e:
-                print(f"[SAFETY DATA INDEX] KD-tree query error: {e}")
+                logger.error("KD-tree query error: %s", e)
         
         # Fallback: linear search through all points
         closest_point = None
