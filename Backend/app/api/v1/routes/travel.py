@@ -7,17 +7,15 @@ from app.services.travel_service import (
     get_all_district_risks, 
     get_districts_in_state,
     get_multiple_routes,
-    RouteAlternative
 )
 from app.services.hospital_service import get_nearby_hospitals
-from app.services.route_scoring_service import get_route_scoring_service, RouteScoringService, RouteScore
+from app.services.route_scoring_service import get_route_scoring_service, RouteScoringService
 from app.schemas.route import (
     SafeRouteRequest,
     SafeRouteResponse,
     RouteResponse,
     RouteComparison,
     RouteErrorResponse,
-    RoutePreference
 )
 from app.api.v1.dependencies import get_current_user
 
@@ -203,8 +201,15 @@ async def compute_safe_routes(
         safest_route.type = "safest"
         safest_route.summary = f"Safest route (risk: {safest_route.safety_score}/10)"
 
-        # If they're the same route, keep only one and label it safest
-        if safest_route is normal_route:
+        # Deduplicate: treat routes as the same if distance differs by <3%
+        # (handles via-point alternatives that end up on the same road)
+        def routes_are_same(r1, r2) -> bool:
+            if r1 is r2:
+                return True
+            max_dist = max(r1.distance, r2.distance, 1)
+            return abs(r1.distance - r2.distance) / max_dist < 0.03
+
+        if routes_are_same(safest_route, normal_route):
             final_routes = [safest_route]
         else:
             final_routes = [safest_route, normal_route]
