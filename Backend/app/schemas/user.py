@@ -34,13 +34,6 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class TokenResponse(BaseModel):
-    access_token: str
-    refresh_token: str
-    token_type: str
-    user: UserResponse
-
-
 class LoginResponse(BaseModel):
     """Response after successful login with tokens"""
     access_token: str
