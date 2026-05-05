@@ -79,9 +79,10 @@ async def google_auth(
     user = db.query(User).filter(User.email == email).first()
 
     if not user:
-        # New user — create with a random unusable password so the
-        # existing password column constraint is satisfied.
-        # They can set a password later via a "forgot password" flow.
+        # New OAuth user — store a random non-bcrypt string as the password.
+        # This intentionally prevents password-based login for OAuth accounts.
+        # The column is NOT NULL so we must provide a value; this placeholder
+        # is never used for authentication (verify_password will always fail on it).
         random_password = secrets.token_hex(32)
         user = User(
             name=name,
