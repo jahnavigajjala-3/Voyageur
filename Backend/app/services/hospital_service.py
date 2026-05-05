@@ -70,28 +70,4 @@ def get_nearby_hospitals(lat: float, lng: float, radius_km: float = 30, top_n: i
     return result
 
 
-def get_district_hospital_summary(district: str, state: str) -> dict:
-    if district_df is None:
-        return {"error": "Hospital district data not loaded"}
 
-    match = district_df[
-        district_df['District'].str.lower() == district.lower()
-    ]
-
-    if match.empty and state:
-        match = district_df[
-            district_df['State'].str.lower() == state.lower()
-        ]
-
-    if match.empty:
-        return {"error": f"No hospital data for {district}"}
-
-    row = match.iloc[0]
-    return {
-        "district":          row['District'],
-        "state":             row['State'],
-        "total_hospitals":   int(row['total_hospitals']),
-        "avg_rating":        row['avg_rating'],
-        "best_hospital_city": row['best_hospital_city'],
-        "best_rating":       row['best_rating']
-    }
