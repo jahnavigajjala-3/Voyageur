@@ -35,6 +35,8 @@ function getStepIcon(text = "") {
   if (t.includes("end of road")) return "⚑";
   return "•";
 }
+// stepIcon is an alias used in RouteSafetyBar
+const stepIcon = getStepIcon;
 
 // ─── Weather helpers ────────────────────────────────────────────────────────
 function getWeatherIcon(code) {
@@ -505,21 +507,6 @@ function getScoreColor(s) {
   return "#ef4444";
 }
 
-function stepIcon(text = "") {
-  const t = text.toLowerCase();
-  if (t.includes("arrive") || t.includes("destination")) return "🏁";
-  if (t.includes("roundabout") || t.includes("rotary"))  return "🔄";
-  if (t.includes("slight left"))  return "↖";
-  if (t.includes("slight right")) return "↗";
-  if (t.includes("sharp left"))   return "⬅";
-  if (t.includes("sharp right"))  return "➡";
-  if (t.includes("left"))  return "←";
-  if (t.includes("right")) return "→";
-  if (t.includes("straight") || t.includes("continue") || t.includes("head")) return "↑";
-  if (t.includes("ferry")) return "⛴";
-  return "•";
-}
-
 function fmtDist(m) {
   return m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`;
 }
@@ -595,13 +582,19 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
 
   const byType = useMemo(() => {
     const find = (t) => routes.find((r) => r.type === t);
-    return {
-      safest:      find("safest")      || routes[0],
-      alternative: find("alternative") || routes[routes.length - 1],
-    };
+    const safest = find("safest") || routes[0];
+    const alternative = find("alternative");
+    return { safest, alternative };
   }, [routes]);
 
-  const current = byType[activeTab];
+  // If only one route, always show safest tab
+  const availableTabs = useMemo(() => {
+    const tabs = [["safest", ROUTE_TAB.safest]];
+    if (byType.alternative) tabs.push(["alternative", ROUTE_TAB.alternative]);
+    return tabs;
+  }, [byType]);
+
+  const current = byType[activeTab] || byType.safest;
 
   // Fetch steps whenever a route becomes active and we don't have them yet
   useEffect(() => {
@@ -676,7 +669,7 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
       <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
         {/* Tabs */}
         <div style={{ display: "flex", gap: "5px", flexShrink: 0 }}>
-          {Object.entries(ROUTE_TAB).map(([key, cfg]) => {
+          {availableTabs.map(([key, cfg]) => {
             const r = byType[key];
             const isActive = activeTab === key;
             return (
@@ -699,6 +692,12 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
               </button>
             );
           })}
+          {availableTabs.length === 1 && (
+            <span style={{
+              fontSize: "10px", color: "rgba(255,255,255,0.25)",
+              padding: "5px 8px", alignSelf: "center",
+            }}>Only one route available for this trip</span>
+          )}
         </div>
 
         <div style={{ width: "1px", height: "28px", background: "rgba(255,255,255,0.08)", flexShrink: 0 }} />
