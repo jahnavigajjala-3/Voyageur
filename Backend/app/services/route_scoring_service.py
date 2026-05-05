@@ -370,86 +370,7 @@ class RouteScoringService:
             is_high_risk=is_high_risk,
             is_uncertain=is_uncertain
         )
-    
-    def _calculate_penalties(self, segment_scores: List[SegmentScore]) -> Dict[str, float]:
-        """
-        Calculate penalties for high-risk and uncertain segments.
-        
-        Args:
-            segment_scores: List of scored segments
-            
-        Returns:
-            Dictionary of penalty amounts
-        """
-        penalties = {
-            "high_risk": 0.0,
-            "isolation": 0.0,
-            "uncertainty": 0.0
-        }
-        
-        high_risk_count = 0
-        uncertain_count = 0
-        no_data_count = 0
-        
-        for segment_score in segment_scores:
-            if segment_score.is_high_risk:
-                high_risk_count += 1
-                # Penalty proportional to how bad the score is
-                risk_severity = max(0, self.high_risk_threshold - segment_score.base_score)
-                penalties["high_risk"] += risk_severity * self.high_risk_penalty_weight
-            
-            if segment_score.is_uncertain:
-                uncertain_count += 1
-                penalties["uncertainty"] += self.uncertainty_penalty_weight
-            
-            if not segment_score.segment.has_safety_data:
-                no_data_count += 1
-                # Isolation penalty for segments far from any safety data
-                if segment_score.segment.distance_to_safety_data_km > 20.0:
-                    penalties["isolation"] += self.isolation_penalty_weight
-        
-        print(f"[ROUTE SCORING] Penalties: {high_risk_count} high-risk, {uncertain_count} uncertain, {no_data_count} no-data segments")
-        return penalties
-    
-    def _normalize_score(self, raw_score: float, min_score: float = 0.0, max_score: float = 100.0) -> float:
-        """
-        Normalize score to 0-100 range.
-        
-        Args:
-            raw_score: Raw score to normalize
-            min_score: Minimum possible raw score
-            max_score: Maximum possible raw score
-            
-        Returns:
-            Normalized score between 0 and 100
-        """
-        # Clip to bounds
-        clipped_score = max(min_score, min(raw_score, max_score))
-        
-        # Normalize to 0-100 range
-        if max_score - min_score == 0:
-            return 50.0  # Default if all scores are the same
-        
-        normalized = ((clipped_score - min_score) / (max_score - min_score)) * 100.0
-        return max(0.0, min(100.0, normalized))
-    
-    def _determine_risk_level(self, normalized_score: float) -> str:
-        """
-        Determine risk level based on normalized score.
-        
-        Args:
-            normalized_score: Score in 0-100 range
-            
-        Returns:
-            Risk level: "low", "medium", or "high"
-        """
-        if normalized_score >= 80.0:
-            return "low"
-        elif normalized_score >= 50.0:
-            return "medium"
-        else:
-            return "high"
-    
+
     async def score_route(self, polyline: str, route_metadata: Optional[Dict[str, Any]] = None) -> RouteScore:
         """
         Score a complete route.
@@ -506,7 +427,7 @@ class RouteScoringService:
         n = len(segment_scores)
 
         print(f"[ROUTE SCORING] Complete: {n} segments, {total_distance:.1f}km, "
-              f"risk score: {risk_score}/10 ({risk_level}), "
+              f"safety score: {safety_score}/10 ({risk_level}), "
               f"high-risk: {high_risk_count}, uncertain: {uncertain_count}")
 
         return RouteScore(
