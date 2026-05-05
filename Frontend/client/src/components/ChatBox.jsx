@@ -25,13 +25,12 @@ export default function ChatBox() {
     setInput("");
     setLoading(true);
     try {
-      const tripCtx = location
-        ? `User's current location: lat=${location.lat}, lng=${location.lng}`
-        : "User location not available.";
       const data = await sendChatMessage({
         history: messages.slice(-5).filter((m) => m.content && m.role),
         message: input,
-        trip_context: tripCtx,
+        trip_context: "",
+        current_lat: location?.lat ?? null,
+        current_lng: location?.lng ?? null,
       });
       setMessages([...history, { role: "assistant", content: data.response }]);
     } catch {

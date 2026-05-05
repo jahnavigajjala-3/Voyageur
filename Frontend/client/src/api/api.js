@@ -40,11 +40,27 @@ export const signupUser = async (form) => {
 };
 
 // Chat
-export const sendChatMessage = async ({ history, message, trip_context }) => {
+export const sendChatMessage = async ({
+  history,
+  message,
+  trip_context = "",
+  trip_id = null,
+  current_lat = null,
+  current_lng = null,
+  planned_route = null,
+}) => {
   const res = await fetch(`${API_V1}/ai/chat`, {
     method: "POST",
     headers: getAuthHeaders(),
-    body: JSON.stringify({ history, message, trip_context }),
+    body: JSON.stringify({
+      history,
+      message,
+      trip_context,
+      trip_id,
+      current_lat,
+      current_lng,
+      planned_route,
+    }),
   });
   return handleResponse(res);
 };
