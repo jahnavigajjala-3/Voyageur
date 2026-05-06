@@ -122,13 +122,6 @@ export default function Dashboard() {
           borderRight: "1px solid rgba(255,255,255,0.06)", minHeight: "100vh",
           position: "sticky", top: 0, zIndex: 10,
         }}>
-        <div className="anim-float flex items-center justify-center rounded-2xl mb-3 text-sm font-bold"
-          style={{
-            width: "42px", height: "42px",
-            background: "linear-gradient(135deg, rgba(139,92,246,0.8), rgba(59,130,246,0.8))",
-            boxShadow: "0 0 20px rgba(139,92,246,0.35), inset 0 1px 0 rgba(255,255,255,0.2)",
-            color: "#fff", letterSpacing: "0.05em",
-          }}>AI</div>
         <nav className="flex flex-col gap-2 flex-1">
           {NAV_ITEMS.map((item) => (
             <button key={item.label}
@@ -159,7 +152,7 @@ export default function Dashboard() {
           <div className="card-enter-1">
             <h1 className="text-2xl font-bold"
               style={{ background: "linear-gradient(90deg, #e2e8f0 0%, #a5b4fc 50%, #818cf8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              Hey, {greeting}
+              Voyageur
             </h1>
             <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>
               {user?.name ? `Welcome back, ${user.name}` : "Your AI travel companion is ready"}
