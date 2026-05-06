@@ -169,34 +169,6 @@ export default function Dashboard() {
             </p>
           </div>
 
-          {/* ── WEATHER BADGE ── */}
-          <div className="flex items-center gap-2.5 px-4 py-2 rounded-xl"
-            style={{
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              backdropFilter: "blur(12px)",
-              minWidth: "120px",
-            }}>
-            {weatherLoading ? (
-              <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>Loading...</span>
-            ) : weather ? (
-              <>
-                <span style={{ fontSize: "18px" }}>{getWeatherIcon(weather.weathercode)}</span>
-                <div>
-                  <p className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>
-                    {weather.temperature}°C
-                  </p>
-                  <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.35)" }}>
-                    {getWeatherLabel(weather.weathercode)} · {weather.windspeed} km/h
-                  </p>
-                </div>
-              </>
-            ) : (
-              <span className="text-xs" style={{ color: "rgba(255,255,255,0.2)" }}>No weather</span>
-            )}
-          </div>
-          {/* ── END WEATHER BADGE ── */}
-
         </header>
 
         <div className="flex flex-1 gap-5 p-6 overflow-auto">
