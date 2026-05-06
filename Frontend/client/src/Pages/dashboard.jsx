@@ -177,7 +177,7 @@ export default function Dashboard() {
               userLocation={location}
             />
           </div>
-          <aside className="flex flex-col gap-4" style={{ width: "255px", flexShrink: 0 }}>
+          <aside className="flex flex-col gap-4" style={{ width: "360px", flexShrink: 0 }}>
             {/* Weather card in right sidebar */}
             {weather && (
               <div className="rounded-2xl p-4 relative overflow-hidden"
