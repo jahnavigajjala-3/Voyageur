@@ -8,9 +8,6 @@ import useLocation from "../hooks/useLocation";
 
 const NAV_ITEMS = [
   { icon: "⊞", label: "Home",    path: "/dashboard" },
-  { icon: "✦", label: "Explore", path: "#" },
-  { icon: "◎", label: "Map",     path: "#" },
-  { icon: "✦", label: "AI Chat", path: "/chat" },
 ];
 
 const RISK_COLORS = {
