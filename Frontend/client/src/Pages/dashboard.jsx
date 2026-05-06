@@ -65,8 +65,7 @@ export default function Dashboard() {
     selectedRouteId,
     isLoadingRoutes,
     routeHistory,
-    setSelectedRouteId,
-    clearHistory
+    setSelectedRouteId
   } = useRouteContext();
   const navigate = useNavigate();
   const { location } = useLocation(); // ← needed for weather
@@ -76,7 +75,6 @@ export default function Dashboard() {
   const [clickedRisk, setClickedRisk]   = useState(null);
   const [chatOpen, setChatOpen]         = useState(false);
   const [hospitalsFor, setHospitalsFor] = useState(null);
-  const [showRouteHistory, setShowRouteHistory] = useState(false);
 
   // ─── Weather state ────────────────────────────────────────────────────────
   const [weather, setWeather]               = useState(null);
@@ -213,96 +211,60 @@ export default function Dashboard() {
                 }}>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em" }}>RECENT ROUTES</p>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setShowRouteHistory(!showRouteHistory)}
-                      className="text-xs px-2 py-1 rounded-lg"
-                      style={{
-                        background: "rgba(139,92,246,0.1)",
-                        border: "1px solid rgba(139,92,246,0.2)",
-                        color: "rgba(167,139,250,0.8)"
-                      }}
-                    >
-                      {showRouteHistory ? "Hide" : "Show"}
-                    </button>
-                    <button
-                      onClick={clearHistory}
-                      className="text-xs px-2 py-1 rounded-lg"
-                      style={{
-                        background: "rgba(239,68,68,0.1)",
-                        border: "1px solid rgba(239,68,68,0.2)",
-                        color: "rgba(252,165,165,0.8)"
-                      }}
-                      title="Clear history"
-                    >
-                      Clear
-                    </button>
-                  </div>
                 </div>
                 
-                {showRouteHistory && (
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {routeHistory.slice(0, 5).map((historyItem, index) => (
-                      <div
-                        key={historyItem.id}
-                        className="p-3 rounded-xl cursor-pointer hover:bg-white/5 transition-colors"
-                        style={{
-                          background: "rgba(255,255,255,0.02)",
-                          border: "1px solid rgba(255,255,255,0.05)"
-                        }}
-                        onClick={() => {
-                          // Re-run this route
-                          if (mapRef.current) {
-                            mapRef.current.triggerRoute(
-                              historyItem.origin,
-                              historyItem.destination,
-                              true // use safe routes
-                            );
-                          }
-                        }}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
-                            Route {index + 1}
-                          </span>
-                          <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
-                            {new Date(historyItem.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                        <div className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
-                          <div className="truncate">
-                            <span style={{ color: "#22c55e" }}>●</span> {historyItem.origin.lat.toFixed(4)}, {historyItem.origin.lng.toFixed(4)}
-                          </div>
-                          <div className="truncate">
-                            <span style={{ color: "#ef4444" }}>●</span> {historyItem.destination.lat.toFixed(4)}, {historyItem.destination.lng.toFixed(4)}
-                          </div>
-                        </div>
-                        {historyItem.routes && historyItem.routes.length > 0 && (
-                          <div className="mt-2 flex items-center gap-1">
-                            <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>Best:</span>
-                            <span className="text-xs font-medium" style={{ 
-                              color: historyItem.routes[0].type === 'safest' ? '#22c55e' : 
-                                     historyItem.routes[0].type === 'fastest' ? '#3b82f6' : '#64748b'
-                            }}>
-                              {historyItem.routes[0].type.toUpperCase()}
-                            </span>
-                            <span className="text-xs ml-auto" style={{ color: "rgba(255,255,255,0.3)" }}>
-                              {Math.round(historyItem.routes[0].safety_score)}/100
-                            </span>
-                          </div>
-                        )}
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {routeHistory.slice(0, 5).map((historyItem, index) => (
+                    <div
+                      key={historyItem.id}
+                      className="p-3 rounded-xl cursor-pointer hover:bg-white/5 transition-colors"
+                      style={{
+                        background: "rgba(255,255,255,0.02)",
+                        border: "1px solid rgba(255,255,255,0.05)"
+                      }}
+                      onClick={() => {
+                        if (mapRef.current) {
+                          mapRef.current.triggerRoute(
+                            historyItem.origin,
+                            historyItem.destination,
+                            true
+                          );
+                        }
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
+                          Route {index + 1}
+                        </span>
+                        <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
+                          {new Date(historyItem.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                )}
-                
-                {!showRouteHistory && routeHistory.length > 0 && (
-                  <div className="text-center py-2">
-                    <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
-                      {routeHistory.length} saved route{routeHistory.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                )}
+                      <div className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
+                        <div className="truncate">
+                          <span style={{ color: "#22c55e" }}>●</span> {historyItem.origin.lat.toFixed(4)}, {historyItem.origin.lng.toFixed(4)}
+                        </div>
+                        <div className="truncate">
+                          <span style={{ color: "#ef4444" }}>●</span> {historyItem.destination.lat.toFixed(4)}, {historyItem.destination.lng.toFixed(4)}
+                        </div>
+                      </div>
+                      {historyItem.routes && historyItem.routes.length > 0 && (
+                        <div className="mt-2 flex items-center gap-1">
+                          <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>Best:</span>
+                          <span className="text-xs font-medium" style={{ 
+                            color: historyItem.routes[0].type === 'safest' ? '#22c55e' : 
+                                   historyItem.routes[0].type === 'fastest' ? '#3b82f6' : '#64748b'
+                          }}>
+                            {historyItem.routes[0].type.toUpperCase()}
+                          </span>
+                          <span className="text-xs ml-auto" style={{ color: "rgba(255,255,255,0.3)" }}>
+                            {historyItem.routes[0].safety_score?.toFixed ? historyItem.routes[0].safety_score.toFixed(1) : historyItem.routes[0].safety_score}/10
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
