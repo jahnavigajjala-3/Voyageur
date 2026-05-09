@@ -20,7 +20,7 @@ export default function AuthLayout({ children, exiting = false }) {
       minHeight: "100vh",
       width: "100%",
       overflow: "hidden",
-      background: "radial-gradient(ellipse at 40% 20%, #0d1340 0%, #060918 45%, #020617 100%)",
+      background: "radial-gradient(ellipse at 15% 40%, rgba(14,30,80,0.55) 0%, transparent 55%), radial-gradient(ellipse at 85% 15%, rgba(7,20,55,0.45) 0%, transparent 50%), radial-gradient(ellipse at 50% 90%, rgba(4,12,35,0.6) 0%, transparent 60%), #04060f",
       fontFamily: "'Inter','Segoe UI',sans-serif",
       display: "flex",
       alignItems: "center",
@@ -50,7 +50,7 @@ export default function AuthLayout({ children, exiting = false }) {
       {/* ── Nebula glow ── */}
       <div style={{
         position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none",
-        background: "radial-gradient(ellipse at 15% 80%, rgba(88,28,135,0.1) 0%, transparent 55%), radial-gradient(ellipse at 80% 15%, rgba(30,58,138,0.08) 0%, transparent 50%)",
+        background: "radial-gradient(ellipse at 15% 80%, rgba(56,189,248,0.1) 0%, transparent 55%), radial-gradient(ellipse at 80% 15%, rgba(99,102,241,0.08) 0%, transparent 50%)",
       }} />
 
       {/* ── Earth Lottie — full background ── */}
