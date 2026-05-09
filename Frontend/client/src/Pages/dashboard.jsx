@@ -12,6 +12,7 @@ import { getLocationDisplayName } from "../services/geocodingService";
 
 const NAV_ITEMS = [
   { icon: "⊞", label: "Home",    path: "/dashboard" },
+  { icon: "⌖", label: "Trip Guide", path: "/trip-guide" },
   { icon: "✦", label: "AI Chat", path: "/chat" },
 ];
 
