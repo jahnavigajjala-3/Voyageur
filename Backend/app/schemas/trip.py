@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 
 class TripCreate(BaseModel):
@@ -29,3 +29,38 @@ class TripResponse(BaseModel):
     planned_route: Optional[str] = None
 
     model_config = {"from_attributes": True}
+
+
+class TripGuidanceRequest(BaseModel):
+    from_location: str
+    transit_preference: str
+    destination: str
+    feed_preference: str
+    budget_scale: str
+    duration: int
+
+
+class TravelSuggestion(BaseModel):
+    mode: str
+    estimated_price: str
+    reason: str
+
+
+class StaySuggestion(BaseModel):
+    hotel_name: str
+    type: str
+    price_per_night: str
+
+
+class ItineraryDay(BaseModel):
+    day: int
+    theme: str
+    activities: List[str]
+
+
+class TripGuidanceResponse(BaseModel):
+    departure_hub: str
+    destination_visuals: List[str]
+    travel_suggestions: List[TravelSuggestion]
+    stay_suggestions: List[StaySuggestion]
+    itinerary: List[ItineraryDay]
