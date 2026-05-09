@@ -65,34 +65,25 @@ export const sendChatMessage = async ({
   return handleResponse(res);
 };
 
-// Crime
+// Crime — public endpoints, no auth header needed
 export const getCrimeRiskByCoords = async (lat, lng) => {
   const res = await fetch(
-    `${API_V1}/travel/crime-risk?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`,
-    {
-      headers: getAuthHeaders(),
-    }
+    `${API_V1}/travel/crime-risk?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`
   );
   return handleResponse(res);
 };
 
 export const getDistrictsInState = async (lat, lng) => {
   const res = await fetch(
-    `${API_V1}/travel/districts-in-state?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`,
-    {
-      headers: getAuthHeaders(),
-    }
+    `${API_V1}/travel/districts-in-state?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`
   );
   return handleResponse(res);
 };
 
-// Hospitals
+// Hospitals — public endpoint, no auth header needed
 export const getNearbyHospitals = async (lat, lng, radius = 30, limit = 5) => {
   const res = await fetch(
-    `${API_V1}/travel/hospitals?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&radius=${radius}&limit=${limit}`,
-    {
-      headers: getAuthHeaders(),
-    }
+    `${API_V1}/travel/hospitals?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&radius=${radius}&limit=${limit}`
   );
   return handleResponse(res);
 };
@@ -125,19 +116,20 @@ export const getWeather = async (lat, lng) => {
   return handleResponse(res);
 };
 
-// Safe Routes — uses axiosInstance so the 401→refresh interceptor fires automatically
+// Safe Routes — public endpoint, no auth required
 export const getSafeRoutes = async (origin, destination, alternatives = 3, preference = "safety", signal = null) => {
-  const response = await axiosInstance.post(
-    "/travel/routes/safe",
-    {
-      origin:       { lat: origin.lat, lng: origin.lng },
-      destination:  { lat: destination.lat, lng: destination.lng },
+  const res = await fetch(`${API_V1}/travel/routes/safe`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      origin:      { lat: origin.lat, lng: origin.lng },
+      destination: { lat: destination.lat, lng: destination.lng },
       alternatives,
       preference,
-    },
-    { signal: signal?.signal ?? signal ?? undefined }
-  );
-  return response.data;
+    }),
+    signal: signal?.signal ?? signal ?? undefined,
+  });
+  return handleResponse(res);
 };
 
 // Create a debounced version for rapid user input
