@@ -2,11 +2,13 @@ import { useContext, useRef, useState, useEffect, useMemo } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useRouteContext } from "../context/RouteContext";
 import CrimeMap from "../components/CrimeMap";
+import LocationImageCard from "../components/LocationImageCard";
 import { useNavigate } from "react-router-dom";
 import { sendChatMessage, getWeather } from "../api/api";
 import useLocation from "../hooks/useLocation";
 import { getRiskColorsByLevel, getRiskColor } from "../utils/riskColors";
 import { MapPin, Navigation } from "lucide-react";
+import { getLocationDisplayName } from "../services/geocodingService";
 
 const NAV_ITEMS = [
   { icon: "⊞", label: "Home",    path: "/dashboard" },
@@ -84,6 +86,7 @@ export default function Dashboard() {
   const [chatOpen, setChatOpen]         = useState(false);
   const [hospitalsFor, setHospitalsFor] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [locationName, setLocationName] = useState("");
 
   // ─── Weather state ────────────────────────────────────────────────────────
   const [weather, setWeather]               = useState(null);
@@ -100,15 +103,26 @@ export default function Dashboard() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
 
-  // ─── Fetch weather whenever location changes ──────────────────────────────
+  // ─── Fetch weather and location name whenever location changes ───────────
   useEffect(() => {
     if (location?.lat == null || location?.lng == null) return;
 
-    const fetchWeather = async () => {
+    const fetchWeatherAndLocation = async () => {
       try {
         setWeatherLoading(true);
-        const data = await getWeather(location.lat, location.lng);
-        setWeather(data);
+        
+        // Fetch weather
+        const weatherData = await getWeather(location.lat, location.lng);
+        setWeather(weatherData);
+        
+        // Fetch location name (city)
+        try {
+          const cityName = await getLocationDisplayName(location.lat, location.lng);
+          setLocationName(cityName);
+        } catch (geocodeError) {
+          console.warn("Geocoding failed, using coordinates:", geocodeError);
+          setLocationName(`Location (${location.lat.toFixed(2)}, ${location.lng.toFixed(2)})`);
+        }
       } catch (err) {
         console.error("Weather fetch failed:", err);
       } finally {
@@ -116,7 +130,7 @@ export default function Dashboard() {
       }
     };
 
-    fetchWeather();
+    fetchWeatherAndLocation();
   }, [location]);
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -364,6 +378,22 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
+
+            {/* Location Image Card */}
+            <div className="voyageour-panel card-enter-2 rounded-2xl overflow-hidden"
+              style={{
+                background: 'transparent',
+                border: 'none',
+                boxShadow: 'none',
+              }}>
+              <LocationImageCard
+                locationName={locationName}
+                locationType="current"
+                width="100%"
+                height="280px"
+                showTitle={true}
+              />
+            </div>
 
             <RiskPanel liveRisk={liveRisk} clickedRisk={clickedRisk} mapRef={mapRef} hospitalsFor={hospitalsFor}
               onClearSelection={() => { setClickedRisk(null); setHospitalsFor(null); }} />
