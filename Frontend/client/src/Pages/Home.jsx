@@ -1,43 +1,17 @@
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 
+// The root "/" route acts as a smart redirect:
+//   - Still loading auth state → show nothing (ProtectedRoute handles the spinner)
+//   - Authenticated           → go straight to dashboard
+//   - Not authenticated       → go to login
 export default function Home() {
-  const { user } = useContext(AuthContext);
-  const navigate = useNavigate();
+  const { user, loading } = useContext(AuthContext);
 
-  return (
-    <div className="h-screen flex flex-col items-center justify-center bg-gray-100">
+  if (loading) return null; // AuthContext is still reading localStorage
 
-      <h1 className="text-4xl font-bold mb-4">Amigo 🌍</h1>
-      <p className="text-gray-600 mb-6">
-        Your AI Travel Companion
-      </p>
+  if (user) return <Navigate to="/dashboard" replace />;
 
-      {!user ? (
-        <div className="space-x-4">
-          <button
-            onClick={() => navigate("/login")}
-            className="bg-black text-white px-6 py-3 rounded-lg"
-          >
-            Login
-          </button>
-
-          <button
-            onClick={() => navigate("/signup")}
-            className="bg-gray-300 px-6 py-3 rounded-lg"
-          >
-            Signup
-          </button>
-        </div>
-      ) : (
-        <button
-          onClick={() => navigate("/dashboard")}
-          className="bg-black text-white px-6 py-3 rounded-lg"
-        >
-          Go to Dashboard 🚀
-        </button>
-      )}
-    </div>
-  );
+  return <Navigate to="/login" replace />;
 }
