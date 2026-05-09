@@ -200,7 +200,7 @@ function MultiRouteMachine({ routes, activeRouteId, onRouteSelect }) {
         <div style="font-family: sans-serif; padding: 8px; min-width: 200px;">
           <strong>${route.type.toUpperCase()} ROUTE</strong><br/>
           <div style="margin-top: 8px;">
-            <div><strong>Safety Score:</strong> ${route.safety_score.toFixed(0)}/100</div>
+            <div><strong>Safety Score:</strong> ${route.safety_score.toFixed(1)}/10</div>
             <div><strong>Risk Level:</strong> <span style="color: ${
               route.risk_level === 'low' ? '#22c55e' : 
               route.risk_level === 'medium' ? '#eab308' : '#ef4444'

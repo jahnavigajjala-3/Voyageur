@@ -200,7 +200,7 @@ const RouteSafetyDisplay = ({
                 <span>{cfg.label}</span>
                 {route && (
                   <span style={{ fontSize: "9px", opacity: 0.7 }}>
-                    {Math.round(route.safety_score)}/100
+                    {route.safety_score?.toFixed ? route.safety_score.toFixed(1) : route.safety_score}/10
                   </span>
                 )}
               </button>
