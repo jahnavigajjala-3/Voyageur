@@ -199,6 +199,20 @@ export const RouteProvider = ({ children }) => {
     localStorage.removeItem('route_history');
   }, []);
 
+  // Full session reset — called on logout or when switching to guest mode.
+  // Clears all in-memory state and localStorage keys so no data leaks between sessions.
+  const resetSession = useCallback(() => {
+    setSelectedRouteId(null);
+    setRoutes([]);
+    setIsLoadingRoutes(false);
+    setComparisonMetrics(null);
+    setComparedRoutes([]);
+    setRouteHistory([]);
+    safetyScoreCache.clear();
+    localStorage.removeItem('route_history');
+    localStorage.removeItem('route_preferences');
+  }, [safetyScoreCache]);
+
   // Get route by ID
   const getRouteById = useCallback((routeId) => {
     return routes.find(route => route.id === routeId);
@@ -239,6 +253,7 @@ export const RouteProvider = ({ children }) => {
     addToHistory,
     updatePreferences,
     clearHistory,
+    resetSession,
     getRouteById,
     getSelectedRoute,
     

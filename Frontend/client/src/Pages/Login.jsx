@@ -4,9 +4,11 @@ import { useGoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
+import { useRouteContext } from "../context/RouteContext";
 
 export default function Login() {
   const { login, googleAuth, continueAsGuest } = useAuth();
+  const { resetSession } = useRouteContext();
   const navigate = useNavigate();
   const [form, setForm]           = useState({ email: "", password: "" });
   const [loading, setLoading]     = useState(false);
@@ -33,6 +35,7 @@ export default function Login() {
   };
 
   const handleGuestLogin = () => {
+    resetSession(); // wipe any previous user's route history before guest session
     continueAsGuest();
     setExiting(true);
     setTimeout(() => navigate("/dashboard"), 550);

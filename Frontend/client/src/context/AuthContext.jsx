@@ -63,16 +63,23 @@ export const AuthProvider = ({ children }) => {
 
   // ─── Guest mode ───────────────────────────────────────────────────────────
   const continueAsGuest = () => {
+    // Clear all authenticated user data before starting guest session
+    localStorage.removeItem("route_history");
+    localStorage.removeItem("route_preferences");
     localStorage.setItem("guestMode", "true");
     setIsGuest(true);
   };
 
   // ─── Logout ───────────────────────────────────────────────────────────────
   const logout = () => {
+    // Clear auth tokens and user data
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
     localStorage.removeItem("guestMode");
+    // Clear all user-specific cached data so it never leaks into the next session
+    localStorage.removeItem("route_history");
+    localStorage.removeItem("route_preferences");
     setAccessToken(null);
     setUser(null);
     setIsGuest(false);

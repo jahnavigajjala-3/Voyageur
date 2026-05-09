@@ -65,7 +65,8 @@ export default function Dashboard() {
     selectedRouteId,
     isLoadingRoutes,
     routeHistory,
-    setSelectedRouteId
+    setSelectedRouteId,
+    resetSession,
   } = useRouteContext();
   const navigate = useNavigate();
   const { location } = useLocation(); // ← needed for weather
@@ -83,7 +84,11 @@ export default function Dashboard() {
 
   const mapRef = useRef(null);
 
-  const handleLogout = () => { logout(); navigate("/login"); };
+  const handleLogout = () => {
+    resetSession(); // clear all route/history state before logging out
+    logout();
+    navigate("/login");
+  };
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
 
