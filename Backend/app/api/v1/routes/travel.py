@@ -19,7 +19,7 @@ from app.schemas.route import (
     RouteComparison,
     RouteErrorResponse,
 )
-from app.api.v1.dependencies import get_current_user
+from app.api.v1.dependencies import get_current_user, get_optional_user
 
 router = APIRouter()
 logger = get_logger(__name__)
@@ -28,23 +28,23 @@ logger = get_logger(__name__)
 async def crime_risk_by_coords(
     lat: float,
     lng: float,
-    current_user=Depends(get_current_user),
+    current_user=Depends(get_optional_user),
 ):
-    """Get crime risk for coordinates (requires auth)."""
+    """Get crime risk for coordinates. Accessible by guests and authenticated users."""
     return await get_crime_risk_by_coords(lat, lng)
 
 @router.get("/districts-in-state")
 async def districts_in_state(
     lat: float,
     lng: float,
-    current_user=Depends(get_current_user),
+    current_user=Depends(get_optional_user),
 ):
     """Get all districts in the detected state with their crime data."""
     return await get_districts_in_state(lat, lng)
 
 @router.get("/districts")
-async def all_districts(current_user=Depends(get_current_user)):
-    """Get all district risk data (requires auth)."""
+async def all_districts(current_user=Depends(get_optional_user)):
+    """Get all district risk data."""
     return get_all_district_risks()
 
 @router.get("/hospitals")
@@ -53,9 +53,9 @@ async def nearby_hospitals(
     lng: float,
     radius: float = 30,
     limit: int = 5,
-    current_user=Depends(get_current_user),
+    current_user=Depends(get_optional_user),
 ):
-    """Get nearby hospitals (requires auth)."""
+    """Get nearby hospitals. Accessible by guests and authenticated users."""
     return get_nearby_hospitals(lat, lng, radius, limit)
 
 @router.post(
@@ -71,7 +71,7 @@ async def nearby_hospitals(
 async def compute_safe_routes(
     request: SafeRouteRequest,
     route_scoring_service: RouteScoringService = Depends(get_route_scoring_service),
-    current_user = Depends(get_current_user)
+    current_user = Depends(get_optional_user)
 ):
     """
     Compute safest route between two points with alternatives.
@@ -93,7 +93,7 @@ async def compute_safe_routes(
             request_id,
             (request.origin.lat, request.origin.lng),
             (request.destination.lat, request.destination.lng),
-            current_user.id, request.alternatives, request.preference,
+            current_user.id if current_user else "guest", request.alternatives, request.preference,
         )
         
         # Get multiple route alternatives from OSRM
