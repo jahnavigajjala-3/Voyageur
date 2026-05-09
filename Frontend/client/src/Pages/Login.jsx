@@ -88,14 +88,14 @@ export default function Login() {
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "32px" }}>
             <div style={{
               width: "38px", height: "38px", borderRadius: "12px",
-              background: "linear-gradient(135deg, rgba(139,92,246,0.8), rgba(59,130,246,0.8))",
-              boxShadow: "0 0 18px rgba(139,92,246,0.35), inset 0 1px 0 rgba(255,255,255,0.2)",
+              background: "linear-gradient(135deg, rgba(56,189,248,0.8), rgba(59,130,246,0.8))",
+              boxShadow: "0 0 18px rgba(56,189,248,0.35), inset 0 1px 0 rgba(255,255,255,0.2)",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: "13px", fontWeight: "700", color: "#fff", letterSpacing: "0.04em",
             }}>AI</div>
             <span style={{
               fontSize: "18px", fontWeight: "700", letterSpacing: "-0.01em",
-              background: "linear-gradient(90deg, #e2e8f0 0%, #a5b4fc 50%, #818cf8 100%)",
+              background: "linear-gradient(90deg, #e2e8f0 0%, #7dd3fc 50%, #38bdf8 100%)",
               WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
             }}>Voyageur</span>
           </div>
@@ -166,7 +166,7 @@ export default function Login() {
 
           <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.2)", textAlign: "center", marginTop: "20px" }}>
             Don&apos;t have an account?{" "}
-            <Link to="/signup" style={{ color: "rgba(167,139,250,0.85)", fontWeight: "600", textDecoration: "none" }}>
+            <Link to="/signup" style={{ color: "rgba(125,211,252,0.85)", fontWeight: "600", textDecoration: "none" }}>
               Sign up
             </Link>
           </p>
@@ -245,19 +245,19 @@ function SubmitButton({ loading, exiting, label, loadingLabel }) {
     <motion.button
       type="submit"
       disabled={active}
-      whileHover={active ? {} : { scale: 1.02, boxShadow: "0 0 28px rgba(139,92,246,0.5), 0 6px 18px rgba(0,0,0,0.35)" }}
+      whileHover={active ? {} : { scale: 1.02, boxShadow: "0 0 28px rgba(56,189,248,0.5), 0 6px 18px rgba(0,0,0,0.35)" }}
       whileTap={active ? {} : { scale: 0.97 }}
       transition={{ duration: 0.15 }}
       style={{
         width: "100%", height: "44px", borderRadius: "12px", marginTop: "6px",
         background: active
-          ? "rgba(139,92,246,0.2)"
-          : "linear-gradient(135deg, rgba(139,92,246,0.85), rgba(59,130,246,0.8))",
-        border: "1px solid rgba(139,92,246,0.35)",
-        color: active ? "rgba(167,139,250,0.5)" : "#fff",
+          ? "rgba(56,189,248,0.2)"
+          : "linear-gradient(135deg, rgba(56,189,248,0.85), rgba(59,130,246,0.8))",
+        border: "1px solid rgba(56,189,248,0.35)",
+        color: active ? "rgba(125,211,252,0.5)" : "#fff",
         fontSize: "14px", fontWeight: "600",
         cursor: active ? "not-allowed" : "pointer",
-        boxShadow: active ? "none" : "0 0 18px rgba(139,92,246,0.28), 0 4px 14px rgba(0,0,0,0.3)",
+        boxShadow: active ? "none" : "0 0 18px rgba(56,189,248,0.28), 0 4px 14px rgba(0,0,0,0.3)",
         letterSpacing: "0.02em",
       }}
     >
@@ -277,8 +277,8 @@ function AuthInput({ type, name, placeholder, value, onChange, autoComplete }) {
         width: "100%", height: "44px", padding: "0 14px",
         borderRadius: "12px",
         background: "rgba(255,255,255,0.05)",
-        border: focused ? "1px solid rgba(139,92,246,0.5)" : "1px solid rgba(255,255,255,0.08)",
-        boxShadow: focused ? "0 0 0 3px rgba(139,92,246,0.1), 0 0 12px rgba(139,92,246,0.08)" : "none",
+        border: focused ? "1px solid rgba(56,189,248,0.5)" : "1px solid rgba(255,255,255,0.08)",
+        boxShadow: focused ? "0 0 0 3px rgba(56,189,248,0.1), 0 0 12px rgba(56,189,248,0.08)" : "none",
         color: "rgba(255,255,255,0.85)", fontSize: "13px", outline: "none",
         transition: "border-color 0.2s ease, box-shadow 0.2s ease",
         boxSizing: "border-box",
@@ -305,8 +305,8 @@ function PasswordInput({ name, placeholder, value, onChange, autoComplete, show,
           padding: "0 44px 0 14px",   /* right padding reserves space for the eye icon */
           borderRadius: "12px",
           background: "rgba(255,255,255,0.05)",
-          border: focused ? "1px solid rgba(139,92,246,0.5)" : "1px solid rgba(255,255,255,0.08)",
-          boxShadow: focused ? "0 0 0 3px rgba(139,92,246,0.1), 0 0 12px rgba(139,92,246,0.08)" : "none",
+          border: focused ? "1px solid rgba(56,189,248,0.5)" : "1px solid rgba(255,255,255,0.08)",
+          boxShadow: focused ? "0 0 0 3px rgba(56,189,248,0.1), 0 0 12px rgba(56,189,248,0.08)" : "none",
           color: "rgba(255,255,255,0.85)", fontSize: "13px", outline: "none",
           transition: "border-color 0.2s ease, box-shadow 0.2s ease",
           boxSizing: "border-box",
@@ -324,7 +324,7 @@ function PasswordInput({ name, placeholder, value, onChange, autoComplete, show,
           transition: "color 0.15s ease",
           lineHeight: 0,
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = "rgba(167,139,250,0.8)"; }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = "rgba(125,211,252,0.8)"; }}
         onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.3)"; }}
       >
         {show ? <EyeOffIcon /> : <EyeIcon />}
