@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { sendChatMessage, getWeather } from "../api/api";
 import useLocation from "../hooks/useLocation";
 import { getRiskColorsByLevel, getRiskColor } from "../utils/riskColors";
+import { MapPin, Navigation } from "lucide-react";
 
 const NAV_ITEMS = [
   { icon: "⊞", label: "Home",    path: "/dashboard" },
