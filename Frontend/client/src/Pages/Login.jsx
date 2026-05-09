@@ -6,7 +6,7 @@ import { useNavigate, Link } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 
 export default function Login() {
-  const { login, googleAuth } = useAuth();
+  const { login, googleAuth, continueAsGuest } = useAuth();
   const navigate = useNavigate();
   const [form, setForm]           = useState({ email: "", password: "" });
   const [loading, setLoading]     = useState(false);
@@ -30,6 +30,12 @@ export default function Login() {
       setError(err?.response?.data?.detail || "Invalid email or password.");
       setLoading(false);
     }
+  };
+
+  const handleGuestLogin = () => {
+    continueAsGuest();
+    setExiting(true);
+    setTimeout(() => navigate("/dashboard"), 550);
   };
 
   const handleGoogleLogin = useGoogleLogin({
@@ -130,7 +136,32 @@ export default function Login() {
             <SubmitButton loading={loading} exiting={exiting} label="Sign In" loadingLabel="Signing in..." />
           </form>
 
-          <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.2)", textAlign: "center", marginTop: "24px" }}>
+          {/* Guest mode */}
+          <button
+            type="button"
+            onClick={handleGuestLogin}
+            style={{
+              width: "100%", height: "40px", borderRadius: "12px", marginTop: "12px",
+              background: "transparent",
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "rgba(255,255,255,0.35)",
+              fontSize: "13px", fontWeight: "500",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "rgba(255,255,255,0.18)";
+              e.currentTarget.style.color = "rgba(255,255,255,0.6)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+              e.currentTarget.style.color = "rgba(255,255,255,0.35)";
+            }}
+          >
+            Continue as Guest
+          </button>
+
+          <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.2)", textAlign: "center", marginTop: "20px" }}>
             Don&apos;t have an account?{" "}
             <Link to="/signup" style={{ color: "rgba(167,139,250,0.85)", fontWeight: "600", textDecoration: "none" }}>
               Sign up

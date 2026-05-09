@@ -30,12 +30,13 @@ function AuthLoader() {
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, isGuest, loading } = useAuth();
 
   // Still reading localStorage — show spinner, don't render anything yet
   if (loading) return <AuthLoader />;
 
-  if (!isAuthenticated) {
+  // Both authenticated users and guests can access protected routes
+  if (!isAuthenticated && !isGuest) {
     return <Navigate to="/login" replace />;
   }
 

@@ -59,7 +59,7 @@ function getWeatherLabel(code) {
 // ────────────────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const { user, logout } = useContext(AuthContext);
+  const { user, logout, isGuest } = useContext(AuthContext);
   const {
     routes: safeRoutes,
     selectedRouteId,
@@ -136,7 +136,26 @@ export default function Dashboard() {
               }}>{item.icon}</button>
           ))}
         </nav>
-        <button onClick={handleLogout} title="Logout"
+        {/* Guest mode badge + sign-in shortcut */}
+        {isGuest && (
+          <button
+            onClick={() => navigate("/login")}
+            title="Sign in to save trips and sync data"
+            className="nav-btn flex items-center justify-center rounded-xl"
+            style={{
+              width: "42px", height: "42px", fontSize: "10px", fontWeight: "700",
+              background: "rgba(234,179,8,0.1)",
+              border: "1px solid rgba(234,179,8,0.25)",
+              color: "rgba(253,224,71,0.8)",
+              letterSpacing: "0.02em",
+              lineHeight: 1.1,
+              textAlign: "center",
+            }}
+          >
+            GUEST
+          </button>
+        )}
+        <button onClick={handleLogout} title={isGuest ? "Exit guest mode" : "Logout"}
           className="nav-btn flex items-center justify-center rounded-xl"
           style={{ width: "42px", height: "42px", fontSize: "13px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)", color: "rgba(252,165,165,0.6)" }}>⏻</button>
       </aside>
@@ -154,7 +173,9 @@ export default function Dashboard() {
               Voyageur
             </h1>
             <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>
-              {user?.name ? `Welcome back, ${user.name}` : "Your AI travel companion is ready"}
+              {isGuest
+                ? "Exploring as guest · Sign in to save trips"
+                : user?.name ? `Welcome back, ${user.name}` : "Your AI travel companion is ready"}
             </p>
           </div>
 
