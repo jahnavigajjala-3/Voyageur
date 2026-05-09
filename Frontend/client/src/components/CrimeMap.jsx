@@ -338,6 +338,10 @@ const CrimeMap = forwardRef(function CrimeMap(
   const [routeActive, setRouteActive]       = useState(false);
   const [stepCoords, setStepCoords]         = useState([]);
   const [activeStepIdx, setActiveStepIdx]   = useState(null);
+  // Independent marker state for picked from/to — shown immediately on map click,
+  // before route calculation happens
+  const [pickedFrom, setPickedFrom] = useState(null); // { lat, lng }
+  const [pickedTo, setPickedTo]     = useState(null); // { lat, lng }
   const [flyTarget, setFlyTarget]           = useState(null);
   const [selectedLocation, setSelectedLocation]   = useState(null);
   const [selectedCrimeRisk, setSelectedCrimeRisk] = useState(null);
@@ -374,6 +378,9 @@ const CrimeMap = forwardRef(function CrimeMap(
           setStepCoords([]);
           setActiveStepIdx(null);
           setRouteWaypoints([from, to]);
+          // Keep pick markers in sync with the resolved coordinates
+          setPickedFrom({ lat: from.lat, lng: from.lng });
+          setPickedTo({ lat: to.lat, lng: to.lng });
           
           if (useSafeRoutes) {
             // Use the new safe routes API with caching
@@ -474,6 +481,8 @@ const CrimeMap = forwardRef(function CrimeMap(
       setSafeRoutes([]);
       setSelectedRouteId(null);
       setIsLoadingRoutes(false);
+      setPickedFrom(null);
+      setPickedTo(null);
       if (onRouteDirections) onRouteDirections([]);
     },
 
@@ -522,6 +531,8 @@ const CrimeMap = forwardRef(function CrimeMap(
       setSafeRoutes([]);
       setSelectedRouteId(null);
       setIsLoadingRoutes(false);
+      setPickedFrom(null);
+      setPickedTo(null);
       if (onHospitalsChange) onHospitalsChange(null);
     },
 
@@ -556,7 +567,11 @@ const CrimeMap = forwardRef(function CrimeMap(
 
   const handleMapClick = async (lat, lng) => {
     if (pickingFor && onRoutePick) {
-      onRoutePick({ lat, lng, name: `${lat.toFixed(5)}, ${lng.toFixed(5)}` });
+      const coords = { lat, lng, name: `${lat.toFixed(5)}, ${lng.toFixed(5)}` };
+      // Place marker immediately — independent of route calculation
+      if (pickingFor === "from") setPickedFrom({ lat, lng });
+      if (pickingFor === "to")   setPickedTo({ lat, lng });
+      onRoutePick(coords);
       return;
     }
     const loc = { lat, lng };
@@ -599,6 +614,28 @@ const CrimeMap = forwardRef(function CrimeMap(
         <MapClickHandler onMapClick={handleMapClick} />
         <RecenterButton lat={location.lat} lng={location.lng} />
         <FlyToLocation target={flyTarget} />
+
+        {/* Immediate pick markers — shown as soon as user clicks, before route calculation */}
+        {pickedFrom && (
+          <Marker position={[pickedFrom.lat, pickedFrom.lng]} icon={routeStartIcon}>
+            <Popup className="voyageour-popup">
+              <div style={{ fontFamily:"'Inter','Segoe UI',sans-serif", padding:"8px 10px", background:"rgba(5,8,20,0.97)", color:"rgba(255,255,255,0.85)", borderRadius:"10px", fontSize:"12px", lineHeight:1.6 }}>
+                <div style={{ fontWeight:700, fontSize:"11px", letterSpacing:"0.1em", color:"#22c55e", marginBottom:"3px" }}>START</div>
+                <div style={{ color:"rgba(255,255,255,0.5)", fontSize:"11px" }}>{pickedFrom.lat.toFixed(5)}, {pickedFrom.lng.toFixed(5)}</div>
+              </div>
+            </Popup>
+          </Marker>
+        )}
+        {pickedTo && (
+          <Marker position={[pickedTo.lat, pickedTo.lng]} icon={routeEndIcon}>
+            <Popup className="voyageour-popup">
+              <div style={{ fontFamily:"'Inter','Segoe UI',sans-serif", padding:"8px 10px", background:"rgba(5,8,20,0.97)", color:"rgba(255,255,255,0.85)", borderRadius:"10px", fontSize:"12px", lineHeight:1.6 }}>
+                <div style={{ fontWeight:700, fontSize:"11px", letterSpacing:"0.1em", color:"#f97316", marginBottom:"3px" }}>DESTINATION</div>
+                <div style={{ color:"rgba(255,255,255,0.5)", fontSize:"11px" }}>{pickedTo.lat.toFixed(5)}, {pickedTo.lng.toFixed(5)}</div>
+              </div>
+            </Popup>
+          </Marker>
+        )}
 
         <Marker position={[location.lat, location.lng]} icon={userLocIcon}>
           <Popup className="voyageour-popup">
