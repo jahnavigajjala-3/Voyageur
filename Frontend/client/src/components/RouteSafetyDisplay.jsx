@@ -1,20 +1,8 @@
 import { useState, useMemo } from "react";
 
-const getRiskColor = (level) => {
-  switch (level?.toLowerCase()) {
-    case "low":    return "#22c55e";
-    case "medium": return "#eab308";
-    case "high":   return "#ef4444";
-    default:       return "#64748b";
-  }
-};
+import { getRiskColorsByLevel, getRiskColor } from "../utils/riskColors";
 
-const getScoreColor = (score) => {
-  // 1–10 scale: 1 = lowest risk (green), 10 = highest risk (red)
-  if (score <= 3.5) return "#22c55e";
-  if (score <= 6.5) return "#eab308";
-  return "#ef4444";
-};
+
 
 const fmt = {
   duration: (s) => {
@@ -30,8 +18,8 @@ const TAB_CONFIG = {
 };
 
 const RouteCard = ({ route, isActive, onSelect }) => {
-  const scoreColor = getScoreColor(route.safety_score);
-  const riskColor  = getRiskColor(route.risk_level);
+  const scoreColor = getRiskColor(route.safety_score);
+  const riskColor  = getRiskColorsByLevel(route.risk_level).accent;
 
   return (
     <div
@@ -281,7 +269,7 @@ const RouteSafetyDisplay = ({
                     <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)" }}>
                       {fmt.duration(r.duration)}
                     </span>
-                    <span style={{ fontSize: "11px", fontWeight: 600, color: getScoreColor(r.safety_score) }}>
+                    <span style={{ fontSize: "11px", fontWeight: 600, color: getRiskColor(r.safety_score) }}>
                       {r.safety_score?.toFixed ? r.safety_score.toFixed(1) : r.safety_score}
                     </span>
                   </div>

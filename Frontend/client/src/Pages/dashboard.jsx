@@ -5,7 +5,7 @@ import CrimeMap from "../components/CrimeMap";
 import { useNavigate } from "react-router-dom";
 import { sendChatMessage, getWeather } from "../api/api";
 import useLocation from "../hooks/useLocation";
-import { MapPin, Navigation } from "lucide-react";
+import { getRiskColorsByLevel, getRiskColor } from "../utils/riskColors";
 
 const NAV_ITEMS = [
   { icon: "⊞", label: "Home",    path: "/dashboard" },
@@ -21,12 +21,7 @@ const INDIGO = "rgba(99,102,241,1)";
 const SURFACE = "rgba(8,12,28,0.72)";
 const BORDER  = "rgba(255,255,255,0.07)";
 
-const RISK_COLORS = {
-  HIGH:    { bg: "rgba(239,68,68,0.08)",   border: "rgba(239,68,68,0.22)",   text: "#fca5a5", accent: "#ef4444", glow: "rgba(239,68,68,0.25)" },
-  MEDIUM:  { bg: "rgba(234,179,8,0.08)",   border: "rgba(234,179,8,0.22)",   text: "#fde68a", accent: "#eab308", glow: "rgba(234,179,8,0.25)" },
-  LOW:     { bg: "rgba(34,197,94,0.08)",   border: "rgba(34,197,94,0.22)",   text: "#86efac", accent: "#22c55e", glow: "rgba(34,197,94,0.25)" },
-  UNKNOWN: { bg: "rgba(100,116,139,0.08)", border: "rgba(100,116,139,0.22)", text: "#94a3b8", accent: "#64748b", glow: "rgba(100,116,139,0.15)" },
-};
+// Removed RISK_COLORS in favor of imported logic
 
 function getStepIcon(text = "") {
   const t = text.toLowerCase();
@@ -559,12 +554,7 @@ const ROUTE_TAB = {
   alternative: { icon: "🗺️", label: "Normal",  color: "#60a5fa", bg: "rgba(59,130,246,0.15)", border: "rgba(59,130,246,0.35)" },
 };
 
-function getScoreColor(s) {
-  // 1–10 safety scale: 10 = safest (green), 1 = most dangerous (red)
-  if (s >= 7.0) return "#22c55e";
-  if (s >= 4.0) return "#eab308";
-  return "#ef4444";
-}
+// Replaced getScoreColor with getRiskColor from utils
 
 function fmtDist(m) {
   return m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m)} m`;
@@ -720,8 +710,8 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
 
   if (!routes || routes.length === 0) return null;
 
-  const scoreColor = current ? getScoreColor(current.safety_score) : "#64748b";
-  const riskColor  = current?.risk_level === "low" ? "#22c55e" : current?.risk_level === "medium" ? "#eab308" : "#ef4444";
+  const scoreColor = current ? getRiskColor(current.safety_score) : "#64748b";
+  const riskColor  = current ? getRiskColorsByLevel(current.risk_level).accent : "#64748b";
   const steps      = current?.id ? (stepsMap[current.id] || []) : [];
   const isLoadingSteps = current?.id ? !!loadingSteps[current.id] : false;
 
@@ -746,7 +736,7 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
                 <span>{cfg.icon}</span>
                 <span>{cfg.label}</span>
                 {r && (
-                  <span style={{ fontSize: "10px", fontWeight: 700, color: isActive ? getScoreColor(r.safety_score) : "rgba(255,255,255,0.3)" }}>
+                  <span style={{ fontSize: "10px", fontWeight: 700, color: isActive ? getRiskColor(r.safety_score) : "rgba(255,255,255,0.3)" }}>
                     {r.safety_score?.toFixed ? r.safety_score.toFixed(1) : r.safety_score}
                     <span style={{ fontSize: "8px", fontWeight: 400, opacity: 0.7 }}> risk</span>
                   </span>
@@ -1256,7 +1246,7 @@ function ClearModal({ onCancel, onConfirm }) {
 // ─── RiskCard ─────────────────────────────────────────────────────────────
 function RiskCard({ title, risk, delay = "", onFocus, onHospitals, onClear, hospitalsActive }) {
   const level    = risk?.risk_level || "UNKNOWN";
-  const colors   = RISK_COLORS[level] || RISK_COLORS.UNKNOWN;
+  const colors   = getRiskColorsByLevel(level);
   const district = risk?.detected_district || risk?.district;
   const state    = risk?.detected_state    || risk?.state;
   const score    = risk?.risk_score;
