@@ -108,6 +108,15 @@ export const getTripById = async (id) => {
   return handleResponse(res);
 };
 
+export const getTripGuidance = async (payload) => {
+  const res = await fetch(`${API_V1}/trip-guidance`, {
+    method: "POST",
+    headers: defaultHeaders,
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(res);
+};
+
 // Weather — FIX: was using hardcoded localhost, now uses API_V1
 export const getWeather = async (lat, lng) => {
   const res = await fetch(

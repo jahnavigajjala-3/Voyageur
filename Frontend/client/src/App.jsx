@@ -6,6 +6,7 @@ import Home from "./Pages/Home";
 import Login from "./Pages/Login";
 import Signup from "./Pages/Signup";
 import Dashboard from "./Pages/dashboard";
+import TripGuide from "./Pages/TripGuide";
 import ChatBox from "./components/ChatBox";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -102,6 +103,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <ChatBox />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/trip-guide"
+                element={
+                  <ProtectedRoute>
+                    <TripGuide />
                   </ProtectedRoute>
                 }
               />
