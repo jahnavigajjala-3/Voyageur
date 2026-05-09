@@ -13,35 +13,45 @@ L.Icon.Default.mergeOptions({
   shadowUrl:     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
-const hospitalIcon = new L.Icon({
-  iconUrl:    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
-  shadowUrl:  "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-  iconSize: [25,41], iconAnchor: [12,41], popupAnchor: [1,-34], shadowSize: [41,41],
-});
-
-const clickedIcon = new L.Icon({
-  iconUrl:    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png",
-  shadowUrl:  "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-  iconSize: [25,41], iconAnchor: [12,41], popupAnchor: [1,-34], shadowSize: [41,41],
-});
-
-const routeIcon = new L.Icon({
-  iconUrl:    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
-  shadowUrl:  "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-  iconSize: [25,41], iconAnchor: [12,41], popupAnchor: [1,-34], shadowSize: [41,41],
-});
-
-const stepIcon = new L.DivIcon({
+// ── Custom glowing DivIcons ──────────────────────────────────────────────
+const makeGlowIcon = (color, size = 14, pulseColor) => new L.DivIcon({
   className: "",
   html: `<div style="
-    width:14px;height:14px;border-radius:50%;
-    background:rgba(139,92,246,0.9);
-    border:2px solid #fff;
-    box-shadow:0 0 10px rgba(139,92,246,0.8);
-  "></div>`,
-  iconSize: [14, 14],
-  iconAnchor: [7, 7],
+    position:relative;
+    width:${size}px;height:${size}px;
+  ">
+    ${pulseColor ? `<div style="
+      position:absolute;inset:-6px;border-radius:50%;
+      border:1.5px solid ${pulseColor};
+      animation:leaflet-pulse 2s ease-out infinite;
+      opacity:0;
+    "></div>` : ""}
+    <div style="
+      width:${size}px;height:${size}px;border-radius:50%;
+      background:${color};
+      border:2px solid rgba(255,255,255,0.9);
+      box-shadow:0 0 10px ${color},0 0 20px ${color}80;
+    "></div>
+  </div>`,
+  iconSize: [size, size],
+  iconAnchor: [size / 2, size / 2],
+  popupAnchor: [0, -(size / 2 + 4)],
 });
+
+// User location — cyan pulse
+const userLocIcon = makeGlowIcon("#38bdf8", 14, "#38bdf8");
+// Route start — green
+const routeStartIcon = makeGlowIcon("#22c55e", 13);
+// Route end — red/orange
+const routeEndIcon = makeGlowIcon("#f97316", 13);
+// Clicked spot — amber
+const clickedIcon = makeGlowIcon("#fbbf24", 12);
+// Hospital — emerald
+const hospitalIcon = makeGlowIcon("#10b981", 11);
+// Route waypoint (legacy)
+const routeIcon = routeStartIcon;
+// Step marker — cyan small
+const stepIcon = makeGlowIcon("#38bdf8", 10);
 
 const RISK_CIRCLE_COLORS = {
   HIGH: "#ef4444", MEDIUM: "#eab308", LOW: "#22c55e", UNKNOWN: "#64748b",
@@ -103,7 +113,7 @@ function RoutingMachine({ waypoints, isActive, onRouteDirections, onStepCoords }
           if (onStepCoords)      onStepCoords(stepCoords);
 
           layerRef.current = L.geoJSON(route.geometry, {
-            style: { color: "#818cf8", weight: 5, opacity: 0.9 },
+            style: { color: "#38bdf8", weight: 5, opacity: 0.95, lineCap: "round", lineJoin: "round" },
           }).addTo(map);
 
           try {
@@ -161,22 +171,22 @@ function MultiRouteMachine({ routes, activeRouteId, onRouteSelect }) {
       const isFastest = route.type === "fastest";
       const isActive = route.id === activeRouteId;
       
-      let color = "#64748b"; // Default grey for alternatives
+      let color = "#475569"; // Default grey for alternatives
       let weight = 4;
-      let opacity = 0.7;
+      let opacity = 0.65;
       
       if (isSafest) {
         color = "#22c55e"; // Green for safest
-        weight = 6;
-        opacity = 0.9;
-      } else if (isFastest) {
-        color = "#3b82f6"; // Blue for fastest
         weight = 5;
-        opacity = 0.8;
+        opacity = 0.95;
+      } else if (isFastest) {
+        color = "#38bdf8"; // Cyan for fastest
+        weight = 5;
+        opacity = 0.85;
       }
       
       if (isActive) {
-        weight += 1;
+        weight += 2;
         opacity = 1.0;
       }
 
@@ -186,7 +196,9 @@ function MultiRouteMachine({ routes, activeRouteId, onRouteSelect }) {
           color, 
           weight, 
           opacity,
-          dashArray: isActive ? null : "5, 5"
+          dashArray: isActive ? null : "6, 5",
+          lineCap: "round",
+          lineJoin: "round",
         }
       }).addTo(map);
 
@@ -197,20 +209,44 @@ function MultiRouteMachine({ routes, activeRouteId, onRouteSelect }) {
 
       // Add popup with safety information
       layer.bindPopup(`
-        <div style="font-family: sans-serif; padding: 8px; min-width: 200px;">
-          <strong>${route.type.toUpperCase()} ROUTE</strong><br/>
-          <div style="margin-top: 8px;">
-            <div><strong>Safety Score:</strong> ${route.safety_score.toFixed(1)}/10</div>
-            <div><strong>Risk Level:</strong> <span style="color: ${
-              route.risk_level === 'low' ? '#22c55e' : 
-              route.risk_level === 'medium' ? '#eab308' : '#ef4444'
-            }">${route.risk_level.toUpperCase()}</span></div>
-            <div><strong>Distance:</strong> ${(route.distance / 1000).toFixed(1)} km</div>
-            <div><strong>Duration:</strong> ${Math.round(route.duration / 60)} min</div>
-            ${route.summary ? `<div style="margin-top: 8px; font-style: italic;">${route.summary}</div>` : ''}
+        <div style="
+          font-family:'Inter','Segoe UI',sans-serif;
+          padding:10px 12px;
+          min-width:180px;
+          background:rgba(5,8,20,0.97);
+          color:rgba(255,255,255,0.85);
+          border-radius:10px;
+          font-size:12px;
+          line-height:1.6;
+        ">
+          <div style="font-weight:700;font-size:11px;letter-spacing:0.1em;color:${
+            route.type === 'safest' ? '#86efac' : route.type === 'fastest' ? '#7dd3fc' : '#94a3b8'
+          };margin-bottom:6px;">${route.type.toUpperCase()} ROUTE</div>
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:rgba(255,255,255,0.4);">Safety</span>
+              <span style="font-weight:600;color:${
+                route.safety_score >= 7 ? '#86efac' : route.safety_score >= 4 ? '#fde68a' : '#fca5a5'
+              };">${route.safety_score.toFixed(1)}/10</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:rgba(255,255,255,0.4);">Risk</span>
+              <span style="font-weight:600;color:${
+                route.risk_level === 'low' ? '#86efac' : route.risk_level === 'medium' ? '#fde68a' : '#fca5a5'
+              };">${route.risk_level.toUpperCase()}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:rgba(255,255,255,0.4);">Distance</span>
+              <span>${(route.distance / 1000).toFixed(1)} km</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+              <span style="color:rgba(255,255,255,0.4);">Duration</span>
+              <span>${Math.round(route.duration / 60)} min</span>
+            </div>
+            ${route.summary ? `<div style="margin-top:6px;font-style:italic;color:rgba(255,255,255,0.35);font-size:11px;">${route.summary}</div>` : ''}
           </div>
         </div>
-      `);
+      `, { className: "voyageour-popup" });
 
       layerRefs.current[index] = layer;
     });
@@ -278,11 +314,11 @@ function RecenterButton({ lat, lng }) {
         title="Recenter"
         style={{
           width: "36px", height: "36px", borderRadius: "50%", cursor: "pointer",
-          background: hovered ? "rgba(139,92,246,0.35)" : "rgba(10,10,20,0.7)",
+          background: hovered ? "rgba(56,189,248,0.2)" : "rgba(5,8,20,0.8)",
           backdropFilter: "blur(12px)",
-          border: hovered ? "1px solid rgba(139,92,246,0.6)" : "1px solid rgba(255,255,255,0.15)",
-          boxShadow: hovered ? "0 0 14px rgba(139,92,246,0.4)" : "0 4px 12px rgba(0,0,0,0.4)",
-          color: hovered ? "rgba(167,139,250,1)" : "rgba(255,255,255,0.7)",
+          border: hovered ? "1px solid rgba(56,189,248,0.5)" : "1px solid rgba(255,255,255,0.1)",
+          boxShadow: hovered ? "0 0 14px rgba(56,189,248,0.35)" : "0 4px 12px rgba(0,0,0,0.5)",
+          color: hovered ? "#7dd3fc" : "rgba(255,255,255,0.55)",
           fontSize: "15px", display: "flex", alignItems: "center", justifyContent: "center",
           transition: "all 0.2s ease", transform: hovered ? "scale(1.08)" : "scale(1)",
         }}
@@ -557,19 +593,30 @@ const CrimeMap = forwardRef(function CrimeMap(
         style={{ flex: 1, width: "100%", minHeight: "300px", cursor: pickingFor ? "crosshair" : undefined }}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution="&copy; OpenStreetMap contributors"
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <MapClickHandler onMapClick={handleMapClick} />
         <RecenterButton lat={location.lat} lng={location.lng} />
         <FlyToLocation target={flyTarget} />
 
-        <Marker position={[location.lat, location.lng]}>
-          <Popup>
-            <strong>You are here</strong>
-            {crimeRisk && !crimeRisk.error && (
-              <><br />{displayDistrict}{displayState ? `, ${displayState}` : ""}<br />Risk: {crimeRisk.risk_level}</>
-            )}
+        <Marker position={[location.lat, location.lng]} icon={userLocIcon}>
+          <Popup className="voyageour-popup">
+            <div style={{
+              fontFamily:"'Inter','Segoe UI',sans-serif", padding:"8px 10px",
+              background:"rgba(5,8,20,0.97)", color:"rgba(255,255,255,0.85)",
+              borderRadius:"10px", fontSize:"12px", lineHeight:1.6, minWidth:"140px",
+            }}>
+              <div style={{ fontWeight:700, fontSize:"11px", letterSpacing:"0.1em", color:"#38bdf8", marginBottom:"4px" }}>YOU ARE HERE</div>
+              {crimeRisk && !crimeRisk.error && (
+                <div style={{ color:"rgba(255,255,255,0.5)", fontSize:"11px" }}>
+                  {displayDistrict}{displayState ? `, ${displayState}` : ""}<br />
+                  <span style={{ color: crimeRisk.risk_level === "LOW" ? "#86efac" : crimeRisk.risk_level === "MEDIUM" ? "#fde68a" : "#fca5a5" }}>
+                    {crimeRisk.risk_level} RISK
+                  </span>
+                </div>
+              )}
+            </div>
           </Popup>
         </Marker>
         {crimeRisk && !crimeRisk.error && (
@@ -586,11 +633,22 @@ const CrimeMap = forwardRef(function CrimeMap(
 
         {selectedLocation && (
           <Marker position={[selectedLocation.lat, selectedLocation.lng]} icon={clickedIcon}>
-            <Popup>
-              <strong>Selected spot</strong><br />
-              {selectedCrimeRisk && !selectedCrimeRisk.error
-                ? <>{selDistrict}{selState ? `, ${selState}` : ""}<br />Risk: {selectedCrimeRisk.risk_level}<br />Score: {selectedCrimeRisk.risk_score}</>
-                : "Fetching crime data..."}
+            <Popup className="voyageour-popup">
+              <div style={{
+                fontFamily:"'Inter','Segoe UI',sans-serif", padding:"8px 10px",
+                background:"rgba(5,8,20,0.97)", color:"rgba(255,255,255,0.85)",
+                borderRadius:"10px", fontSize:"12px", lineHeight:1.6, minWidth:"140px",
+              }}>
+                <div style={{ fontWeight:700, fontSize:"11px", letterSpacing:"0.1em", color:"#fbbf24", marginBottom:"4px" }}>SELECTED SPOT</div>
+                {selectedCrimeRisk && !selectedCrimeRisk.error
+                  ? <div style={{ color:"rgba(255,255,255,0.5)", fontSize:"11px" }}>
+                      {selDistrict}{selState ? `, ${selState}` : ""}<br />
+                      <span style={{ color: selectedCrimeRisk.risk_level === "LOW" ? "#86efac" : selectedCrimeRisk.risk_level === "MEDIUM" ? "#fde68a" : "#fca5a5" }}>
+                        {selectedCrimeRisk.risk_level} RISK
+                      </span> · Score: {selectedCrimeRisk.risk_score}
+                    </div>
+                  : <div style={{ color:"rgba(255,255,255,0.35)", fontSize:"11px" }}>Fetching crime data...</div>}
+              </div>
             </Popup>
           </Marker>
         )}
@@ -599,7 +657,18 @@ const CrimeMap = forwardRef(function CrimeMap(
           .filter(h => h.latitude != null && h.longitude != null)
           .map((h, i) => (
             <Marker key={`hosp-${i}`} position={[h.latitude, h.longitude]} icon={hospitalIcon}>
-              <Popup><strong>{h.city}</strong><br />{h.district}, {h.state}<br />Distance: {h.distance_km} km</Popup>
+              <Popup className="voyageour-popup">
+                <div style={{
+                  fontFamily:"'Inter','Segoe UI',sans-serif", padding:"8px 10px",
+                  background:"rgba(5,8,20,0.97)", color:"rgba(255,255,255,0.85)",
+                  borderRadius:"10px", fontSize:"12px", lineHeight:1.6, minWidth:"140px",
+                }}>
+                  <div style={{ fontWeight:700, fontSize:"11px", letterSpacing:"0.1em", color:"#10b981", marginBottom:"4px" }}>HOSPITAL</div>
+                  <div style={{ color:"rgba(255,255,255,0.7)", fontWeight:600 }}>{h.city}</div>
+                  <div style={{ color:"rgba(255,255,255,0.4)", fontSize:"11px" }}>{h.district}, {h.state}</div>
+                  <div style={{ color:"#38bdf8", fontSize:"11px", marginTop:"3px" }}>{h.distance_km} km away</div>
+                </div>
+              </Popup>
             </Marker>
           ))}
         {showHospitals && hospitalCenter && (
@@ -623,11 +692,21 @@ const CrimeMap = forwardRef(function CrimeMap(
                   activeRouteId={selectedRouteId}
                   onRouteSelect={handleRouteSelect}
                 />
-                <Marker position={[routeWaypoints[0].lat, routeWaypoints[0].lng]} icon={routeIcon}>
-                  <Popup>Start: {routeWaypoints[0].name}</Popup>
+                <Marker position={[routeWaypoints[0].lat, routeWaypoints[0].lng]} icon={routeStartIcon}>
+                  <Popup className="voyageour-popup">
+                    <div style={{ fontFamily:"'Inter','Segoe UI',sans-serif", padding:"8px 10px", background:"rgba(5,8,20,0.97)", color:"rgba(255,255,255,0.85)", borderRadius:"10px", fontSize:"12px", lineHeight:1.6 }}>
+                      <div style={{ fontWeight:700, fontSize:"11px", letterSpacing:"0.1em", color:"#22c55e", marginBottom:"3px" }}>START</div>
+                      <div style={{ color:"rgba(255,255,255,0.6)" }}>{routeWaypoints[0].name}</div>
+                    </div>
+                  </Popup>
                 </Marker>
-                <Marker position={[routeWaypoints[routeWaypoints.length - 1].lat, routeWaypoints[routeWaypoints.length - 1].lng]} icon={routeIcon}>
-                  <Popup>Destination: {routeWaypoints[routeWaypoints.length - 1].name}</Popup>
+                <Marker position={[routeWaypoints[routeWaypoints.length - 1].lat, routeWaypoints[routeWaypoints.length - 1].lng]} icon={routeEndIcon}>
+                  <Popup className="voyageour-popup">
+                    <div style={{ fontFamily:"'Inter','Segoe UI',sans-serif", padding:"8px 10px", background:"rgba(5,8,20,0.97)", color:"rgba(255,255,255,0.85)", borderRadius:"10px", fontSize:"12px", lineHeight:1.6 }}>
+                      <div style={{ fontWeight:700, fontSize:"11px", letterSpacing:"0.1em", color:"#f97316", marginBottom:"3px" }}>DESTINATION</div>
+                      <div style={{ color:"rgba(255,255,255,0.6)" }}>{routeWaypoints[routeWaypoints.length - 1].name}</div>
+                    </div>
+                  </Popup>
                 </Marker>
                 {isLoadingRoutes && (
                   <div style={{
@@ -635,14 +714,18 @@ const CrimeMap = forwardRef(function CrimeMap(
                     top: "10px",
                     left: "50%",
                     transform: "translateX(-50%)",
-                    background: "rgba(0,0,0,0.7)",
-                    color: "white",
+                    background: "rgba(5,8,20,0.9)",
+                    backdropFilter: "blur(12px)",
+                    color: "rgba(125,211,252,0.9)",
                     padding: "8px 16px",
-                    borderRadius: "4px",
+                    borderRadius: "8px",
+                    border: "1px solid rgba(56,189,248,0.2)",
                     zIndex: 1000,
-                    fontSize: "14px"
+                    fontSize: "12px",
+                    fontFamily: "'Inter','Segoe UI',sans-serif",
+                    letterSpacing: "0.05em",
                   }}>
-                    Computing safe routes...
+                    Computing safe routes…
                   </div>
                 )}
               </>
@@ -655,11 +738,21 @@ const CrimeMap = forwardRef(function CrimeMap(
                   onRouteDirections={onRouteDirections}
                   onStepCoords={setStepCoords}
                 />
-                <Marker position={[routeWaypoints[0].lat, routeWaypoints[0].lng]} icon={routeIcon}>
-                  <Popup>Start: {routeWaypoints[0].name}</Popup>
+                <Marker position={[routeWaypoints[0].lat, routeWaypoints[0].lng]} icon={routeStartIcon}>
+                  <Popup className="voyageour-popup">
+                    <div style={{ fontFamily:"'Inter','Segoe UI',sans-serif", padding:"8px 10px", background:"rgba(5,8,20,0.97)", color:"rgba(255,255,255,0.85)", borderRadius:"10px", fontSize:"12px", lineHeight:1.6 }}>
+                      <div style={{ fontWeight:700, fontSize:"11px", letterSpacing:"0.1em", color:"#22c55e", marginBottom:"3px" }}>START</div>
+                      <div style={{ color:"rgba(255,255,255,0.6)" }}>{routeWaypoints[0].name}</div>
+                    </div>
+                  </Popup>
                 </Marker>
-                <Marker position={[routeWaypoints[routeWaypoints.length - 1].lat, routeWaypoints[routeWaypoints.length - 1].lng]} icon={routeIcon}>
-                  <Popup>Destination: {routeWaypoints[routeWaypoints.length - 1].name}</Popup>
+                <Marker position={[routeWaypoints[routeWaypoints.length - 1].lat, routeWaypoints[routeWaypoints.length - 1].lng]} icon={routeEndIcon}>
+                  <Popup className="voyageour-popup">
+                    <div style={{ fontFamily:"'Inter','Segoe UI',sans-serif", padding:"8px 10px", background:"rgba(5,8,20,0.97)", color:"rgba(255,255,255,0.85)", borderRadius:"10px", fontSize:"12px", lineHeight:1.6 }}>
+                      <div style={{ fontWeight:700, fontSize:"11px", letterSpacing:"0.1em", color:"#f97316", marginBottom:"3px" }}>DESTINATION</div>
+                      <div style={{ color:"rgba(255,255,255,0.6)" }}>{routeWaypoints[routeWaypoints.length - 1].name}</div>
+                    </div>
+                  </Popup>
                 </Marker>
               </>
             )}
