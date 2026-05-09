@@ -48,7 +48,7 @@ export default function ChatBox() {
     <div
       className="flex flex-col h-screen"
       style={{
-        background: "radial-gradient(ellipse at 20% 50%, rgba(88,28,135,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(30,58,138,0.08) 0%, transparent 60%), #05050f",
+        background: "radial-gradient(ellipse at 20% 50%, rgba(14,30,80,0.55) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(7,20,55,0.45) 0%, transparent 60%), #04060f",
         fontFamily: "'Inter','Segoe UI',sans-serif",
       }}
     >
@@ -72,7 +72,7 @@ export default function ChatBox() {
               border: "1px solid rgba(255,255,255,0.08)",
               color: "rgba(255,255,255,0.5)",
             }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(139,92,246,0.12)"; e.currentTarget.style.color = "rgba(167,139,250,0.9)"; }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(56,189,248,0.08)"; e.currentTarget.style.color = "rgba(125,211,252,0.9)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "rgba(255,255,255,0.5)"; }}
             title="Back to dashboard"
           >
@@ -83,8 +83,8 @@ export default function ChatBox() {
             className="anim-float flex items-center justify-center rounded-xl text-sm font-bold"
             style={{
               width: "36px", height: "36px",
-              background: "linear-gradient(135deg, rgba(139,92,246,0.8), rgba(59,130,246,0.8))",
-              boxShadow: "0 0 16px rgba(139,92,246,0.35), inset 0 1px 0 rgba(255,255,255,0.2)",
+              background: "linear-gradient(135deg, rgba(56,189,248,0.75), rgba(59,130,246,0.8))",
+              boxShadow: "0 0 16px rgba(56,189,248,0.3), inset 0 1px 0 rgba(255,255,255,0.2)",
               color: "#fff",
             }}
           >
@@ -95,7 +95,7 @@ export default function ChatBox() {
             <p
               className="text-sm font-semibold"
               style={{
-                background: "linear-gradient(90deg, #e2e8f0, #a5b4fc)",
+                background: "linear-gradient(90deg, #f0f4ff, #7dd3fc)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
@@ -116,9 +116,9 @@ export default function ChatBox() {
         <span
           className="text-xs px-3 py-1 rounded-full"
           style={{
-            background: "rgba(139,92,246,0.1)",
-            border: "1px solid rgba(139,92,246,0.2)",
-            color: "rgba(167,139,250,0.7)",
+            background: "rgba(56,189,248,0.08)",
+            border: "1px solid rgba(56,189,248,0.15)",
+            color: "rgba(125,211,252,0.7)",
           }}
         >
           {messages.length} messages
@@ -129,7 +129,7 @@ export default function ChatBox() {
       <div
         className="flex-1 overflow-y-auto px-6 py-6"
         style={{
-          background: "radial-gradient(ellipse at top, rgba(139,92,246,0.04) 0%, transparent 50%)",
+          background: "radial-gradient(ellipse at top, rgba(56,189,248,0.03) 0%, transparent 50%)",
         }}
       >
         <div className="max-w-2xl mx-auto flex flex-col gap-4">
@@ -145,8 +145,8 @@ export default function ChatBox() {
                   className="flex-shrink-0 flex items-center justify-center rounded-xl mr-2.5 self-end mb-1 text-xs font-bold"
                   style={{
                     width: "28px", height: "28px",
-                    background: "linear-gradient(135deg, rgba(139,92,246,0.6), rgba(59,130,246,0.6))",
-                    border: "1px solid rgba(139,92,246,0.25)",
+                    background: "linear-gradient(135deg, rgba(56,189,248,0.6), rgba(59,130,246,0.6))",
+                    border: "1px solid rgba(56,189,248,0.18)",
                     color: "#fff",
                   }}
                 >
@@ -161,13 +161,13 @@ export default function ChatBox() {
                   padding: "12px 16px",
                   borderRadius: msg.role === "user" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
                   background: msg.role === "user"
-                    ? "linear-gradient(135deg, rgba(139,92,246,0.22), rgba(59,130,246,0.18))"
+                    ? "linear-gradient(135deg, rgba(56,189,248,0.15), rgba(59,130,246,0.18))"
                     : "rgba(255,255,255,0.04)",
                   border: msg.role === "user"
-                    ? "1px solid rgba(139,92,246,0.25)"
+                    ? "1px solid rgba(56,189,248,0.18)"
                     : "1px solid rgba(255,255,255,0.07)",
                   color: msg.role === "user"
-                    ? "rgba(221,214,254,0.95)"
+                    ? "rgba(224,242,254,0.95)"
                     : "rgba(255,255,255,0.75)",
                   backdropFilter: "blur(8px)",
                 }}
@@ -184,8 +184,8 @@ export default function ChatBox() {
                 className="flex-shrink-0 flex items-center justify-center rounded-xl mr-2.5 self-end mb-1 text-xs font-bold"
                 style={{
                   width: "28px", height: "28px",
-                  background: "linear-gradient(135deg, rgba(139,92,246,0.6), rgba(59,130,246,0.6))",
-                  border: "1px solid rgba(139,92,246,0.25)",
+                  background: "linear-gradient(135deg, rgba(56,189,248,0.6), rgba(59,130,246,0.6))",
+                  border: "1px solid rgba(56,189,248,0.18)",
                   color: "#fff",
                 }}
               >
@@ -204,7 +204,7 @@ export default function ChatBox() {
                     key={d}
                     className="w-1.5 h-1.5 rounded-full"
                     style={{
-                      background: "rgba(167,139,250,0.6)",
+                      background: "rgba(125,211,252,0.6)",
                       animation: `pulse-dot 1.2s ease-in-out ${d * 0.2}s infinite`,
                     }}
                   />
@@ -246,11 +246,11 @@ export default function ChatBox() {
             style={{
               width: "46px", height: "46px", fontSize: "16px",
               background: input.trim() && !loading
-                ? "linear-gradient(135deg, rgba(139,92,246,0.8), rgba(59,130,246,0.8))"
+                ? "linear-gradient(135deg, rgba(56,189,248,0.75), rgba(59,130,246,0.8))"
                 : "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(139,92,246,0.25)",
+              border: "1px solid rgba(56,189,248,0.18)",
               color: input.trim() && !loading ? "#fff" : "rgba(255,255,255,0.2)",
-              boxShadow: input.trim() && !loading ? "0 0 16px rgba(139,92,246,0.3)" : "none",
+              boxShadow: input.trim() && !loading ? "0 0 16px rgba(56,189,248,0.25)" : "none",
               transition: "all 0.2s ease",
             }}
           >

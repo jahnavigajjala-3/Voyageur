@@ -11,11 +11,20 @@ const NAV_ITEMS = [
   { icon: "✦", label: "AI Chat", path: "/chat" },
 ];
 
+// ─── Design tokens ────────────────────────────────────────────────────────
+const CYAN   = "rgba(56,189,248,1)";
+const CYAN20 = "rgba(56,189,248,0.2)";
+const CYAN10 = "rgba(56,189,248,0.1)";
+const CYAN05 = "rgba(56,189,248,0.05)";
+const INDIGO = "rgba(99,102,241,1)";
+const SURFACE = "rgba(8,12,28,0.72)";
+const BORDER  = "rgba(255,255,255,0.07)";
+
 const RISK_COLORS = {
-  HIGH:    { bg: "rgba(239,68,68,0.1)",   border: "rgba(239,68,68,0.25)",   text: "#fca5a5", accent: "#ef4444", glow: "rgba(239,68,68,0.3)" },
-  MEDIUM:  { bg: "rgba(234,179,8,0.1)",   border: "rgba(234,179,8,0.25)",   text: "#fde68a", accent: "#eab308", glow: "rgba(234,179,8,0.3)" },
-  LOW:     { bg: "rgba(34,197,94,0.1)",   border: "rgba(34,197,94,0.25)",   text: "#86efac", accent: "#22c55e", glow: "rgba(34,197,94,0.3)" },
-  UNKNOWN: { bg: "rgba(100,116,139,0.1)", border: "rgba(100,116,139,0.25)", text: "#94a3b8", accent: "#64748b", glow: "rgba(100,116,139,0.2)" },
+  HIGH:    { bg: "rgba(239,68,68,0.08)",   border: "rgba(239,68,68,0.22)",   text: "#fca5a5", accent: "#ef4444", glow: "rgba(239,68,68,0.25)" },
+  MEDIUM:  { bg: "rgba(234,179,8,0.08)",   border: "rgba(234,179,8,0.22)",   text: "#fde68a", accent: "#eab308", glow: "rgba(234,179,8,0.25)" },
+  LOW:     { bg: "rgba(34,197,94,0.08)",   border: "rgba(34,197,94,0.22)",   text: "#86efac", accent: "#22c55e", glow: "rgba(34,197,94,0.25)" },
+  UNKNOWN: { bg: "rgba(100,116,139,0.08)", border: "rgba(100,116,139,0.22)", text: "#94a3b8", accent: "#64748b", glow: "rgba(100,116,139,0.15)" },
 };
 
 function getStepIcon(text = "") {
@@ -67,7 +76,6 @@ export default function Dashboard() {
     routeHistory,
     setSelectedRouteId,
     resetSession,
-    deleteRoute,
   } = useRouteContext();
   const navigate = useNavigate();
   const { location } = useLocation(); // ← needed for weather
@@ -77,11 +85,10 @@ export default function Dashboard() {
   const [clickedRisk, setClickedRisk]   = useState(null);
   const [chatOpen, setChatOpen]         = useState(false);
   const [hospitalsFor, setHospitalsFor] = useState(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState(null); // id of route pending deletion
 
   // ─── Weather state ────────────────────────────────────────────────────────
   const [weather, setWeather]               = useState(null);
-  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [, setWeatherLoading]               = useState(false);
   // ─────────────────────────────────────────────────────────────────────────
 
   const mapRef = useRef(null);
@@ -117,78 +124,121 @@ export default function Dashboard() {
   return (
     <div className="flex min-h-screen w-full"
       style={{
-        background: "radial-gradient(ellipse at 20% 50%, rgba(88,28,135,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(30,58,138,0.08) 0%, transparent 60%), #05050f",
+        background: "radial-gradient(ellipse at 15% 40%, rgba(14,30,80,0.55) 0%, transparent 55%), radial-gradient(ellipse at 85% 15%, rgba(7,20,55,0.45) 0%, transparent 50%), radial-gradient(ellipse at 50% 90%, rgba(4,12,35,0.6) 0%, transparent 60%), #04060f",
         fontFamily: "'Inter','Segoe UI',sans-serif",
       }}>
 
+      {/* ── Ambient background orbs ── */}
+      <div className="ambient-orb" style={{ width: "500px", height: "500px", top: "-120px", left: "-80px", background: "rgba(14,30,100,0.35)", animationDelay: "0s" }} />
+      <div className="ambient-orb" style={{ width: "400px", height: "400px", bottom: "-100px", right: "200px", background: "rgba(7,18,60,0.3)", animationDelay: "-6s" }} />
+      <div className="ambient-orb" style={{ width: "300px", height: "300px", top: "40%", right: "-60px", background: "rgba(10,22,70,0.25)", animationDelay: "-12s" }} />
+
       {/* ── SIDEBAR ── */}
-      <aside className="flex flex-col items-center py-8 px-3 gap-5"
+      <aside className="voyageour-sidebar flex flex-col items-center py-7 px-3 gap-4"
         style={{
-          width: "68px", background: "rgba(255,255,255,0.025)", backdropFilter: "blur(24px)",
-          borderRight: "1px solid rgba(255,255,255,0.06)", minHeight: "100vh",
-          position: "sticky", top: 0, zIndex: 10,
+          width: "64px", minHeight: "100vh",
+          position: "sticky", top: 0, zIndex: 20, flexShrink: 0,
         }}>
-        <nav className="flex flex-col gap-2 flex-1">
+
+        {/* Logo mark */}
+        <div className="flex items-center justify-center mb-3"
+          style={{
+            width: "36px", height: "36px", borderRadius: "10px",
+            background: "linear-gradient(135deg, rgba(56,189,248,0.2), rgba(99,102,241,0.15))",
+            border: "1px solid rgba(56,189,248,0.22)",
+            boxShadow: "0 0 16px rgba(56,189,248,0.1)",
+            fontSize: "14px", color: "rgba(125,211,252,0.9)",
+          }}>✦</div>
+
+        <nav className="flex flex-col gap-1.5 flex-1">
           {NAV_ITEMS.map((item) => (
             <button key={item.label}
               onClick={() => { setActiveNav(item.label); if (item.path !== "#") navigate(item.path); }}
               title={item.label}
-              className="nav-btn flex items-center justify-center rounded-xl"
+              className={`nav-btn flex items-center justify-center rounded-xl ${activeNav === item.label ? "active-nav" : ""}`}
               style={{
-                width: "42px", height: "42px", fontSize: "15px",
-                background: activeNav === item.label ? "rgba(139,92,246,0.18)" : "transparent",
-                border: activeNav === item.label ? "1px solid rgba(139,92,246,0.35)" : "1px solid transparent",
-                color: activeNav === item.label ? "rgba(167,139,250,1)" : "rgba(255,255,255,0.35)",
-                boxShadow: activeNav === item.label ? "0 0 12px rgba(139,92,246,0.2)" : "none",
+                width: "40px", height: "40px", fontSize: "14px",
+                background: activeNav === item.label ? "rgba(56,189,248,0.12)" : "transparent",
+                border: activeNav === item.label ? "1px solid rgba(56,189,248,0.28)" : "1px solid transparent",
+                color: activeNav === item.label ? "rgba(125,211,252,1)" : "rgba(255,255,255,0.3)",
               }}>{item.icon}</button>
           ))}
         </nav>
-        {/* Guest mode badge + sign-in shortcut */}
+
+        {/* Guest badge */}
         {isGuest && (
           <button
             onClick={() => navigate("/login")}
             title="Sign in to save trips and sync data"
             className="nav-btn flex items-center justify-center rounded-xl"
             style={{
-              width: "42px", height: "42px", fontSize: "10px", fontWeight: "700",
-              background: "rgba(234,179,8,0.1)",
-              border: "1px solid rgba(234,179,8,0.25)",
-              color: "rgba(253,224,71,0.8)",
-              letterSpacing: "0.02em",
-              lineHeight: 1.1,
-              textAlign: "center",
+              width: "40px", height: "40px", fontSize: "9px", fontWeight: "700",
+              background: "rgba(234,179,8,0.08)",
+              border: "1px solid rgba(234,179,8,0.2)",
+              color: "rgba(253,224,71,0.75)",
+              letterSpacing: "0.02em", lineHeight: 1.1, textAlign: "center",
             }}
-          >
-            GUEST
-          </button>
+          >GUEST</button>
         )}
+
+        {/* AI live indicator */}
+        <div className="flex flex-col items-center gap-1.5 mb-2">
+          <div className="live-dot-cyan" />
+          <span style={{ fontSize: "7px", color: "rgba(56,189,248,0.45)", letterSpacing: "0.1em", writingMode: "vertical-rl", transform: "rotate(180deg)" }}>LIVE</span>
+        </div>
+
         <button onClick={handleLogout} title={isGuest ? "Exit guest mode" : "Logout"}
           className="nav-btn flex items-center justify-center rounded-xl"
-          style={{ width: "42px", height: "42px", fontSize: "13px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.15)", color: "rgba(252,165,165,0.6)" }}>⏻</button>
+          style={{ width: "40px", height: "40px", fontSize: "12px", background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.12)", color: "rgba(252,165,165,0.5)" }}>⏻</button>
       </aside>
 
       {/* ── MAIN ── */}
-      <main className="flex-1 flex flex-col overflow-hidden" style={{ minWidth: 0 }}>
+      <main className="flex-1 flex flex-col overflow-hidden" style={{ minWidth: 0, position: "relative", zIndex: 1 }}>
 
-        {/* ── HEADER (greeting + weather badge) ── */}
-        <header className="flex items-center justify-between px-8 py-5"
+        {/* ── HEADER ── */}
+        <header className="flex items-center justify-between px-7 py-4"
           style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
 
-          <div className="card-enter-1">
-            <h1 className="text-2xl font-bold"
-              style={{ background: "linear-gradient(90deg, #e2e8f0 0%, #a5b4fc 50%, #818cf8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              Voyageur
-            </h1>
-            <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>
-              {isGuest
-                ? "Exploring as guest · Sign in to save trips"
-                : user?.name ? `Welcome back, ${user.name}` : "Your AI travel companion is ready"}
-            </p>
+          <div className="card-enter-1 flex items-center gap-4">
+            <div>
+              <h1 className="text-xl font-bold tracking-tight"
+                style={{ background: "linear-gradient(90deg, #f0f4ff 0%, #7dd3fc 45%, #818cf8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-0.02em" }}>
+                VOYAGEOUR
+              </h1>
+              <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.28)", letterSpacing: "0.03em" }}>
+                {isGuest
+                  ? "Exploring as guest · Sign in to save trips"
+                  : user?.name ? `${greeting}, ${user.name} — AI travel intelligence active` : "AI travel intelligence active"}
+              </p>
+            </div>
+            <div style={{ width: "1px", height: "26px", background: "linear-gradient(to bottom, transparent, rgba(56,189,248,0.28), transparent)" }} />
+            <div className="ai-active-pill flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold tracking-widest">
+              <div className="live-dot-cyan" style={{ width: "5px", height: "5px" }} />
+              AI ACTIVE
+            </div>
           </div>
 
+          {/* Weather badge */}
+          {weather && (
+            <div className="card-enter-2 flex items-center gap-2.5 px-3.5 py-2 rounded-xl"
+              style={{
+                background: "rgba(8,12,28,0.72)", backdropFilter: "blur(20px)",
+                border: "1px solid rgba(255,255,255,0.07)",
+                boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+              }}>
+              <span style={{ fontSize: "18px" }}>{getWeatherIcon(weather.weathercode)}</span>
+              <div>
+                <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1 }}>{weather.temperature}°C</p>
+                <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.35)", marginTop: "1px" }}>{getWeatherLabel(weather.weathercode)} · {weather.windspeed} km/h</p>
+              </div>
+            </div>
+          )}
         </header>
 
-        <div className="flex flex-1 gap-5 p-6 overflow-auto">
+        {/* Holographic header line */}
+        <div className="holo-line" />
+
+        <div className="flex flex-1 gap-4 p-5 overflow-auto" style={{ minHeight: 0 }}>
           <div className="flex-1 flex flex-col" style={{ minWidth: 0 }}>
             <GlassMapCard
               onRiskUpdate={setLiveRisk}
@@ -203,161 +253,61 @@ export default function Dashboard() {
               userLocation={location}
             />
           </div>
-          <aside className="flex flex-col gap-4" style={{ width: "360px", flexShrink: 0 }}>
-            {/* Weather card in right sidebar */}
-            {weather && (
-              <div className="rounded-2xl p-4 relative overflow-hidden"
-                style={{
-                  background: "rgba(255,255,255,0.03)", backdropFilter: "blur(24px)",
-                  border: "1px solid rgba(255,255,255,0.07)", boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
-                }}>
-                <p className="text-xs font-medium mb-3" style={{ color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em" }}>WEATHER</p>
-                <div className="flex items-center gap-3">
-                  <span style={{ fontSize: "28px" }}>{getWeatherIcon(weather.weathercode)}</span>
-                  <div>
-                    <p className="text-xl font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>{weather.temperature}°C</p>
-                    <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>{getWeatherLabel(weather.weathercode)}</p>
-                  </div>
-                </div>
-                <div className="flex gap-3 mt-3">
-                  <div className="flex-1 px-2 py-1.5 rounded-lg text-center"
-                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                    <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>Wind</p>
-                    <p className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.7)" }}>{weather.windspeed} km/h</p>
-                  </div>
-                  {/* add more weather fields here if your API returns them */}
-                </div>
-              </div>
-            )}
+          <aside className="flex flex-col gap-3.5" style={{ width: "340px", flexShrink: 0 }}>
 
             {/* Route History Panel */}
             {routeHistory.length > 0 && (
-              <div className="rounded-2xl p-4 relative overflow-hidden"
-                style={{
-                  background: "rgba(255,255,255,0.03)", backdropFilter: "blur(24px)",
-                  border: "1px solid rgba(255,255,255,0.07)", boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
-                }}>
+              <div className="voyageour-panel card-enter-3 rounded-2xl p-4 relative overflow-hidden">
+                <div style={{ position: "absolute", top: 0, left: "20%", right: "20%", height: "1px", background: "linear-gradient(90deg, transparent, rgba(56,189,248,0.3), transparent)" }} />
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em" }}>RECENT ROUTES</p>
+                  <div className="flex items-center gap-2">
+                    <span style={{ fontSize: "11px", color: "rgba(56,189,248,0.8)" }}>◈</span>
+                    <p className="text-[10px] font-semibold" style={{ color: "rgba(255,255,255,0.32)", letterSpacing: "0.12em" }}>RECENT ROUTES</p>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full"
+                    style={{ background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.18)", color: "rgba(125,211,252,0.6)" }}>
+                    {routeHistory.length}
+                  </span>
                 </div>
-                
-                <div className="space-y-2 max-h-60 overflow-y-auto">
+                <div className="flex flex-col gap-1.5 max-h-52 overflow-y-auto">
                   {routeHistory.slice(0, 5).map((historyItem, index) => (
-                    <div
-                      key={historyItem.id}
-                      className="p-3 rounded-xl"
-                      style={{
-                        background: "rgba(255,255,255,0.02)",
-                        border: "1px solid rgba(255,255,255,0.05)",
-                        transition: "opacity 0.2s ease",
-                      }}
-                    >
-                      {/* Row: click to replay, trash to delete */}
-                      <div className="flex items-start gap-2">
-                        <div
-                          className="flex-1 cursor-pointer"
-                          onClick={() => {
-                            if (mapRef.current) {
-                              mapRef.current.triggerRoute(
-                                historyItem.origin,
-                                historyItem.destination,
-                                true
-                              );
-                            }
-                          }}
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
-                              Route {index + 1}
-                            </span>
-                            <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
-                              {new Date(historyItem.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
-                          <div className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
-                            <div className="truncate">
-                              <span style={{ color: "#22c55e" }}>●</span> {historyItem.origin.lat.toFixed(4)}, {historyItem.origin.lng.toFixed(4)}
-                            </div>
-                            <div className="truncate">
-                              <span style={{ color: "#ef4444" }}>●</span> {historyItem.destination.lat.toFixed(4)}, {historyItem.destination.lng.toFixed(4)}
-                            </div>
-                          </div>
-                          {historyItem.routes && historyItem.routes.length > 0 && (
-                            <div className="mt-2 flex items-center gap-1">
-                              <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>Best:</span>
-                              <span className="text-xs font-medium" style={{ 
-                                color: historyItem.routes[0].type === 'safest' ? '#22c55e' : 
-                                       historyItem.routes[0].type === 'fastest' ? '#3b82f6' : '#64748b'
-                              }}>
-                                {historyItem.routes[0].type.toUpperCase()}
-                              </span>
-                              <span className="text-xs ml-auto" style={{ color: "rgba(255,255,255,0.3)" }}>
-                                {historyItem.routes[0].safety_score?.toFixed ? historyItem.routes[0].safety_score.toFixed(1) : historyItem.routes[0].safety_score}/10
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        {/* Delete button */}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(historyItem.id); }}
-                          title="Delete route"
-                          style={{
-                            flexShrink: 0, width: "30px", height: "30px",
-                            background: "transparent", border: "none",
-                            color: "rgba(252,165,165,0.6)", cursor: "pointer",
-                            fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center",
-                            borderRadius: "8px", transition: "all 0.15s ease",
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.color = "#fca5a5"; e.currentTarget.style.background = "rgba(239,68,68,0.1)"; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(252,165,165,0.4)"; e.currentTarget.style.background = "transparent"; }}
-                        >🗑</button>
+                    <div key={historyItem.id}
+                      className="glass-card p-3 rounded-xl cursor-pointer"
+                      style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)" }}
+                      onClick={() => mapRef.current?.triggerRoute(historyItem.origin, historyItem.destination, true)}>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[11px] font-medium" style={{ color: "rgba(255,255,255,0.62)" }}>Route {index + 1}</span>
+                        <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.25)" }}>
+                          {new Date(historyItem.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </span>
                       </div>
+                      <div className="text-[10px] flex flex-col gap-0.5" style={{ color: "rgba(255,255,255,0.42)" }}>
+                        <div className="truncate flex items-center gap-1.5">
+                          <span style={{ color: "#22c55e", fontSize: "7px" }}>●</span>
+                          {historyItem.origin.lat.toFixed(4)}, {historyItem.origin.lng.toFixed(4)}
+                        </div>
+                        <div className="truncate flex items-center gap-1.5">
+                          <span style={{ color: "#ef4444", fontSize: "7px" }}>●</span>
+                          {historyItem.destination.lat.toFixed(4)}, {historyItem.destination.lng.toFixed(4)}
+                        </div>
+                      </div>
+                      {historyItem.routes?.length > 0 && (
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold"
+                            style={{
+                              background: historyItem.routes[0].type === "safest" ? "rgba(34,197,94,0.1)" : "rgba(59,130,246,0.1)",
+                              color: historyItem.routes[0].type === "safest" ? "#86efac" : "#93c5fd",
+                              border: `1px solid ${historyItem.routes[0].type === "safest" ? "rgba(34,197,94,0.22)" : "rgba(59,130,246,0.22)"}`,
+                            }}>
+                            {historyItem.routes[0].type.toUpperCase()}
+                          </span>
+                          <span className="text-[10px] ml-auto" style={{ color: "rgba(255,255,255,0.28)" }}>
+                            {historyItem.routes[0].safety_score?.toFixed ? historyItem.routes[0].safety_score.toFixed(1) : historyItem.routes[0].safety_score}/10
+                          </span>
+                        </div>
+                      )}
                     </div>
                   ))}
-                </div>
-              </div>
-            )}
-
-            {/* Delete confirmation modal */}
-            {confirmDeleteId && (
-              <div style={{
-                position: "fixed", inset: 0, zIndex: 9998,
-                background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}
-                onClick={() => setConfirmDeleteId(null)}
-              >
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  style={{
-                    background: "rgba(10,10,25,0.95)", backdropFilter: "blur(24px)",
-                    border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px",
-                    padding: "24px", width: "280px",
-                    boxShadow: "0 20px 60px rgba(0,0,0,0.7)",
-                  }}
-                >
-                  <p className="text-sm font-semibold mb-2" style={{ color: "rgba(255,255,255,0.9)" }}>Delete route?</p>
-                  <p className="text-xs mb-5" style={{ color: "rgba(255,255,255,0.4)" }}>
-                    Are you sure you want to delete this route?
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setConfirmDeleteId(null)}
-                      style={{
-                        flex: 1, padding: "8px", borderRadius: "10px",
-                        background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
-                        color: "rgba(255,255,255,0.6)", fontSize: "12px", cursor: "pointer",
-                      }}
-                    >Cancel</button>
-                    <button
-                      onClick={() => { deleteRoute(confirmDeleteId); setConfirmDeleteId(null); }}
-                      style={{
-                        flex: 1, padding: "8px", borderRadius: "10px",
-                        background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)",
-                        color: "#fca5a5", fontSize: "12px", fontWeight: "600", cursor: "pointer",
-                      }}
-                    >Delete</button>
-                  </div>
                 </div>
               </div>
             )}
@@ -381,7 +331,7 @@ export default function Dashboard() {
 }
 
 // ─── FloatingChat (weather passed in for AI context) ──────────────────────
-function FloatingChat({ open, onToggle, weather, safeRoutes = [], selectedRouteId = null, liveRisk = null }) {
+function FloatingChat({ open, onToggle, weather, safeRoutes = [], selectedRouteId = null }) {
   const { location } = useLocation();
   const [messages, setMessages] = useState([
     { role: "assistant", content: "Hi! I'm your AI travel companion. Ask me anything about safety, routes, or destinations." },
@@ -460,52 +410,51 @@ function FloatingChat({ open, onToggle, weather, safeRoutes = [], selectedRouteI
         <div className="anim-fade-up fixed flex flex-col"
           style={{
             bottom: "88px", right: "24px", width: "360px", height: "500px", zIndex: 9999,
-            background: "rgba(8,8,20,0.92)", backdropFilter: "blur(32px)",
-            border: "1px solid rgba(139,92,246,0.2)", borderRadius: "20px",
-            boxShadow: "0 30px 80px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.06)",
+            background: "rgba(5,8,20,0.94)", backdropFilter: "blur(36px) saturate(180%)",
+            border: "1px solid rgba(56,189,248,0.15)", borderRadius: "20px",
+            boxShadow: "0 32px 80px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.05)",
             overflow: "hidden",
           }}>
+          {/* Top accent line */}
+          <div style={{ position: "absolute", top: 0, left: "15%", right: "15%", height: "1px", background: "linear-gradient(90deg, transparent, rgba(56,189,248,0.5), transparent)" }} />
+
           <div className="flex items-center justify-between px-4 py-3 flex-shrink-0"
             style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
             <div className="flex items-center gap-2.5">
               <div className="anim-float flex items-center justify-center rounded-xl text-xs font-bold"
-                style={{ width: "30px", height: "30px", background: "linear-gradient(135deg, rgba(139,92,246,0.7), rgba(59,130,246,0.7))", boxShadow: "0 0 12px rgba(139,92,246,0.3)", color: "#fff" }}>AI</div>
+                style={{ width: "30px", height: "30px", background: "linear-gradient(135deg, rgba(56,189,248,0.6), rgba(99,102,241,0.55))", boxShadow: "0 0 14px rgba(56,189,248,0.25)", color: "#fff" }}>AI</div>
               <div>
                 <p className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>AI Assistant</p>
                 <div className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#22c55e", boxShadow: "0 0 4px #22c55e" }} />
-                  <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>Online</span>
+                  <div className="live-dot" style={{ width: "5px", height: "5px" }} />
+                  <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>Online</span>
                 </div>
               </div>
             </div>
             <button onClick={onToggle}
               className="flex items-center justify-center rounded-lg"
-              style={{ width: "26px", height: "26px", fontSize: "12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.12)"; e.currentTarget.style.color = "#fca5a5"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}>✕</button>
+              style={{ width: "26px", height: "26px", fontSize: "11px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.35)", cursor: "pointer" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.1)"; e.currentTarget.style.color = "#fca5a5"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "rgba(255,255,255,0.35)"; }}>✕</button>
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3"
-            style={{ background: "radial-gradient(ellipse at top, rgba(139,92,246,0.04) 0%, transparent 60%)" }}>
+            style={{ background: "radial-gradient(ellipse at top, rgba(56,189,248,0.03) 0%, transparent 60%)" }}>
             {messages.map((msg, i) => (
               <div key={i} className="anim-fade-in flex" style={{ justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
-                <div className="text-xs leading-relaxed whitespace-pre-wrap"
+                <div className={`text-xs leading-relaxed whitespace-pre-wrap ${msg.role === "user" ? "chat-bubble-user" : "chat-bubble-ai"}`}
                   style={{
                     maxWidth: "82%", padding: "10px 13px",
                     borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                    background: msg.role === "user" ? "linear-gradient(135deg, rgba(139,92,246,0.25), rgba(59,130,246,0.2))" : "rgba(255,255,255,0.05)",
-                    border: msg.role === "user" ? "1px solid rgba(139,92,246,0.25)" : "1px solid rgba(255,255,255,0.07)",
-                    color: msg.role === "user" ? "rgba(221,214,254,0.95)" : "rgba(255,255,255,0.75)",
                   }}>{msg.content}</div>
               </div>
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl"
-                  style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)" }}>
+                <div className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl chat-bubble-ai">
                   {[0,1,2].map((d) => (
                     <span key={d} className="w-1.5 h-1.5 rounded-full"
-                      style={{ background: "rgba(167,139,250,0.6)", animation: `pulse-dot 1.2s ease-in-out ${d * 0.2}s infinite` }} />
+                      style={{ background: "rgba(125,211,252,0.55)", animation: `pulse-dot 1.2s ease-in-out ${d * 0.2}s infinite` }} />
                   ))}
                 </div>
               </div>
@@ -516,14 +465,15 @@ function FloatingChat({ open, onToggle, weather, safeRoutes = [], selectedRouteI
           <div className="px-3 py-3 flex-shrink-0 flex gap-2" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
             <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKey}
               placeholder="Ask anything..." className="glass-input flex-1 px-3 py-2 rounded-xl text-xs"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.85)" }} />
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.85)" }} />
             <button onClick={handleSend} disabled={loading || !input.trim()}
               className="ctrl-btn flex items-center justify-center rounded-xl flex-shrink-0"
               style={{
-                width: "34px", height: "34px", fontSize: "14px",
-                background: input.trim() && !loading ? "linear-gradient(135deg, rgba(139,92,246,0.7), rgba(59,130,246,0.7))" : "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(139,92,246,0.2)",
-                color: input.trim() && !loading ? "#fff" : "rgba(255,255,255,0.25)",
+                width: "34px", height: "34px", fontSize: "14px", cursor: "pointer",
+                background: input.trim() && !loading ? "linear-gradient(135deg, rgba(56,189,248,0.65), rgba(99,102,241,0.6))" : "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(56,189,248,0.2)",
+                color: input.trim() && !loading ? "#fff" : "rgba(255,255,255,0.2)",
+                boxShadow: input.trim() && !loading ? "0 0 14px rgba(56,189,248,0.25)" : "none",
                 transition: "all 0.2s ease",
               }}>↑</button>
           </div>
@@ -532,14 +482,14 @@ function FloatingChat({ open, onToggle, weather, safeRoutes = [], selectedRouteI
 
       <button onClick={onToggle} className="fixed flex items-center justify-center"
         style={{
-          bottom: "24px", right: "24px", width: "54px", height: "54px", zIndex: 9999,
-          borderRadius: "50%",
-          background: open ? "rgba(139,92,246,0.3)" : "linear-gradient(135deg, rgba(139,92,246,0.85), rgba(59,130,246,0.85))",
-          border: "1px solid rgba(139,92,246,0.4)",
-          boxShadow: open ? "0 0 0 4px rgba(139,92,246,0.1)" : "0 8px 30px rgba(139,92,246,0.4)",
-          color: "#fff", fontSize: open ? "18px" : "20px",
-          transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)",
-          transform: open ? "scale(0.92) rotate(45deg)" : "scale(1) rotate(0deg)",
+          bottom: "24px", right: "24px", width: "52px", height: "52px", zIndex: 9999,
+          borderRadius: "50%", cursor: "pointer",
+          background: open ? "rgba(56,189,248,0.2)" : "linear-gradient(135deg, rgba(56,189,248,0.75), rgba(99,102,241,0.7))",
+          border: "1px solid rgba(56,189,248,0.35)",
+          boxShadow: open ? "0 0 0 4px rgba(56,189,248,0.08)" : "0 8px 28px rgba(56,189,248,0.35), 0 0 0 1px rgba(56,189,248,0.15)",
+          color: "#fff", fontSize: open ? "16px" : "18px",
+          transition: "all 0.28s cubic-bezier(0.34,1.56,0.64,1)",
+          transform: open ? "scale(0.9) rotate(45deg)" : "scale(1) rotate(0deg)",
         }}
         title="AI Assistant">{open ? "✕" : "✦"}</button>
     </>
@@ -651,12 +601,14 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
   // Fetch steps whenever a route becomes active and we don't have them yet
   useEffect(() => {
     if (!current?.id || stepsMap[current.id] || loadingSteps[current.id]) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoadingSteps(prev => ({ ...prev, [current.id]: true }));
     fetchStepsForRoute(current).then(steps => {
       setStepsMap(prev => ({ ...prev, [current.id]: steps }));
       setLoadingSteps(prev => ({ ...prev, [current.id]: false }));
       setCurrentStepIdx(0);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current?.id]);
 
   // Real-time: advance step based on user location proximity
@@ -674,6 +626,7 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
       if (d < minDist) { minDist = d; closest = i; }
     });
     // Only advance, never go back
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentStepIdx(prev => Math.max(prev, closest));
   }, [userLocation, current?.id, stepsMap]);
 
@@ -693,16 +646,16 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
   if (isLoading) {
     return (
       <div style={{
-        borderTop: "1px solid rgba(255,255,255,0.06)",
+        borderTop: "1px solid rgba(255,255,255,0.05)",
         padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px",
-        background: "rgba(0,0,0,0.2)",
+        background: "rgba(0,0,0,0.25)",
       }}>
         <div style={{
           width: "14px", height: "14px", borderRadius: "50%",
-          border: "2px solid rgba(139,92,246,0.3)", borderTopColor: "rgba(139,92,246,0.9)",
+          border: "2px solid rgba(56,189,248,0.2)", borderTopColor: "rgba(56,189,248,0.8)",
           animation: "spin 0.8s linear infinite", flexShrink: 0,
         }} />
-        <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)" }}>Computing safe routes…</span>
+        <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)" }}>Computing safe routes…</span>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
@@ -795,9 +748,9 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
 
             <button onClick={() => onRouteSelect?.(current.id)} style={{
               padding: "5px 12px", borderRadius: "8px", cursor: "pointer", flexShrink: 0,
-              background: selectedRouteId === current.id ? "rgba(139,92,246,0.25)" : "rgba(139,92,246,0.1)",
-              border: `1px solid ${selectedRouteId === current.id ? "rgba(139,92,246,0.5)" : "rgba(139,92,246,0.2)"}`,
-              color: selectedRouteId === current.id ? "#c4b5fd" : "rgba(167,139,250,0.7)",
+              background: selectedRouteId === current.id ? "rgba(56,189,248,0.18)" : "rgba(56,189,248,0.07)",
+              border: `1px solid ${selectedRouteId === current.id ? "rgba(56,189,248,0.4)" : "rgba(56,189,248,0.15)"}`,
+              color: selectedRouteId === current.id ? "#7dd3fc" : "rgba(125,211,252,0.6)",
               fontSize: "11px", fontWeight: 500, transition: "all 0.15s ease",
             }}>
               {selectedRouteId === current.id ? "✓ Selected" : "Select"}
@@ -853,7 +806,7 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
               <div style={{ padding: "16px", textAlign: "center" }}>
                 <div style={{
                   display: "inline-block", width: "16px", height: "16px", borderRadius: "50%",
-                  border: "2px solid rgba(139,92,246,0.3)", borderTopColor: "rgba(139,92,246,0.9)",
+                  border: "2px solid rgba(56,189,248,0.25)", borderTopColor: "rgba(56,189,248,0.85)",
                   animation: "spin 0.8s linear infinite",
                 }} />
                 <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.3)", marginTop: "8px" }}>Loading directions…</p>
@@ -877,8 +830,8 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
                       display: "flex", alignItems: "flex-start", gap: "10px",
                       padding: "8px 10px", borderRadius: "10px", cursor: "pointer",
                       marginBottom: "2px",
-                      background: isActive ? "rgba(139,92,246,0.15)" : "transparent",
-                      border: isActive ? "1px solid rgba(139,92,246,0.3)" : "1px solid transparent",
+                      background: isActive ? "rgba(56,189,248,0.1)" : "transparent",
+                      border: isActive ? "1px solid rgba(56,189,248,0.25)" : "1px solid transparent",
                       transition: "all 0.15s ease",
                     }}
                   >
@@ -887,8 +840,8 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
                       width: "26px", height: "26px", borderRadius: "8px", flexShrink: 0,
                       display: "flex", alignItems: "center", justifyContent: "center",
                       fontSize: "13px",
-                      background: isFirst ? "rgba(34,197,94,0.2)" : isLast ? "rgba(239,68,68,0.2)" : isActive ? "rgba(139,92,246,0.3)" : "rgba(255,255,255,0.06)",
-                      border: isFirst ? "1px solid rgba(34,197,94,0.4)" : isLast ? "1px solid rgba(239,68,68,0.4)" : isActive ? "1px solid rgba(139,92,246,0.4)" : "1px solid rgba(255,255,255,0.08)",
+                      background: isFirst ? "rgba(34,197,94,0.2)" : isLast ? "rgba(239,68,68,0.2)" : isActive ? "rgba(56,189,248,0.2)" : "rgba(255,255,255,0.06)",
+                      border: isFirst ? "1px solid rgba(34,197,94,0.4)" : isLast ? "1px solid rgba(239,68,68,0.4)" : isActive ? "1px solid rgba(56,189,248,0.35)" : "1px solid rgba(255,255,255,0.08)",
                     }}>
                       {stepIcon(step.text)}
                     </div>
@@ -900,7 +853,7 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
                         color: isActive ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.65)",
                         fontWeight: isActive ? 600 : 400,
                       }}>{step.text}</p>
-                      <p style={{ fontSize: "10px", color: isActive ? "rgba(167,139,250,0.8)" : "rgba(255,255,255,0.3)", marginTop: "2px" }}>
+                      <p style={{ fontSize: "10px", color: isActive ? "rgba(125,211,252,0.8)" : "rgba(255,255,255,0.3)", marginTop: "2px" }}>
                         {fmtDist(step.distance)}
                       </p>
                     </div>
@@ -921,11 +874,13 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
 }
 
 // ─── GlassMapCard (unchanged) ─────────────────────────────────────────────
-function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsChange, safeRoutes = [], selectedRouteId, onRouteSelect, isLoadingRoutes = false, user, userLocation }) {
+function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsChange, safeRoutes = [], selectedRouteId, onRouteSelect, isLoadingRoutes = false, userLocation }) {
   const [routeFrom, setRouteFrom]             = useState("");
   const [routeTo, setRouteTo]                 = useState("");
   const [routeFromCoords, setRouteFromCoords] = useState(null);
   const [routeToCoords, setRouteToCoords]     = useState(null);
+  const [startDate, setStartDate]             = useState("");
+  const [endDate, setEndDate]                 = useState("");
   const [routeLoading, setRouteLoading]       = useState(false);
   const [pickingFor, setPickingFor]           = useState(null);
   const [routeDirections, setRouteDirections] = useState([]);
@@ -937,6 +892,7 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
 
   useEffect(() => {
     if (routeDirections.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDirectionsOpen(true);
       setActiveStep(0);
       const totalDist = routeDirections.reduce((sum, s) => sum + (s.distance || 0), 0);
@@ -997,99 +953,131 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
 
   const pinBtnStyle = (field) => ({
     width: "28px", height: "28px", fontSize: "11px", flexShrink: 0,
-    background: pickingFor === field ? "rgba(139,92,246,0.3)" : "rgba(139,92,246,0.08)",
-    border: pickingFor === field ? "1px solid rgba(139,92,246,0.5)" : "1px solid rgba(139,92,246,0.18)",
-    color: pickingFor === field ? "rgba(167,139,250,1)" : "rgba(167,139,250,0.5)",
-    boxShadow: pickingFor === field ? "0 0 8px rgba(139,92,246,0.3)" : "none",
+    background: pickingFor === field ? "rgba(56,189,248,0.2)" : "rgba(56,189,248,0.06)",
+    border: pickingFor === field ? "1px solid rgba(56,189,248,0.45)" : "1px solid rgba(56,189,248,0.15)",
+    color: pickingFor === field ? "rgba(125,211,252,1)" : "rgba(125,211,252,0.45)",
+    boxShadow: pickingFor === field ? "0 0 10px rgba(56,189,248,0.2)" : "none",
     borderRadius: "10px", transition: "all 0.18s ease", cursor: "pointer",
   });
 
-  const mapHeight = directionsOpen ? "300px" : "390px";
-
   return (
-    <div className="card-enter-2 rounded-2xl overflow-hidden flex flex-col"
+    <div className="card-enter-2 rounded-2xl overflow-hidden flex flex-col voyageour-panel"
       style={{
-        background: "rgba(255,255,255,0.03)", backdropFilter: "blur(24px)",
-        border: "1px solid rgba(255,255,255,0.07)",
-        boxShadow: "0 30px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)",
+        boxShadow: "0 32px 64px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05)",
+        position: "relative",
       }}>
+      {/* Top accent line */}
+      <div style={{ position: "absolute", top: 0, left: "10%", right: "10%", height: "1px", background: "linear-gradient(90deg, transparent, rgba(56,189,248,0.4), rgba(99,102,241,0.3), transparent)", zIndex: 1 }} />
 
       <div className="px-5 py-4 flex flex-col gap-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>Live Map</p>
-            <p className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>Crime risk · Hospitals · Routes</p>
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: "11px", color: "rgba(56,189,248,0.7)" }}>◈</span>
+            <div>
+              <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.82)" }}>Live Map</p>
+              <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.28)" }}>Crime risk · Hospitals · Routes</p>
+            </div>
           </div>
           {routeSummary && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs"
-              style={{ background: "rgba(139,92,246,0.12)", border: "1px solid rgba(139,92,246,0.25)", color: "rgba(167,139,250,0.9)" }}>
+              style={{ background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.2)", color: "rgba(125,211,252,0.9)" }}>
               <span>🕐 {routeSummary.time}</span>
-              <span style={{ color: "rgba(255,255,255,0.2)" }}>·</span>
+              <span style={{ color: "rgba(255,255,255,0.18)" }}>·</span>
               <span>📍 {routeSummary.dist}</span>
             </div>
           )}
         </div>
 
         <form onSubmit={handleSubmit} className="flex items-center gap-2">
+          {/* ── From / To inputs — identical width ── */}
           <div className="flex flex-col gap-1.5 flex-1" style={{ position: "relative", minWidth: 0 }}>
+            {/* Connector line */}
             <div style={{
-              position: "absolute", left: "13px", top: "32px", bottom: "32px", width: "2px",
-              background: "linear-gradient(to bottom, rgba(34,197,94,0.6), rgba(239,68,68,0.6))",
+              position: "absolute", left: "13px", top: "34px", bottom: "34px", width: "1.5px",
+              background: "linear-gradient(to bottom, rgba(34,197,94,0.5), rgba(239,68,68,0.5))",
               zIndex: 1, borderRadius: "2px",
             }} />
+
+            {/* FROM row */}
             <div className="flex gap-1.5 items-center">
-              <div style={{ width: "28px", height: "28px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}>
-                <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 8px rgba(34,197,94,0.6)" }} />
+              <div style={{ width: "26px", height: "26px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}>
+                <div style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 7px rgba(34,197,94,0.7)" }} />
               </div>
               <input value={routeFrom} onChange={(e) => { setRouteFrom(e.target.value); setRouteFromCoords(null); }}
-                placeholder={pickingFor === "from" ? "Click on map..." : "From"}
+                placeholder={pickingFor === "from" ? "Click on map…" : "From — origin"}
                 className="glass-input flex-1 px-3 py-2 rounded-xl text-xs"
-                style={{ background: pickingFor === "from" ? "rgba(139,92,246,0.08)" : "rgba(255,255,255,0.05)", border: pickingFor === "from" ? "1px solid rgba(139,92,246,0.35)" : "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.8)", minWidth: 0 }} />
-              <button type="button" title="Pick from map" onClick={() => setPickingFor((p) => p === "from" ? null : "from")} style={pinBtnStyle("from")}>◎</button>
-              <button type="button" onClick={() => { setRouteFrom("Current Location"); setPickingFor(null); }}
-                className="ctrl-btn px-2.5 py-2 rounded-xl text-xs whitespace-nowrap"
-                style={{ background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.18)", color: "rgba(134,239,172,0.8)" }}>Current</button>
+                style={{ background: pickingFor === "from" ? "rgba(56,189,248,0.06)" : "rgba(255,255,255,0.04)", border: pickingFor === "from" ? "1px solid rgba(56,189,248,0.3)" : "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.82)", minWidth: 0 }} />
+              <button type="button" title="Use current location"
+                onClick={() => { setRouteFrom("Current Location"); setPickingFor(null); }}
+                className="ctrl-btn flex items-center justify-center rounded-xl flex-shrink-0"
+                style={{ width: "28px", height: "28px", fontSize: "10px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.18)", color: "rgba(134,239,172,0.8)", cursor: "pointer" }}>⊙</button>
+              <button type="button" title="Pick on map"
+                onClick={() => setPickingFor((p) => p === "from" ? null : "from")}
+                style={{ ...pinBtnStyle("from"), width: "28px", height: "28px" }}>◎</button>
             </div>
+
+            {/* TO row */}
             <div className="flex gap-1.5 items-center">
-              <div style={{ width: "28px", height: "28px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}>
-                <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#ef4444", boxShadow: "0 0 8px rgba(239,68,68,0.6)" }} />
+              <div style={{ width: "26px", height: "26px", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2 }}>
+                <div style={{ width: "9px", height: "9px", borderRadius: "50%", background: "#f97316", boxShadow: "0 0 7px rgba(249,115,22,0.7)" }} />
               </div>
               <input value={routeTo} onChange={(e) => { setRouteTo(e.target.value); setRouteToCoords(null); }}
-                placeholder={pickingFor === "to" ? "Click on map..." : "To"}
+                placeholder={pickingFor === "to" ? "Click on map…" : "To — destination"}
                 className="glass-input flex-1 px-3 py-2 rounded-xl text-xs"
-                style={{ background: pickingFor === "to" ? "rgba(139,92,246,0.08)" : "rgba(255,255,255,0.05)", border: pickingFor === "to" ? "1px solid rgba(139,92,246,0.35)" : "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.8)", minWidth: 0 }} />
-              <button type="button" title="Pick from map" onClick={() => setPickingFor((p) => p === "to" ? null : "to")} style={pinBtnStyle("to")}>◎</button>
+                style={{ background: pickingFor === "to" ? "rgba(56,189,248,0.06)" : "rgba(255,255,255,0.04)", border: pickingFor === "to" ? "1px solid rgba(56,189,248,0.3)" : "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.82)", minWidth: 0 }} />
+              <button type="button" title="Pick on map"
+                onClick={() => setPickingFor((p) => p === "to" ? null : "to")}
+                style={{ ...pinBtnStyle("to"), width: "28px", height: "28px" }}>◎</button>
+              <button type="button" disabled
+                className="flex items-center justify-center rounded-xl flex-shrink-0"
+                style={{ width: "28px", height: "28px", opacity: 0, pointerEvents: "none" }}></button>
             </div>
           </div>
 
-          <button type="button" onClick={handleSwap}
-            className="ctrl-btn flex items-center justify-center rounded-xl flex-shrink-0"
-            style={{ width: "30px", height: "30px", fontSize: "13px", background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)", color: "rgba(167,139,250,0.8)" }}>⇄</button>
-
-          <div className="flex flex-col gap-1.5 flex-shrink-0">
+          {/* Swap + action buttons */}
+          <div className="flex flex-col gap-1.5 flex-shrink-0 items-center">
+            <button type="button" onClick={handleSwap}
+              className="ctrl-btn flex items-center justify-center rounded-xl"
+              style={{ width: "28px", height: "28px", fontSize: "12px", background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.15)", color: "rgba(125,211,252,0.8)", cursor: "pointer" }}>⇄</button>
             <button type="submit" disabled={routeLoading}
-              className="ctrl-btn px-4 py-2 rounded-xl text-xs font-semibold"
-              style={{ background: routeLoading ? "rgba(139,92,246,0.2)" : "linear-gradient(135deg, rgba(139,92,246,0.7), rgba(59,130,246,0.7))", border: "1px solid rgba(139,92,246,0.3)", color: "#fff", opacity: routeLoading ? 0.7 : 1 }}>
-              {routeLoading ? "..." : "Route"}
+              className="ctrl-btn px-3 py-2 rounded-xl text-xs font-semibold"
+              style={{ background: routeLoading ? "rgba(56,189,248,0.12)" : "linear-gradient(135deg, rgba(56,189,248,0.6), rgba(99,102,241,0.55))", border: "1px solid rgba(56,189,248,0.22)", color: "#fff", opacity: routeLoading ? 0.7 : 1, cursor: "pointer", whiteSpace: "nowrap" }}>
+              {routeLoading ? "…" : "Go"}
             </button>
             <button type="button" onClick={handleClear}
-              className="ctrl-btn px-3 py-2 rounded-xl text-xs"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }}>Clear</button>
+              className="ctrl-btn px-3 py-1.5 rounded-xl text-xs"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.3)", cursor: "pointer" }}>Clear</button>
           </div>
         </form>
 
+        {/* Date pickers */}
+        <div className="flex gap-3 items-center">
+          <div className="flex-1">
+            <p className="text-[10px] mb-1" style={{ color: "rgba(255,255,255,0.4)", paddingLeft: "4px" }}>Departure (Optional)</p>
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
+              className="glass-input w-full px-3 py-2 rounded-xl text-xs"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.8)" }} />
+          </div>
+          <div className="flex-1">
+            <p className="text-[10px] mb-1" style={{ color: "rgba(255,255,255,0.4)", paddingLeft: "4px" }}>Return (Optional)</p>
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
+              className="glass-input w-full px-3 py-2 rounded-xl text-xs"
+              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.8)" }} />
+          </div>
+        </div>
+
         {pickingFor && (
           <div className="anim-fade-in flex items-center gap-2 px-3 py-2 rounded-xl text-xs"
-            style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.25)", color: "rgba(167,139,250,0.9)" }}>
+            style={{ background: "rgba(56,189,248,0.07)", border: "1px solid rgba(56,189,248,0.2)", color: "rgba(125,211,252,0.9)" }}>
             <span style={{ fontSize: "14px" }}>◎</span>
             Click anywhere on the map to set the{" "}
-            <strong style={{ color: "#a5b4fc" }}>{pickingFor === "from" ? "starting point" : "destination"}</strong>
-            <button type="button" onClick={() => setPickingFor(null)} className="ml-auto text-xs" style={{ color: "rgba(167,139,250,0.5)" }}>cancel</button>
+            <strong style={{ color: "#7dd3fc" }}>{pickingFor === "from" ? "starting point" : "destination"}</strong>
+            <button type="button" onClick={() => setPickingFor(null)} className="ml-auto text-xs" style={{ color: "rgba(125,211,252,0.45)", cursor: "pointer" }}>cancel</button>
           </div>
         )}
       </div>
 
-      <div style={{ height: mapHeight, transition: "height 0.35s cubic-bezier(0.4,0,0.2,1)", flexShrink: 0 }}>
+      <div style={{ flex: 1, minHeight: directionsOpen ? "320px" : "400px", transition: "min-height 0.35s cubic-bezier(0.4,0,0.2,1)", flexShrink: 0, display: "flex", flexDirection: "column" }}>
         <CrimeMap
           ref={crimeMapRef}
           embedded
@@ -1121,7 +1109,7 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
               <span style={{ fontSize: "13px" }}>🗺️</span>
               <span className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.8)" }}>Turn-by-Turn Directions</span>
               <span className="text-xs px-2 py-0.5 rounded-full"
-                style={{ background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.25)", color: "rgba(167,139,250,0.8)" }}>
+                style={{ background: "rgba(56,189,248,0.1)", border: "1px solid rgba(56,189,248,0.18)", color: "rgba(125,211,252,0.8)" }}>
                 {routeDirections.length} steps
               </span>
             </div>
@@ -1143,9 +1131,9 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
                   onClick={() => handleStepClick(index)}
                   className="flex items-start gap-3 px-3 py-2.5 rounded-xl cursor-pointer"
                   style={{
-                    background: isActive ? "rgba(139,92,246,0.15)" : "transparent",
-                    border: isActive ? "1px solid rgba(139,92,246,0.3)" : "1px solid transparent",
-                    boxShadow: isActive ? "0 0 12px rgba(139,92,246,0.15)" : "none",
+                    background: isActive ? "rgba(56,189,248,0.1)" : "transparent",
+                    border: isActive ? "1px solid rgba(56,189,248,0.25)" : "1px solid transparent",
+                    boxShadow: isActive ? "0 0 12px rgba(56,189,248,0.1)" : "none",
                     transition: "all 0.18s ease", marginBottom: "2px",
                   }}
                   onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.border = "1px solid rgba(255,255,255,0.07)"; } }}
@@ -1155,13 +1143,13 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
                     <div className="flex items-center justify-center rounded-lg text-sm font-bold"
                       style={{
                         width: "28px", height: "28px",
-                        background: isFirst ? "rgba(34,197,94,0.2)" : isLast ? "rgba(239,68,68,0.2)" : isActive ? "rgba(139,92,246,0.3)" : "rgba(255,255,255,0.07)",
-                        border: isFirst ? "1px solid rgba(34,197,94,0.4)" : isLast ? "1px solid rgba(239,68,68,0.4)" : isActive ? "1px solid rgba(139,92,246,0.4)" : "1px solid rgba(255,255,255,0.1)",
-                        color: isFirst ? "#4ade80" : isLast ? "#f87171" : isActive ? "#a78bfa" : "rgba(255,255,255,0.5)",
+                        background: isFirst ? "rgba(34,197,94,0.2)" : isLast ? "rgba(239,68,68,0.2)" : isActive ? "rgba(56,189,248,0.25)" : "rgba(255,255,255,0.07)",
+                        border: isFirst ? "1px solid rgba(34,197,94,0.4)" : isLast ? "1px solid rgba(239,68,68,0.4)" : isActive ? "1px solid rgba(56,189,248,0.35)" : "1px solid rgba(255,255,255,0.1)",
+                        color: isFirst ? "#4ade80" : isLast ? "#f87171" : isActive ? "#7dd3fc" : "rgba(255,255,255,0.5)",
                         fontSize: "13px",
                       }}>{icon}</div>
                     {!isLast && (
-                      <div style={{ width: "2px", height: "14px", background: isActive ? "rgba(139,92,246,0.5)" : "rgba(255,255,255,0.08)", borderRadius: "2px" }} />
+                      <div style={{ width: "2px", height: "14px", background: isActive ? "rgba(56,189,248,0.4)" : "rgba(255,255,255,0.08)", borderRadius: "2px" }} />
                     )}
                   </div>
 
@@ -1170,14 +1158,14 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
                       style={{ color: isActive ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.7)", fontWeight: isActive ? "600" : "400" }}>
                       {step.text}
                     </p>
-                    <p className="text-xs mt-0.5" style={{ color: isActive ? "rgba(167,139,250,0.8)" : "rgba(255,255,255,0.3)" }}>
+                    <p className="text-xs mt-0.5" style={{ color: isActive ? "rgba(125,211,252,0.8)" : "rgba(255,255,255,0.3)" }}>
                       {distLabel}
                     </p>
                   </div>
 
                   {isActive && (
                     <div className="flex-shrink-0 self-center">
-                      <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#a78bfa", boxShadow: "0 0 6px rgba(167,139,250,0.8)" }} />
+                      <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#7dd3fc", boxShadow: "0 0 6px rgba(125,211,252,0.8)" }} />
                     </div>
                   )}
                 </div>
@@ -1191,7 +1179,7 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
         <div className="px-5 py-2.5" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
           <button onClick={() => setDirectionsOpen(true)}
             className="w-full py-2 rounded-xl text-xs font-medium flex items-center justify-center gap-2"
-            style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)", color: "rgba(167,139,250,0.85)" }}>
+            style={{ background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.15)", color: "rgba(125,211,252,0.85)" }}>
             ↑ Show Directions ({routeDirections.length} steps)
           </button>
         </div>
@@ -1229,7 +1217,7 @@ function ClearModal({ onCancel, onConfirm }) {
       style={{ zIndex: 99999, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)" }}
       onClick={onCancel}>
       <div className="anim-fade-up rounded-2xl p-6"
-        style={{ width: "290px", background: "rgba(8,8,20,0.96)", backdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.1)", boxShadow: "0 30px 60px rgba(0,0,0,0.7)" }}
+        style={{ width: "290px", background: "rgba(5,8,20,0.97)", backdropFilter: "blur(32px) saturate(180%)", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 32px 64px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.05)" }}
         onClick={(e) => e.stopPropagation()}>
         <p className="text-sm font-semibold mb-1.5" style={{ color: "rgba(255,255,255,0.9)" }}>Clear selected location?</p>
         <p className="text-xs mb-5" style={{ color: "rgba(255,255,255,0.38)", lineHeight: 1.7 }}>
@@ -1259,12 +1247,14 @@ function RiskCard({ title, risk, delay = "", onFocus, onHospitals, onClear, hosp
   const hasData  = risk && !risk.error;
 
   return (
-    <div className={`${delay} glass-card rounded-2xl p-5 relative overflow-hidden`}
-      style={{ background: "rgba(255,255,255,0.03)", backdropFilter: "blur(24px)", border: "1px solid rgba(255,255,255,0.07)", boxShadow: "0 10px 30px rgba(0,0,0,0.3)" }}>
+    <div className={`${delay} glass-card rounded-2xl p-5 relative overflow-hidden voyageour-panel`}
+      style={{ boxShadow: "0 16px 40px rgba(0,0,0,0.4)" }}>
+      {/* Top accent line */}
+      <div style={{ position: "absolute", top: 0, left: "25%", right: "25%", height: "1px", background: `linear-gradient(90deg, transparent, ${colors.glow}, transparent)` }} />
       <div className="anim-glow absolute rounded-full blur-3xl pointer-events-none"
         style={{ width: "80px", height: "80px", top: "-20px", right: "-20px", background: colors.glow }} />
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em" }}>{title.toUpperCase()}</p>
+        <p className="text-[10px] font-semibold" style={{ color: "rgba(255,255,255,0.3)", letterSpacing: "0.12em" }}>{title.toUpperCase()}</p>
         {onClear && (
           <button onClick={onClear} title="Clear selection" className="flex items-center justify-center rounded-lg"
             style={{ width: "20px", height: "20px", fontSize: "10px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.18)", color: "rgba(252,165,165,0.55)", transition: "all 0.15s ease" }}
@@ -1303,7 +1293,7 @@ function RiskCard({ title, risk, delay = "", onFocus, onHospitals, onClear, hosp
           {hasData && (
             <div className="flex gap-2">
               <button onClick={onFocus} className="ctrl-btn flex-1 py-1.5 rounded-xl text-xs font-medium"
-                style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)", color: "rgba(167,139,250,0.85)" }}>Focus on Map</button>
+                style={{ background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.15)", color: "rgba(125,211,252,0.85)" }}>Focus on Map</button>
               <button onClick={onHospitals} className="ctrl-btn flex-1 py-1.5 rounded-xl text-xs font-medium"
                 style={{ background: hospitalsActive ? "rgba(22,163,74,0.25)" : "rgba(34,197,94,0.08)", border: hospitalsActive ? "1px solid rgba(22,163,74,0.5)" : "1px solid rgba(34,197,94,0.18)", color: hospitalsActive ? "#4ade80" : "rgba(134,239,172,0.55)", transition: "all 0.2s ease" }}>
                 {hospitalsActive ? "Hide Hospitals" : "Show Hospitals"}
