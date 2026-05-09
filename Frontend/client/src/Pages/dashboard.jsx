@@ -76,6 +76,7 @@ export default function Dashboard() {
     routeHistory,
     setSelectedRouteId,
     resetSession,
+    deleteRoute,
   } = useRouteContext();
   const navigate = useNavigate();
   const { location } = useLocation(); // ← needed for weather
@@ -85,6 +86,7 @@ export default function Dashboard() {
   const [clickedRisk, setClickedRisk]   = useState(null);
   const [chatOpen, setChatOpen]         = useState(false);
   const [hospitalsFor, setHospitalsFor] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   // ─── Weather state ────────────────────────────────────────────────────────
   const [weather, setWeather]               = useState(null);
@@ -272,42 +274,96 @@ export default function Dashboard() {
                 <div className="flex flex-col gap-1.5 max-h-52 overflow-y-auto">
                   {routeHistory.slice(0, 5).map((historyItem, index) => (
                     <div key={historyItem.id}
-                      className="glass-card p-3 rounded-xl cursor-pointer"
-                      style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)" }}
-                      onClick={() => mapRef.current?.triggerRoute(historyItem.origin, historyItem.destination, true)}>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[11px] font-medium" style={{ color: "rgba(255,255,255,0.62)" }}>Route {index + 1}</span>
-                        <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.25)" }}>
-                          {new Date(historyItem.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        </span>
+                      className="glass-card p-3 rounded-xl"
+                      style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                      <div className="flex items-start gap-2">
+                        {/* Clickable route info */}
+                        <div className="flex-1 cursor-pointer"
+                          onClick={() => mapRef.current?.triggerRoute(historyItem.origin, historyItem.destination, true)}>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[11px] font-medium" style={{ color: "rgba(255,255,255,0.62)" }}>Route {index + 1}</span>
+                            <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.25)" }}>
+                              {new Date(historyItem.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          </div>
+                          <div className="text-[10px] flex flex-col gap-0.5" style={{ color: "rgba(255,255,255,0.42)" }}>
+                            <div className="truncate flex items-center gap-1.5">
+                              <span style={{ color: "#22c55e", fontSize: "7px" }}>●</span>
+                              {historyItem.origin.lat.toFixed(4)}, {historyItem.origin.lng.toFixed(4)}
+                            </div>
+                            <div className="truncate flex items-center gap-1.5">
+                              <span style={{ color: "#ef4444", fontSize: "7px" }}>●</span>
+                              {historyItem.destination.lat.toFixed(4)}, {historyItem.destination.lng.toFixed(4)}
+                            </div>
+                          </div>
+                          {historyItem.routes?.length > 0 && (
+                            <div className="mt-2 flex items-center gap-1.5">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold"
+                                style={{
+                                  background: historyItem.routes[0].type === "safest" ? "rgba(34,197,94,0.1)" : "rgba(59,130,246,0.1)",
+                                  color: historyItem.routes[0].type === "safest" ? "#86efac" : "#93c5fd",
+                                  border: `1px solid ${historyItem.routes[0].type === "safest" ? "rgba(34,197,94,0.22)" : "rgba(59,130,246,0.22)"}`,
+                                }}>
+                                {historyItem.routes[0].type.toUpperCase()}
+                              </span>
+                              <span className="text-[10px] ml-auto" style={{ color: "rgba(255,255,255,0.28)" }}>
+                                {historyItem.routes[0].safety_score?.toFixed ? historyItem.routes[0].safety_score.toFixed(1) : historyItem.routes[0].safety_score}/10
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        {/* Delete button */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(historyItem.id); }}
+                          title="Delete route"
+                          style={{
+                            flexShrink: 0, width: "30px", height: "30px",
+                            background: "transparent", border: "none",
+                            color: "rgba(252,165,165,0.6)", cursor: "pointer",
+                            fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center",
+                            borderRadius: "8px", transition: "all 0.15s ease",
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = "#fca5a5"; e.currentTarget.style.background = "rgba(239,68,68,0.12)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(252,165,165,0.6)"; e.currentTarget.style.background = "transparent"; }}
+                        >🗑</button>
                       </div>
-                      <div className="text-[10px] flex flex-col gap-0.5" style={{ color: "rgba(255,255,255,0.42)" }}>
-                        <div className="truncate flex items-center gap-1.5">
-                          <span style={{ color: "#22c55e", fontSize: "7px" }}>●</span>
-                          {historyItem.origin.lat.toFixed(4)}, {historyItem.origin.lng.toFixed(4)}
-                        </div>
-                        <div className="truncate flex items-center gap-1.5">
-                          <span style={{ color: "#ef4444", fontSize: "7px" }}>●</span>
-                          {historyItem.destination.lat.toFixed(4)}, {historyItem.destination.lng.toFixed(4)}
-                        </div>
-                      </div>
-                      {historyItem.routes?.length > 0 && (
-                        <div className="mt-2 flex items-center gap-1.5">
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold"
-                            style={{
-                              background: historyItem.routes[0].type === "safest" ? "rgba(34,197,94,0.1)" : "rgba(59,130,246,0.1)",
-                              color: historyItem.routes[0].type === "safest" ? "#86efac" : "#93c5fd",
-                              border: `1px solid ${historyItem.routes[0].type === "safest" ? "rgba(34,197,94,0.22)" : "rgba(59,130,246,0.22)"}`,
-                            }}>
-                            {historyItem.routes[0].type.toUpperCase()}
-                          </span>
-                          <span className="text-[10px] ml-auto" style={{ color: "rgba(255,255,255,0.28)" }}>
-                            {historyItem.routes[0].safety_score?.toFixed ? historyItem.routes[0].safety_score.toFixed(1) : historyItem.routes[0].safety_score}/10
-                          </span>
-                        </div>
-                      )}
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Delete confirmation modal */}
+            {confirmDeleteId && (
+              <div style={{
+                position: "fixed", inset: 0, zIndex: 9998,
+                background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+                onClick={() => setConfirmDeleteId(null)}
+              >
+                <div onClick={(e) => e.stopPropagation()} style={{
+                  background: "rgba(10,10,25,0.95)", backdropFilter: "blur(24px)",
+                  border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px",
+                  padding: "24px", width: "280px",
+                  boxShadow: "0 20px 60px rgba(0,0,0,0.7)",
+                }}>
+                  <p className="text-sm font-semibold mb-2" style={{ color: "rgba(255,255,255,0.9)" }}>Delete route?</p>
+                  <p className="text-xs mb-5" style={{ color: "rgba(255,255,255,0.4)" }}>
+                    Are you sure you want to delete this route?
+                  </p>
+                  <div className="flex gap-2">
+                    <button onClick={() => setConfirmDeleteId(null)} style={{
+                      flex: 1, padding: "8px", borderRadius: "10px",
+                      background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+                      color: "rgba(255,255,255,0.6)", fontSize: "12px", cursor: "pointer",
+                    }}>Cancel</button>
+                    <button onClick={() => { deleteRoute(confirmDeleteId); setConfirmDeleteId(null); }} style={{
+                      flex: 1, padding: "8px", borderRadius: "10px",
+                      background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)",
+                      color: "#fca5a5", fontSize: "12px", fontWeight: "600", cursor: "pointer",
+                    }}>Delete</button>
+                  </div>
                 </div>
               </div>
             )}
@@ -879,8 +935,6 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
   const [routeTo, setRouteTo]                 = useState("");
   const [routeFromCoords, setRouteFromCoords] = useState(null);
   const [routeToCoords, setRouteToCoords]     = useState(null);
-  const [startDate, setStartDate]             = useState("");
-  const [endDate, setEndDate]                 = useState("");
   const [routeLoading, setRouteLoading]       = useState(false);
   const [pickingFor, setPickingFor]           = useState(null);
   const [routeDirections, setRouteDirections] = useState([]);
@@ -1049,22 +1103,6 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
               style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.3)", cursor: "pointer" }}>Clear</button>
           </div>
         </form>
-
-        {/* Date pickers */}
-        <div className="flex gap-3 items-center">
-          <div className="flex-1">
-            <p className="text-[10px] mb-1" style={{ color: "rgba(255,255,255,0.4)", paddingLeft: "4px" }}>Departure (Optional)</p>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-              className="glass-input w-full px-3 py-2 rounded-xl text-xs"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.8)" }} />
-          </div>
-          <div className="flex-1">
-            <p className="text-[10px] mb-1" style={{ color: "rgba(255,255,255,0.4)", paddingLeft: "4px" }}>Return (Optional)</p>
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
-              className="glass-input w-full px-3 py-2 rounded-xl text-xs"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.8)" }} />
-          </div>
-        </div>
 
         {pickingFor && (
           <div className="anim-fade-in flex items-center gap-2 px-3 py-2 rounded-xl text-xs"
