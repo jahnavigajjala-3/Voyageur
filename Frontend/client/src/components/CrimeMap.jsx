@@ -53,9 +53,7 @@ const routeIcon = routeStartIcon;
 // Step marker — cyan small
 const stepIcon = makeGlowIcon("#38bdf8", 10);
 
-const RISK_CIRCLE_COLORS = {
-  HIGH: "#ef4444", MEDIUM: "#eab308", LOW: "#22c55e", UNKNOWN: "#64748b",
-};
+import { getRiskColorsByLevel, getRiskColor } from "../utils/riskColors";
 
 function RoutingMachine({ waypoints, isActive, onRouteDirections, onStepCoords }) {
   const map = useMap();
@@ -226,13 +224,13 @@ function MultiRouteMachine({ routes, activeRouteId, onRouteSelect }) {
             <div style="display:flex;justify-content:space-between;">
               <span style="color:rgba(255,255,255,0.4);">Safety</span>
               <span style="font-weight:600;color:${
-                route.safety_score >= 7 ? '#86efac' : route.safety_score >= 4 ? '#fde68a' : '#fca5a5'
+                getRiskColor(route.safety_score)
               };">${route.safety_score.toFixed(1)}/10</span>
             </div>
             <div style="display:flex;justify-content:space-between;">
               <span style="color:rgba(255,255,255,0.4);">Risk</span>
               <span style="font-weight:600;color:${
-                route.risk_level === 'low' ? '#86efac' : route.risk_level === 'medium' ? '#fde68a' : '#fca5a5'
+                getRiskColorsByLevel(route.risk_level).text
               };">${route.risk_level.toUpperCase()}</span>
             </div>
             <div style="display:flex;justify-content:space-between;">
@@ -648,7 +646,7 @@ const CrimeMap = forwardRef(function CrimeMap(
               {crimeRisk && !crimeRisk.error && (
                 <div style={{ color:"rgba(255,255,255,0.5)", fontSize:"11px" }}>
                   {displayDistrict}{displayState ? `, ${displayState}` : ""}<br />
-                  <span style={{ color: crimeRisk.risk_level === "LOW" ? "#86efac" : crimeRisk.risk_level === "MEDIUM" ? "#fde68a" : "#fca5a5" }}>
+                  <span style={{ color: getRiskColorsByLevel(crimeRisk.risk_level).text }}>
                     {crimeRisk.risk_level} RISK
                   </span>
                 </div>
@@ -661,8 +659,8 @@ const CrimeMap = forwardRef(function CrimeMap(
             center={[location.lat, location.lng]}
             radius={5000}
             pathOptions={{
-              color: RISK_CIRCLE_COLORS[crimeRisk.risk_level] || RISK_CIRCLE_COLORS.UNKNOWN,
-              fillColor: RISK_CIRCLE_COLORS[crimeRisk.risk_level] || RISK_CIRCLE_COLORS.UNKNOWN,
+              color: getRiskColorsByLevel(crimeRisk.risk_level).accent,
+              fillColor: getRiskColorsByLevel(crimeRisk.risk_level).accent,
               fillOpacity: 0.08, weight: 2, opacity: 0.6,
             }}
           />
@@ -680,7 +678,7 @@ const CrimeMap = forwardRef(function CrimeMap(
                 {selectedCrimeRisk && !selectedCrimeRisk.error
                   ? <div style={{ color:"rgba(255,255,255,0.5)", fontSize:"11px" }}>
                       {selDistrict}{selState ? `, ${selState}` : ""}<br />
-                      <span style={{ color: selectedCrimeRisk.risk_level === "LOW" ? "#86efac" : selectedCrimeRisk.risk_level === "MEDIUM" ? "#fde68a" : "#fca5a5" }}>
+                      <span style={{ color: getRiskColorsByLevel(selectedCrimeRisk.risk_level).text }}>
                         {selectedCrimeRisk.risk_level} RISK
                       </span> · Score: {selectedCrimeRisk.risk_score}
                     </div>
