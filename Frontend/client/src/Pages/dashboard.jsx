@@ -3,7 +3,7 @@ import { AuthContext } from "../context/AuthContext";
 import { useRouteContext } from "../context/RouteContext";
 import CrimeMap from "../components/CrimeMap";
 import { useNavigate } from "react-router-dom";
-import { sendChatMessage, createTrip, getWeather } from "../api/api";
+import { sendChatMessage, getWeather } from "../api/api";
 import useLocation from "../hooks/useLocation";
 
 const NAV_ITEMS = [
@@ -67,6 +67,7 @@ export default function Dashboard() {
     routeHistory,
     setSelectedRouteId,
     resetSession,
+    deleteRoute,
   } = useRouteContext();
   const navigate = useNavigate();
   const { location } = useLocation(); // ← needed for weather
@@ -76,6 +77,7 @@ export default function Dashboard() {
   const [clickedRisk, setClickedRisk]   = useState(null);
   const [chatOpen, setChatOpen]         = useState(false);
   const [hospitalsFor, setHospitalsFor] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null); // id of route pending deletion
 
   // ─── Weather state ────────────────────────────────────────────────────────
   const [weather, setWeather]               = useState(null);
@@ -243,53 +245,119 @@ export default function Dashboard() {
                   {routeHistory.slice(0, 5).map((historyItem, index) => (
                     <div
                       key={historyItem.id}
-                      className="p-3 rounded-xl cursor-pointer hover:bg-white/5 transition-colors"
+                      className="p-3 rounded-xl"
                       style={{
                         background: "rgba(255,255,255,0.02)",
-                        border: "1px solid rgba(255,255,255,0.05)"
-                      }}
-                      onClick={() => {
-                        if (mapRef.current) {
-                          mapRef.current.triggerRoute(
-                            historyItem.origin,
-                            historyItem.destination,
-                            true
-                          );
-                        }
+                        border: "1px solid rgba(255,255,255,0.05)",
+                        transition: "opacity 0.2s ease",
                       }}
                     >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
-                          Route {index + 1}
-                        </span>
-                        <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
-                          {new Date(historyItem.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                      {/* Row: click to replay, trash to delete */}
+                      <div className="flex items-start gap-2">
+                        <div
+                          className="flex-1 cursor-pointer"
+                          onClick={() => {
+                            if (mapRef.current) {
+                              mapRef.current.triggerRoute(
+                                historyItem.origin,
+                                historyItem.destination,
+                                true
+                              );
+                            }
+                          }}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
+                              Route {index + 1}
+                            </span>
+                            <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
+                              {new Date(historyItem.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <div className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
+                            <div className="truncate">
+                              <span style={{ color: "#22c55e" }}>●</span> {historyItem.origin.lat.toFixed(4)}, {historyItem.origin.lng.toFixed(4)}
+                            </div>
+                            <div className="truncate">
+                              <span style={{ color: "#ef4444" }}>●</span> {historyItem.destination.lat.toFixed(4)}, {historyItem.destination.lng.toFixed(4)}
+                            </div>
+                          </div>
+                          {historyItem.routes && historyItem.routes.length > 0 && (
+                            <div className="mt-2 flex items-center gap-1">
+                              <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>Best:</span>
+                              <span className="text-xs font-medium" style={{ 
+                                color: historyItem.routes[0].type === 'safest' ? '#22c55e' : 
+                                       historyItem.routes[0].type === 'fastest' ? '#3b82f6' : '#64748b'
+                              }}>
+                                {historyItem.routes[0].type.toUpperCase()}
+                              </span>
+                              <span className="text-xs ml-auto" style={{ color: "rgba(255,255,255,0.3)" }}>
+                                {historyItem.routes[0].safety_score?.toFixed ? historyItem.routes[0].safety_score.toFixed(1) : historyItem.routes[0].safety_score}/10
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        {/* Delete button */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(historyItem.id); }}
+                          title="Delete route"
+                          style={{
+                            flexShrink: 0, width: "30px", height: "30px",
+                            background: "transparent", border: "none",
+                            color: "rgba(252,165,165,0.6)", cursor: "pointer",
+                            fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center",
+                            borderRadius: "8px", transition: "all 0.15s ease",
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = "#fca5a5"; e.currentTarget.style.background = "rgba(239,68,68,0.1)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(252,165,165,0.4)"; e.currentTarget.style.background = "transparent"; }}
+                        >🗑</button>
                       </div>
-                      <div className="text-xs" style={{ color: "rgba(255,255,255,0.5)" }}>
-                        <div className="truncate">
-                          <span style={{ color: "#22c55e" }}>●</span> {historyItem.origin.lat.toFixed(4)}, {historyItem.origin.lng.toFixed(4)}
-                        </div>
-                        <div className="truncate">
-                          <span style={{ color: "#ef4444" }}>●</span> {historyItem.destination.lat.toFixed(4)}, {historyItem.destination.lng.toFixed(4)}
-                        </div>
-                      </div>
-                      {historyItem.routes && historyItem.routes.length > 0 && (
-                        <div className="mt-2 flex items-center gap-1">
-                          <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>Best:</span>
-                          <span className="text-xs font-medium" style={{ 
-                            color: historyItem.routes[0].type === 'safest' ? '#22c55e' : 
-                                   historyItem.routes[0].type === 'fastest' ? '#3b82f6' : '#64748b'
-                          }}>
-                            {historyItem.routes[0].type.toUpperCase()}
-                          </span>
-                          <span className="text-xs ml-auto" style={{ color: "rgba(255,255,255,0.3)" }}>
-                            {historyItem.routes[0].safety_score?.toFixed ? historyItem.routes[0].safety_score.toFixed(1) : historyItem.routes[0].safety_score}/10
-                          </span>
-                        </div>
-                      )}
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Delete confirmation modal */}
+            {confirmDeleteId && (
+              <div style={{
+                position: "fixed", inset: 0, zIndex: 9998,
+                background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+                onClick={() => setConfirmDeleteId(null)}
+              >
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    background: "rgba(10,10,25,0.95)", backdropFilter: "blur(24px)",
+                    border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px",
+                    padding: "24px", width: "280px",
+                    boxShadow: "0 20px 60px rgba(0,0,0,0.7)",
+                  }}
+                >
+                  <p className="text-sm font-semibold mb-2" style={{ color: "rgba(255,255,255,0.9)" }}>Delete route?</p>
+                  <p className="text-xs mb-5" style={{ color: "rgba(255,255,255,0.4)" }}>
+                    Are you sure you want to delete this route?
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setConfirmDeleteId(null)}
+                      style={{
+                        flex: 1, padding: "8px", borderRadius: "10px",
+                        background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+                        color: "rgba(255,255,255,0.6)", fontSize: "12px", cursor: "pointer",
+                      }}
+                    >Cancel</button>
+                    <button
+                      onClick={() => { deleteRoute(confirmDeleteId); setConfirmDeleteId(null); }}
+                      style={{
+                        flex: 1, padding: "8px", borderRadius: "10px",
+                        background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)",
+                        color: "#fca5a5", fontSize: "12px", fontWeight: "600", cursor: "pointer",
+                      }}
+                    >Delete</button>
+                  </div>
                 </div>
               </div>
             )}
@@ -858,15 +926,12 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
   const [routeTo, setRouteTo]                 = useState("");
   const [routeFromCoords, setRouteFromCoords] = useState(null);
   const [routeToCoords, setRouteToCoords]     = useState(null);
-  const [startDate, setStartDate]             = useState("");
-  const [endDate, setEndDate]                 = useState("");
   const [routeLoading, setRouteLoading]       = useState(false);
   const [pickingFor, setPickingFor]           = useState(null);
   const [routeDirections, setRouteDirections] = useState([]);
   const [activeStep, setActiveStep]           = useState(null);
   const [routeSummary, setRouteSummary]       = useState(null);
   const [directionsOpen, setDirectionsOpen]   = useState(false);
-  const [savingTrip, setSavingTrip]           = useState(false);
   const stepRefs  = useRef([]);
   const crimeMapRef = mapRef;
 
@@ -910,7 +975,6 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
 
   const handleClear = () => {
     setRouteFrom(""); setRouteTo("");
-    setStartDate(""); setEndDate("");
     setRouteFromCoords(null); setRouteToCoords(null);
     setPickingFor(null);
     setRouteDirections([]);
@@ -918,50 +982,6 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
     setRouteSummary(null);
     setDirectionsOpen(false);
     crimeMapRef.current?.clearRoute();
-  };
-
-  const handleSaveTrip = async () => {
-    if (!routeFrom || !routeTo) return;
-    setSavingTrip(true);
-    try {
-      // Build route summary from safe routes if available, else fall back to directions summary
-      let dist = routeSummary?.dist || "";
-      let time = routeSummary?.time || "";
-
-      if (!dist && safeRoutes?.length > 0) {
-        const selected = safeRoutes.find(r => r.id === selectedRouteId) || safeRoutes[0];
-        if (selected) {
-          dist = `${(selected.distance / 1000).toFixed(1)} km`;
-          time = `${Math.round(selected.duration / 60)} min`;
-        }
-      }
-
-      let planned_route = `Route from ${routeFrom} to ${routeTo}.`;
-      if (dist) planned_route += ` Distance: ${dist}, ETA: ${time}.`;
-      if (startDate) {
-        const [year, month, day] = startDate.split("-");
-        planned_route += ` Departure: ${day}/${month}/${year}.`;
-      }
-      if (endDate) {
-        const [year, month, day] = endDate.split("-");
-        planned_route += ` Return: ${day}/${month}/${year}.`;
-      }
-
-      await createTrip({
-        destination: routeTo,
-        start_date: startDate ? new Date(startDate).toISOString() : new Date().toISOString(),
-        end_date:   endDate   ? new Date(endDate).toISOString()   : new Date().toISOString(),
-        planned_route,
-        notes: "Planned via Live Map",
-      });
-      alert("Trip saved! The AI now has access to your planned route.");
-    } catch (err) {
-      console.error("Save trip error:", err);
-      const msg = err?.message || String(err) || "Unknown error";
-      alert(`Failed to save trip: ${msg}`);
-    } finally {
-      setSavingTrip(false);
-    }
   };
 
   const handleRoutePick = (coords) => {
@@ -1052,36 +1072,11 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
               style={{ background: routeLoading ? "rgba(139,92,246,0.2)" : "linear-gradient(135deg, rgba(139,92,246,0.7), rgba(59,130,246,0.7))", border: "1px solid rgba(139,92,246,0.3)", color: "#fff", opacity: routeLoading ? 0.7 : 1 }}>
               {routeLoading ? "..." : "Route"}
             </button>
-            <div className="flex gap-1.5">
-              <button type="button" onClick={handleClear}
-                className="ctrl-btn flex-1 px-3 py-2 rounded-xl text-xs"
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }}>Clear</button>
-              {(routeFrom && routeTo) && (
-                <button type="button" onClick={handleSaveTrip} disabled={savingTrip}
-                  className="ctrl-btn flex-1 px-3 py-2 rounded-xl text-xs font-medium"
-                  style={{ background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.25)", color: "#86efac", opacity: savingTrip ? 0.7 : 1 }}>
-                  {savingTrip ? "..." : "Save"}
-                </button>
-              )}
-            </div>
+            <button type="button" onClick={handleClear}
+              className="ctrl-btn px-3 py-2 rounded-xl text-xs"
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }}>Clear</button>
           </div>
         </form>
-
-        {/* Date pickers */}
-        <div className="flex gap-3 items-center">
-          <div className="flex-1">
-            <p className="text-[10px] mb-1" style={{ color: "rgba(255,255,255,0.4)", paddingLeft: "4px" }}>Departure (Optional)</p>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-              className="glass-input w-full px-3 py-2 rounded-xl text-xs"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.8)" }} />
-          </div>
-          <div className="flex-1">
-            <p className="text-[10px] mb-1" style={{ color: "rgba(255,255,255,0.4)", paddingLeft: "4px" }}>Return (Optional)</p>
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
-              className="glass-input w-full px-3 py-2 rounded-xl text-xs"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.8)" }} />
-          </div>
-        </div>
 
         {pickingFor && (
           <div className="anim-fade-in flex items-center gap-2 px-3 py-2 rounded-xl text-xs"

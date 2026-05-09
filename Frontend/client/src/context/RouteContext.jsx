@@ -199,6 +199,11 @@ export const RouteProvider = ({ children }) => {
     localStorage.removeItem('route_history');
   }, []);
 
+  // Delete a single route from history by id
+  const deleteRoute = useCallback((routeId) => {
+    setRouteHistory(prev => prev.filter(r => r.id !== routeId));
+  }, []);
+
   // Full session reset — called on logout or when switching to guest mode.
   // Clears all in-memory state and localStorage keys so no data leaks between sessions.
   const resetSession = useCallback(() => {
@@ -253,6 +258,7 @@ export const RouteProvider = ({ children }) => {
     addToHistory,
     updatePreferences,
     clearHistory,
+    deleteRoute,
     resetSession,
     getRouteById,
     getSelectedRoute,
