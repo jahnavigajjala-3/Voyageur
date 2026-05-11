@@ -245,6 +245,31 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center gap-3 justify-end">
+            {/* Weather Badge */}
+            {weather && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors duration-200" style={{
+                borderColor: 'rgb(var(--border-primary))',
+                background: 'rgb(var(--bg-elevated))',
+              }}>
+                <span className="text-lg">
+                  {weather.weathercode === 0 ? '☀️' : 
+                   [1, 2, 3].includes(weather.weathercode) ? '⛅' :
+                   [45, 48].includes(weather.weathercode) ? '🌫️' :
+                   [51, 53, 55, 61, 63, 65, 80, 81, 82].includes(weather.weathercode) ? '🌧️' :
+                   [71, 73, 75, 77, 85, 86].includes(weather.weathercode) ? '❄️' :
+                   [95, 96, 99].includes(weather.weathercode) ? '⛈️' : '🌤️'}
+                </span>
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold" style={{ color: 'rgb(var(--text-primary))' }}>
+                    {weather.temperature}°C
+                  </span>
+                  <span className="text-[9px]" style={{ color: 'rgb(var(--text-tertiary))' }}>
+                    {getWeatherLabel(weather.weathercode)}
+                  </span>
+                </div>
+              </div>
+            )}
+
             <button
               onClick={toggleTheme}
               className="w-10 h-10 flex items-center justify-center rounded-lg border transition-all duration-200"
