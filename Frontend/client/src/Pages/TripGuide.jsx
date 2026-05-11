@@ -1,10 +1,11 @@
 import { createElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Bus, CalendarDays, Hotel, Image, MapPin, Mountain, Plane, Search, Train } from "lucide-react";
+import { ArrowLeft, Bus, CalendarDays, ChevronLeft, ChevronRight, Hotel, Image, MapPin, Mountain, Plane, Search, Train } from "lucide-react";
 import { getTripGuidance } from "../api/api";
 import { fetchLocationImage } from "../services/unsplashService";
 import useLocation from "../hooks/useLocation";
 import { getLocationDisplayName } from "../services/geocodingService";
+import AppSidebar from "../components/AppSidebar";
 
 const FEEDS = ["Mountains", "Beaches", "Urban", "Nature", "Culture", "Adventure"];
 const BUDGETS = ["economy", "midrange", "luxury"];
@@ -500,11 +501,12 @@ export default function TripGuide() {
 
   return (
     <div
-      className="voyageur-page-bg min-h-screen w-full font-sans pb-10"
-      style={{
-        color: "rgb(var(--text-primary))",
-      }}
+      className="voyageur-page-bg flex min-h-screen w-full"
+      style={{ color: "rgb(var(--text-primary))" }}
     >
+      <AppSidebar />
+
+      <div className="flex-1 min-w-0 overflow-y-auto">
       <main className="mx-auto flex min-h-screen max-w-7xl flex-col gap-5 px-5 py-5">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -942,6 +944,7 @@ export default function TripGuide() {
           </aside>
         </section>
       </main>
+      </div>
     </div>
   );
 }

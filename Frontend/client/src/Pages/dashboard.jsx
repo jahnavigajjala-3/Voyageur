@@ -194,131 +194,110 @@ export default function Dashboard() {
     >
       {/* ── Command rail (navigation) ── */}
       <aside
-        className="voyageour-sidebar flex flex-col border-r transition-colors duration-200"
         style={{
-          width: "min(280px, 22vw)",
-          minWidth: "240px",
+          width: "64px",
           minHeight: "100vh",
           position: "sticky",
           top: 0,
           zIndex: 20,
           flexShrink: 0,
-          padding: "28px 20px 32px",
-          gap: "32px",
-          background: "rgb(var(--bg-secondary) / 0.88)",
-          borderColor: "rgb(var(--border-primary))",
-          backdropFilter: "blur(22px)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          padding: "20px 0",
+          gap: "4px",
+          background: "rgb(var(--bg-secondary) / 0.92)",
+          borderRight: "1px solid rgb(var(--border-primary))",
+          backdropFilter: "blur(20px)",
         }}
       >
+        {/* Logo mark */}
         <div
-          className="flex items-center gap-3 px-1 cursor-pointer select-none"
           onClick={() => navigate("/")}
+          title="Voyageur"
+          style={{
+            width: "36px", height: "36px", borderRadius: "10px",
+            background: "linear-gradient(145deg, rgb(var(--accent-cyan)), rgb(var(--accent-primary)))",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", marginBottom: "16px", flexShrink: 0,
+            boxShadow: "0 8px 20px -10px rgb(var(--accent-cyan) / 0.5)",
+          }}
         >
-          <div
-            className="flex items-center justify-center rounded-lg"
-            style={{
-              width: "40px",
-              height: "40px",
-              background:
-                "linear-gradient(145deg, rgb(var(--accent-cyan)), rgb(var(--accent-primary)))",
-              color: "white",
-              boxShadow: "0 12px 28px -14px rgb(var(--accent-cyan) / 0.55)",
-            }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-              <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
-            </svg>
-          </div>
-          <div className="min-w-0">
-            <p
-              className="text-[11px] font-semibold uppercase tracking-[0.22em] leading-none mb-1.5"
-              style={{ color: "rgb(var(--text-tertiary))" }}
-            >
-              Voyageur
-            </p>
-            <span
-              className="font-serif text-xl font-semibold tracking-tight block truncate"
-              style={{ color: "rgb(var(--text-primary))" }}
-            >
-              Intelligence
-            </span>
-          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" style={{ width: "16px", height: "16px" }}>
+            <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+          </svg>
         </div>
 
-        <div className="px-1 flex flex-col gap-3 flex-1 min-h-0">
-          <p
-            className="text-xs font-semibold uppercase tracking-[0.2em] px-1"
-            style={{ color: "rgb(var(--text-tertiary))" }}
-          >
-            Workspace
-          </p>
-          <nav className="flex flex-col gap-1.5">
-            {NAV_ITEMS.map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.label}
-                  onClick={() => {
-                    setActiveNav(item.label);
-                    if (item.path !== "#") navigate(item.path);
-                  }}
-                  className={`nav-btn flex items-center gap-3.5 rounded-xl px-3.5 py-3 text-[15px] font-medium w-full text-left leading-snug ${
-                    activeNav === item.label ? "active-nav" : ""
-                  }`}
-                >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-lg shrink-0"
-                    style={{
-                      background: activeNav === item.label ? "rgb(var(--bg-elevated))" : "transparent",
-                      border: "1px solid rgb(var(--border-primary) / 0.35)",
-                    }}
-                  >
-                    <Icon className="h-5 w-5" strokeWidth={1.75} />
-                  </span>
-                  {item.label}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
+        {/* Nav items */}
+        <nav style={{ display: "flex", flexDirection: "column", gap: "4px", width: "100%", alignItems: "center" }}>
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeNav === item.label;
+            return (
+              <button
+                key={item.label}
+                onClick={() => { setActiveNav(item.label); if (item.path !== "#") navigate(item.path); }}
+                title={item.label}
+                style={{
+                  width: "40px", height: "40px", borderRadius: "10px",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  border: "none", cursor: "pointer", transition: "all 0.15s ease",
+                  background: isActive ? "rgb(var(--accent-cyan) / 0.12)" : "transparent",
+                  color: isActive ? "rgb(var(--accent-cyan))" : "rgb(var(--text-tertiary))",
+                  outline: isActive ? "1px solid rgb(var(--accent-cyan) / 0.25)" : "none",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = "rgb(var(--bg-tertiary))";
+                    e.currentTarget.style.color = "rgb(var(--text-secondary))";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = "rgb(var(--text-tertiary))";
+                  }
+                }}
+              >
+                <Icon className="h-[18px] w-[18px]" strokeWidth={isActive ? 2.2 : 1.75} />
+              </button>
+            );
+          })}
+        </nav>
 
-        <div className="mt-auto flex flex-col gap-3 px-1">
-          <div
-            className="flex items-center gap-3 px-3.5 py-3 rounded-xl border transition-colors duration-200"
-            style={{
-              background: "rgb(var(--accent-cyan) / 0.08)",
-              borderColor: "rgb(var(--accent-cyan) / 0.22)",
-            }}
-          >
-            <div className="live-dot-cyan shrink-0" />
-            <div className="min-w-0">
-              <p className="text-sm font-semibold leading-tight" style={{ color: "rgb(var(--text-primary))" }}>
-                Neural routing
-              </p>
-              <p className="text-xs mt-0.5 font-medium" style={{ color: "rgb(var(--accent-cyan))" }}>
-                AI online
-              </p>
-            </div>
-          </div>
+        {/* Spacer */}
+        <div style={{ flex: 1 }} />
 
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 rounded-xl px-3.5 py-3 text-[15px] font-medium w-full text-left transition-colors"
-            style={{ color: "rgb(var(--text-secondary))" }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgb(var(--bg-tertiary))";
-              e.currentTarget.style.color = "rgb(var(--text-primary))";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.color = "rgb(var(--text-secondary))";
-            }}
-          >
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg text-lg shrink-0" style={{ border: "1px solid rgb(var(--border-primary) / 0.35)" }}>
-              ⏻
-            </span>
-            {isGuest ? "Exit guest" : "Logout"}
-          </button>
-        </div>
+        {/* Live dot */}
+        <div title="AI online" style={{
+          width: "8px", height: "8px", borderRadius: "50%",
+          background: "rgb(var(--accent-cyan))",
+          boxShadow: "0 0 0 3px rgb(var(--accent-cyan) / 0.15)",
+          marginBottom: "8px", flexShrink: 0,
+        }} />
+
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
+          title={isGuest ? "Exit guest" : "Logout"}
+          style={{
+            width: "40px", height: "40px", borderRadius: "10px",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            border: "none", cursor: "pointer",
+            background: "transparent", color: "rgb(var(--text-tertiary))",
+            transition: "all 0.15s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgb(var(--danger) / 0.08)";
+            e.currentTarget.style.color = "rgb(var(--danger))";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = "rgb(var(--text-tertiary))";
+          }}
+        >
+          <LogOut className="h-4 w-4" strokeWidth={1.75} />
+        </button>
       </aside>
 
       {/* ── Mission surface ── */}
