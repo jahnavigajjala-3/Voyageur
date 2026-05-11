@@ -295,29 +295,20 @@ export default function Dashboard() {
         }}
       >
         <header
-          className="shrink-0 z-10 flex flex-col gap-6 px-6 pt-8 pb-6 md:px-10 md:pt-10 md:pb-8 lg:flex-row lg:items-end lg:justify-between border-b transition-colors duration-200"
+          className="shrink-0 z-10 flex flex-col gap-4 px-6 pt-6 pb-4 md:px-8 md:pt-7 md:pb-5 lg:flex-row lg:items-end lg:justify-between border-b transition-colors duration-200"
           style={{
             borderColor: "rgb(var(--border-primary))",
             background: "rgb(var(--bg-primary) / 0.55)",
             backdropFilter: "blur(20px)",
           }}
         >
-          <div className="min-w-0 max-w-3xl space-y-3">
-            <p
-              className="text-xs md:text-sm font-semibold uppercase tracking-[0.28em]"
-              style={{ color: "rgb(var(--text-tertiary))" }}
-            >
-              Mission control · Live situational layer
-            </p>
+          <div className="min-w-0 max-w-3xl space-y-2">
             <h1
-              className="text-3xl sm:text-4xl lg:text-[2.75rem] font-semibold tracking-tight leading-[1.08]"
+              className="text-2xl sm:text-3xl lg:text-[2.25rem] font-semibold tracking-tight leading-[1.08]"
               style={{ color: "rgb(var(--text-primary))" }}
             >
               {isGuest ? "Good evening, Guest" : user?.name ? `${greeting}, ${user.name}` : "Good evening"}
             </h1>
-            <p className="text-base md:text-lg font-normal leading-relaxed max-w-2xl" style={{ color: "rgb(var(--text-secondary))" }}>
-              Surface risk, routing, and environmental context in one operating picture. Your fleet view stays anchored to live geography.
-            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 justify-start lg:justify-end lg:pb-1">
@@ -398,48 +389,39 @@ export default function Dashboard() {
             scrollbarGutter: "stable",
           }}
         >
-          <div className="mx-auto w-full max-w-[1920px] px-6 py-8 md:px-10 md:py-10 lg:px-12 lg:py-12">
-            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-8 xl:gap-10 xl:items-start">
+          <div className="mx-auto w-full max-w-[1920px] px-6 py-6 md:px-8 md:py-7 lg:px-10 lg:py-8">
+            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-6 xl:gap-8 xl:items-start">
               {/* Primary theater: telemetry + map */}
-              <section className="flex flex-col gap-8 min-w-0 min-h-0">
+              <section className="flex flex-col gap-6 min-w-0 min-h-0">
                 <div>
-                  <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5">
+                  <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-4">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.24em]" style={{ color: "rgb(var(--text-tertiary))" }}>
-                        Live intelligence strip
-                      </p>
-                      <h2 className="mt-2 text-xl sm:text-2xl font-semibold tracking-tight" style={{ color: "rgb(var(--text-primary))" }}>
+                      <h2 className="text-lg sm:text-xl font-semibold tracking-tight" style={{ color: "rgb(var(--text-primary))" }}>
                         Risk telemetry
                       </h2>
-                      <p className="mt-1 text-sm sm:text-base max-w-xl" style={{ color: "rgb(var(--text-secondary))" }}>
-                        Anchored readouts for your position and any map selection. Actions stay one gesture from the canvas.
-                      </p>
                     </div>
                   </div>
 
                   <div
-                    className={`grid gap-5 ${
-                      clickedRisk ? "lg:grid-cols-2" : "lg:grid-cols-1"
+                    className={`grid gap-4 ${
+                      clickedRisk ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"
                     }`}
                   >
                     <div
-                      className="rounded-2xl border p-6 md:p-7 transition-colors duration-200"
+                      className="rounded-2xl border p-5 md:p-5 transition-colors duration-200 w-full"
                       style={surfaceCard}
                     >
-                      <div className="flex items-start justify-between gap-4 mb-4">
-                        <div className="flex-1 min-w-0 space-y-1">
-                          <p className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: "rgb(var(--text-tertiary))" }}>
-                            Live crime risk
-                          </p>
-                          <p className="text-lg md:text-xl font-semibold tracking-tight truncate" style={{ color: "rgb(var(--text-primary))" }}>
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex-1 min-w-0 space-y-0.5">
+                          <p className="text-base md:text-lg font-semibold tracking-tight truncate" style={{ color: "rgb(var(--text-primary))" }}>
                             {locationName || "Current location"}
                           </p>
-                          <p className="text-sm truncate" style={{ color: "rgb(var(--text-secondary))" }}>
-                            {liveRisk?.detected_district || liveRisk?.district || "Live location risk summary"}
+                          <p className="text-xs truncate" style={{ color: "rgb(var(--text-secondary))" }}>
+                            {liveRisk?.detected_district || liveRisk?.district || "Live location"}
                           </p>
                         </div>
                         <div
-                          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl shrink-0"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl shrink-0"
                           style={{
                             background: liveRisk ? getRiskColorsByLevel(liveRisk.risk_level).bg : "rgb(var(--bg-tertiary))",
                             border: liveRisk
@@ -448,7 +430,7 @@ export default function Dashboard() {
                           }}
                         >
                           <span
-                            className="w-2 h-2 rounded-full shrink-0 animate-pulse"
+                            className="w-1.5 h-1.5 rounded-full shrink-0 animate-pulse"
                             style={{
                               background: liveRisk
                                 ? getRiskColorsByLevel(liveRisk.risk_level).accent
@@ -456,7 +438,7 @@ export default function Dashboard() {
                             }}
                           />
                           <span
-                            className="text-xs font-bold tracking-wide"
+                            className="text-[10px] font-bold tracking-wide"
                             style={{
                               color: liveRisk ? getRiskColorsByLevel(liveRisk.risk_level).text : "rgb(var(--text-tertiary))",
                             }}
@@ -467,14 +449,14 @@ export default function Dashboard() {
                       </div>
 
                       {liveRisk ? (
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between text-sm font-semibold" style={{ color: "rgb(var(--text-secondary))" }}>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between text-xs font-semibold" style={{ color: "rgb(var(--text-secondary))" }}>
                             <span>Crime score</span>
                             <span style={{ color: liveRisk ? getRiskColorsByLevel(liveRisk.risk_level).text : "rgb(var(--text-tertiary))" }}>
                               {liveRisk.risk_score != null ? Math.min((liveRisk.risk_score / 3000) * 10, 10).toFixed(1) : "—"} / 10
                             </span>
                           </div>
-                          <div className="rounded-full overflow-hidden h-2" style={{ background: "rgb(var(--bg-tertiary))" }}>
+                          <div className="rounded-full overflow-hidden h-1.5" style={{ background: "rgb(var(--bg-tertiary))" }}>
                             <div
                               className="h-full rounded-full transition-all duration-500"
                               style={{
@@ -483,10 +465,10 @@ export default function Dashboard() {
                               }}
                             />
                           </div>
-                          <div className="flex gap-3 pt-1">
+                          <div className="flex gap-2 pt-0.5">
                             <button
                               onClick={() => mapRef.current?.focusMap("live")}
-                              className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors"
+                              className="flex-1 py-2 rounded-xl text-[10px] font-bold transition-colors"
                               style={{
                                 background: "rgb(var(--bg-tertiary))",
                                 border: "1px solid rgb(var(--border-primary))",
@@ -501,11 +483,11 @@ export default function Dashboard() {
                                 e.currentTarget.style.color = "rgb(var(--text-secondary))";
                               }}
                             >
-                              Focus canvas
+                              Focus
                             </button>
                             <button
                               onClick={() => mapRef.current?.showHospitalsFor("live")}
-                              className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors"
+                              className="flex-1 py-2 rounded-xl text-[10px] font-bold transition-colors"
                               style={{
                                 background: hospitalsFor === "live" ? "rgb(var(--success) / 0.15)" : "rgb(var(--success) / 0.08)",
                                 border:
@@ -530,40 +512,37 @@ export default function Dashboard() {
                           </div>
                         </div>
                       ) : (
-                        <p className="text-sm font-medium pt-1" style={{ color: "rgb(var(--text-secondary))" }}>
+                        <p className="text-xs font-medium pt-1" style={{ color: "rgb(var(--text-secondary))" }}>
                           Loading live risk…
                         </p>
                       )}
                     </div>
 
                     {clickedRisk && (
-                      <div className="rounded-2xl border p-6 md:p-7 transition-colors duration-200" style={surfaceCard}>
-                        <div className="flex items-start justify-between gap-4 mb-4">
-                          <div className="flex-1 min-w-0 space-y-1">
-                            <p className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: "rgb(var(--text-tertiary))" }}>
-                              Selected location
-                            </p>
-                            <p className="text-lg md:text-xl font-semibold tracking-tight truncate" style={{ color: "rgb(var(--text-primary))" }}>
+                      <div className="rounded-2xl border p-5 md:p-5 transition-colors duration-200 w-full" style={surfaceCard}>
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="flex-1 min-w-0 space-y-0.5">
+                            <p className="text-base md:text-lg font-semibold tracking-tight truncate" style={{ color: "rgb(var(--text-primary))" }}>
                               {clickedRisk.detected_district || clickedRisk.district || "Unknown"}
                             </p>
-                            <p className="text-sm truncate" style={{ color: "rgb(var(--text-secondary))" }}>
+                            <p className="text-xs truncate" style={{ color: "rgb(var(--text-secondary))" }}>
                               {clickedRisk.detected_state || clickedRisk.state || ""}
                             </p>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <div
-                              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl"
                               style={{
                                 background: getRiskColorsByLevel(clickedRisk.risk_level || "UNKNOWN").bg,
                                 border: `1px solid ${getRiskColorsByLevel(clickedRisk.risk_level || "UNKNOWN").border}`,
                               }}
                             >
                               <span
-                                className="w-2 h-2 rounded-full shrink-0 animate-pulse"
+                                className="w-1.5 h-1.5 rounded-full shrink-0 animate-pulse"
                                 style={{ background: getRiskColorsByLevel(clickedRisk.risk_level || "UNKNOWN").accent }}
                               />
                               <span
-                                className="text-xs font-bold tracking-wide"
+                                className="text-[10px] font-bold tracking-wide"
                                 style={{ color: getRiskColorsByLevel(clickedRisk.risk_level || "UNKNOWN").text }}
                               >
                                 {clickedRisk.risk_level?.toUpperCase() || "UNKNOWN"}
@@ -575,7 +554,7 @@ export default function Dashboard() {
                                 setClickedRisk(null);
                                 setHospitalsFor(null);
                               }}
-                              className="flex items-center justify-center rounded-xl w-9 h-9 text-sm transition-colors"
+                              className="flex items-center justify-center rounded-xl w-7 h-7 text-xs transition-colors"
                               style={{ color: "rgb(var(--text-tertiary))" }}
                               onMouseEnter={(e) => {
                                 e.currentTarget.style.background = "rgb(var(--danger) / 0.1)";
@@ -592,14 +571,14 @@ export default function Dashboard() {
                           </div>
                         </div>
 
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between text-sm font-semibold" style={{ color: "rgb(var(--text-secondary))" }}>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between text-xs font-semibold" style={{ color: "rgb(var(--text-secondary))" }}>
                             <span>Crime score</span>
                             <span style={{ color: getRiskColorsByLevel(clickedRisk.risk_level || "UNKNOWN").text }}>
                               {clickedRisk.risk_score != null ? Math.min((clickedRisk.risk_score / 3000) * 10, 10).toFixed(1) : "—"} / 10
                             </span>
                           </div>
-                          <div className="rounded-full overflow-hidden h-2" style={{ background: "rgb(var(--bg-tertiary))" }}>
+                          <div className="rounded-full overflow-hidden h-1.5" style={{ background: "rgb(var(--bg-tertiary))" }}>
                             <div
                               className="h-full rounded-full transition-all duration-500"
                               style={{
@@ -608,10 +587,10 @@ export default function Dashboard() {
                               }}
                             />
                           </div>
-                          <div className="flex gap-3 pt-1">
+                          <div className="flex gap-2 pt-0.5">
                             <button
                               onClick={() => mapRef.current?.focusMap("selected")}
-                              className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors"
+                              className="flex-1 py-2 rounded-xl text-[10px] font-bold transition-colors"
                               style={{
                                 background: "rgb(var(--bg-tertiary))",
                                 border: "1px solid rgb(var(--border-primary))",
@@ -626,11 +605,11 @@ export default function Dashboard() {
                                 e.currentTarget.style.color = "rgb(var(--text-secondary))";
                               }}
                             >
-                              Focus canvas
+                              Focus
                             </button>
                             <button
                               onClick={() => mapRef.current?.showHospitalsFor("selected")}
-                              className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors"
+                              className="flex-1 py-2 rounded-xl text-[10px] font-bold transition-colors"
                               style={{
                                 background: hospitalsFor === "selected" ? "rgb(var(--success) / 0.15)" : "rgb(var(--success) / 0.08)",
                                 border:
@@ -660,7 +639,7 @@ export default function Dashboard() {
                 </div>
 
                 <div
-                  className="flex-1 min-h-[min(520px,62vh)] xl:min-h-[calc(100vh-320px)] flex flex-col rounded-2xl border overflow-hidden transition-colors duration-200"
+                  className="flex-1 min-h-[min(480px,58vh)] xl:min-h-[calc(100vh-280px)] flex flex-col rounded-2xl border overflow-hidden transition-colors duration-200"
                   style={{
                     ...surfaceCard,
                     boxShadow: `${surfaceCard.boxShadow}, 0 40px 120px -48px rgb(0 0 0 / 0.65)`,
@@ -687,7 +666,7 @@ export default function Dashboard() {
 
               {/* Operations rail */}
               <aside
-                className="flex flex-col gap-6 min-w-0 xl:sticky xl:top-6 xl:self-start xl:max-h-[calc(100vh-48px)] xl:overflow-y-auto"
+                className="flex flex-col gap-5 min-w-0 xl:sticky xl:top-6 xl:self-start xl:max-h-[calc(100vh-48px)] xl:overflow-y-auto"
                 style={{ scrollbarGutter: "stable" }}
               >
                 {confirmDeleteId && (
@@ -743,10 +722,7 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                <div className="space-y-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.24em] px-0.5" style={{ color: "rgb(var(--text-tertiary))" }}>
-                    Context rail
-                  </p>
+                <div className="space-y-2">
                   <div
                     className="voyageour-panel rounded-2xl overflow-hidden border p-1 transition-colors duration-200"
                     style={{
@@ -759,7 +735,7 @@ export default function Dashboard() {
                       locationName={locationName}
                       locationType="current"
                       width="100%"
-                      height="280px"
+                      height="240px"
                       showTitle={true}
                     />
                   </div>
@@ -767,24 +743,19 @@ export default function Dashboard() {
 
                 {routeHistory.length > 0 && (
                   <div
-                    className="voyageour-panel rounded-2xl p-6 border transition-colors duration-200"
+                    className="voyageour-panel rounded-2xl p-5 border transition-colors duration-200"
                     style={{
                       background: "rgb(var(--bg-elevated) / 0.95)",
                       borderColor: "rgb(var(--border-primary))",
                       boxShadow: "0 28px 64px -36px rgb(0 0 0 / 0.55)",
                     }}
                   >
-                    <div className="flex items-center justify-between mb-5 gap-3">
-                      <div>
-                        <p className="text-xs font-semibold tracking-[0.2em] uppercase" style={{ color: "rgb(var(--text-tertiary))" }}>
-                          Recent routes
-                        </p>
-                        <p className="mt-1 text-lg font-semibold" style={{ color: "rgb(var(--text-primary))" }}>
-                          Flight log
-                        </p>
-                      </div>
+                    <div className="flex items-center justify-between mb-4 gap-3">
+                      <p className="text-base font-semibold" style={{ color: "rgb(var(--text-primary))" }}>
+                        Recent routes
+                      </p>
                       <span
-                        className="text-sm font-semibold px-3 py-1 rounded-full shrink-0"
+                        className="text-xs font-semibold px-2.5 py-1 rounded-full shrink-0"
                         style={{
                           background: "rgb(var(--bg-tertiary))",
                           color: "rgb(var(--text-secondary))",
@@ -794,62 +765,53 @@ export default function Dashboard() {
                         {routeHistory.length}
                       </span>
                     </div>
-                    <div className="flex flex-col gap-4 max-h-[min(420px,50vh)] overflow-y-auto pr-1">
+                    <div className="flex flex-col gap-3 max-h-[min(380px,45vh)] overflow-y-auto pr-1">
                       {routeHistory.slice(0, 5).map((historyItem, index) => (
                         <div
                           key={historyItem.id}
-                          className="group p-5 rounded-2xl border transition-colors"
+                          className="group p-4 rounded-2xl border transition-colors"
                           style={{
                             borderColor: "rgb(var(--border-primary) / 0.6)",
                             background: "rgb(var(--bg-secondary) / 0.5)",
                           }}
                         >
-                          <div className="flex items-start gap-3">
+                          <div className="flex items-start gap-2.5">
                             <div
                               className="flex-1 cursor-pointer min-w-0"
                               onClick={() => mapRef.current?.triggerRoute(historyItem.origin, historyItem.destination, true)}
                             >
-                              <div className="flex items-center justify-between gap-2 mb-3">
-                                <span className="text-base font-semibold truncate" style={{ color: "rgb(var(--text-primary))" }}>
+                              <div className="flex items-center justify-between gap-2 mb-2.5">
+                                <span className="text-sm font-semibold truncate" style={{ color: "rgb(var(--text-primary))" }}>
                                   Route {index + 1}
                                 </span>
-                                <span className="text-xs font-medium shrink-0" style={{ color: "rgb(var(--text-tertiary))" }}>
+                                <span className="text-[10px] font-medium shrink-0" style={{ color: "rgb(var(--text-tertiary))" }}>
                                   {new Date(historyItem.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                                 </span>
                               </div>
-                              <div className="text-sm space-y-2.5" style={{ color: "rgb(var(--text-secondary))" }}>
-                                <div className="flex items-start gap-2.5">
-                                  <span className="inline-flex mt-1.5 h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                              <div className="text-xs space-y-2" style={{ color: "rgb(var(--text-secondary))" }}>
+                                <div className="flex items-start gap-2">
+                                  <span className="inline-flex mt-1 h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
                                   <span className="leading-snug">
                                     Origin: {historyItem.origin.lat.toFixed(4)}, {historyItem.origin.lng.toFixed(4)}
                                   </span>
                                 </div>
-                                <div className="flex items-start gap-2.5">
-                                  <span className="inline-flex mt-1.5 h-2 w-2 rounded-full bg-rose-500 shrink-0" />
+                                <div className="flex items-start gap-2">
+                                  <span className="inline-flex mt-1 h-1.5 w-1.5 rounded-full bg-rose-500 shrink-0" />
                                   <span className="leading-snug">
                                     Destination: {historyItem.destination.lat.toFixed(4)}, {historyItem.destination.lng.toFixed(4)}
                                   </span>
                                 </div>
                               </div>
                               {historyItem.routes?.length > 0 && (
-                                <div className="mt-5 grid grid-cols-[auto_1fr_auto] gap-3 items-center">
+                                <div className="mt-5 flex items-center justify-between">
                                   <div
                                     className={`rounded-full px-3 py-1 text-[11px] font-semibold transition-colors ${
                                       historyItem.routes[0].type === "safest"
-                                        ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                                        : "bg-blue-50 text-blue-700 border border-blue-100"
+                                        ? "bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800"
+                                        : "bg-blue-50 text-blue-700 border border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
                                     }`}
                                   >
                                     {historyItem.routes[0].type.toUpperCase()}
-                                  </div>
-                                  <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgb(var(--bg-tertiary))" }}>
-                                    <div
-                                      className="h-full rounded-full"
-                                      style={{
-                                        width: `${Math.min((historyItem.routes[0].safety_score ?? 0) / 10 * 100, 100)}%`,
-                                        background: historyItem.routes[0].type === "safest" ? "#22c55e" : "#3b82f6",
-                                      }}
-                                    />
                                   </div>
                                   <span className="text-xs font-semibold" style={{ color: "rgb(var(--text-primary))" }}>
                                     {historyItem.routes[0].safety_score?.toFixed(1) ?? "—"}/10
@@ -863,10 +825,10 @@ export default function Dashboard() {
                                 setConfirmDeleteId(historyItem.id);
                               }}
                               title="Delete route"
-                              className="flex-shrink-0 rounded-xl p-2.5 transition-colors hover:bg-rose-500/10"
+                              className="flex-shrink-0 rounded-xl p-2 transition-colors hover:bg-rose-500/10"
                               style={{ color: "rgb(var(--text-tertiary))" }}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </div>
@@ -1463,24 +1425,24 @@ function GlassMapCard({ liveRisk, onRiskUpdate, onClickedRiskUpdate, mapRef, onH
 
   return (
     <div className="flex-1 flex flex-col relative w-full h-full min-h-0 bg-white dark:bg-slate-900 z-10 transition-colors">
-      <div className="px-6 sm:px-8 py-5 sm:py-6 flex flex-col gap-4 border-b border-slate-200 dark:border-slate-800 transition-colors">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3 min-w-0">
-            <span className="text-lg text-teal-600 dark:text-teal-400 transition-colors mt-0.5 shrink-0">◈</span>
+      <div className="px-5 sm:px-6 py-4 sm:py-4 flex flex-col gap-3 border-b border-slate-200 dark:border-slate-800 transition-colors">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-2.5 min-w-0">
+            <span className="text-base text-teal-600 dark:text-teal-400 transition-colors mt-0.5 shrink-0">◈</span>
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 transition-colors">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 transition-colors">
                 Geospatial canvas
               </p>
-              <p className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-slate-100 transition-colors tracking-tight">
+              <p className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100 transition-colors tracking-tight">
                 Live operating map
               </p>
-              <p className="text-sm text-slate-500 dark:text-slate-400 transition-colors mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 transition-colors mt-0.5">
                 Crime risk · Hospitals · Routes
               </p>
             </div>
           </div>
           {routeSummary && (
-            <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium bg-teal-50 dark:bg-teal-900/30 border border-teal-100 dark:border-teal-800 text-teal-700 dark:text-teal-400 transition-colors shrink-0">
+            <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium bg-teal-50 dark:bg-teal-900/30 border border-teal-100 dark:border-teal-800 text-teal-700 dark:text-teal-400 transition-colors shrink-0">
               <span>🕐 {routeSummary.time}</span>
               <span className="text-teal-200 dark:text-teal-600">·</span>
               <span>📍 {routeSummary.dist}</span>
@@ -1488,21 +1450,21 @@ function GlassMapCard({ liveRisk, onRiskUpdate, onClickedRiskUpdate, mapRef, onH
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3 mb-1">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
           <div className="flex gap-2 items-center">
             <input value={routeFrom} onChange={(e) => { setRouteFrom(e.target.value); setRouteFromCoords(null); }}
               placeholder={pickingFor === "from" ? "Click on map…" : "From — origin"}
-              className={`flex-1 px-3 py-2.5 rounded-xl text-xs border focus:outline-none transition-colors ${pickingFor === "from" ? "bg-teal-50 dark:bg-teal-900/40 border-teal-300 dark:border-teal-600 text-teal-900 dark:text-teal-100" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:border-teal-400 dark:focus:border-teal-500"}`}
+              className={`flex-1 px-3 py-2 rounded-xl text-xs border focus:outline-none transition-colors ${pickingFor === "from" ? "bg-teal-50 dark:bg-teal-900/40 border-teal-300 dark:border-teal-600 text-teal-900 dark:text-teal-100" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:border-teal-400 dark:focus:border-teal-500"}`}
             />
             <button type="button" title="Use current location"
               onClick={() => { setRouteFrom("Current Location"); setPickingFor(null); }}
-              className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl flex-shrink-0 text-[11px] font-medium bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors">
-              <Navigation size={12} /> Current
+              className="flex items-center gap-1.5 px-2.5 py-2 rounded-xl flex-shrink-0 text-[10px] font-medium bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors">
+              <Navigation size={11} /> Current
             </button>
             <button type="button" title="Pick on map"
               onClick={() => setPickingFor((p) => p === "from" ? null : "from")}
-              className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl flex-shrink-0 text-[11px] font-medium transition-colors ${pickingFor === "from" ? "bg-teal-100 dark:bg-teal-900/40 border-teal-300 dark:border-teal-600 text-teal-800 dark:text-teal-300" : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"}`}>
-              <MapPin size={12} /> Map
+              className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl flex-shrink-0 text-[10px] font-medium transition-colors ${pickingFor === "from" ? "bg-teal-100 dark:bg-teal-900/40 border-teal-300 dark:border-teal-600 text-teal-800 dark:text-teal-300" : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"}`}>
+              <MapPin size={11} /> Map
             </button>
           </div>
 
