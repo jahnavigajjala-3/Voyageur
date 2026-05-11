@@ -1225,7 +1225,7 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
                     </span>
                   </div>
                   <div className="min-w-0 flex-1 pt-0.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Safety score</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Risk score</p>
                     <p className="text-xs text-slate-400 dark:text-slate-500">vs. maximum risk band</p>
                   </div>
                 </div>
