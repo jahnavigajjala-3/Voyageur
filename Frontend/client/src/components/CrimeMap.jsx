@@ -70,6 +70,23 @@ const POPUP_MIN_BOX = { ...POPUP_BOX, minWidth: "140px" };
 const popupMuted = { color: "rgb(var(--text-secondary))", fontSize: "11px" };
 const popupSoft = { color: "rgb(var(--text-tertiary))", fontSize: "11px" };
 
+/** Keeps Leaflet in sync when the dashboard flex layout changes size */
+function MapLayoutSync() {
+  const map = useMap();
+  useEffect(() => {
+    const container = map.getContainer();
+    const root = container?.closest?.(".crime-map-root") || container?.parentElement;
+    map.invalidateSize();
+    if (!root || typeof ResizeObserver === "undefined") return undefined;
+    const ro = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    ro.observe(root);
+    return () => ro.disconnect();
+  }, [map]);
+  return null;
+}
+
 function RoutingMachine({ waypoints, isActive, onRouteDirections, onStepCoords }) {
   const map = useMap();
   const layerRef = useRef(null);
@@ -615,16 +632,35 @@ const CrimeMap = forwardRef(function CrimeMap(
   };
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <div
+      className="crime-map-root"
+      style={{
+        flex: "1 1 0%",
+        minHeight: 0,
+        height: "100%",
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        position: "relative",
+      }}
+    >
       <MapContainer
         center={[location.lat, location.lng]}
         zoom={12}
-        style={{ flex: 1, width: "100%", minHeight: "300px", cursor: pickingFor ? "crosshair" : undefined }}
+        className="crime-map-leaflet z-0"
+        style={{
+          flex: "1 1 auto",
+          width: "100%",
+          height: "100%",
+          minHeight: 0,
+          cursor: pickingFor ? "crosshair" : undefined,
+        }}
       >
         <TileLayer
           attribution="&copy; OpenStreetMap contributors"
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <MapLayoutSync />
         <MapClickHandler onMapClick={handleMapClick} />
         <RecenterButton lat={location.lat} lng={location.lng} />
         <FlyToLocation target={flyTarget} />
