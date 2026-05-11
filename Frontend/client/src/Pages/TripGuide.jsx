@@ -1,6 +1,6 @@
-import { createElement, useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { createElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Bus, CalendarDays, ChevronLeft, ChevronRight, Hotel, Image, MapPin, Mountain, Plane, Search, Train } from "lucide-react";
+import { ArrowLeft, Bus, CalendarDays, Hotel, Image, MapPin, Mountain, Plane, Search, Train } from "lucide-react";
 import { getTripGuidance } from "../api/api";
 import { fetchLocationImage } from "../services/unsplashService";
 import useLocation from "../hooks/useLocation";
@@ -287,9 +287,7 @@ export default function TripGuide() {
   const [loadingImages, setLoadingImages] = useState(false);
   const [suggestionImages, setSuggestionImages] = useState({});
   const [suggestionImageLoading, setSuggestionImageLoading] = useState({});
-  const [currentSlide, setCurrentSlide] = useState(0);
   const [actualFromLocation, setActualFromLocation] = useState("Current Location");
-  const carouselRef = useRef(null);
   const suggestionInflightRef = useRef(new Set());
 
   const hasDestination = Boolean(form.destination?.trim());
@@ -457,30 +455,12 @@ export default function TripGuide() {
     setDraftDestination("");
     setGuidance(null);
     setError("");
-    setCurrentSlide(0);
     setSuggestionImages({});
     setSuggestionImageLoading({});
     suggestionInflightRef.current.clear();
   };
 
   const itineraryDays = guidance?.itinerary || [];
-  const totalSlides = itineraryDays.length;
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % totalSlides);
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
-  };
-
-  const goToSlide = (index) => {
-    setCurrentSlide(index);
-  };
-
-  useEffect(() => {
-    setCurrentSlide(0);
-  }, [guidance]);
 
   const primaryKeyword = imageKeywords[0];
 
@@ -689,70 +669,52 @@ export default function TripGuide() {
 
               <div className="grid flex-1 gap-4 border-t border-slate-100 bg-slate-50 p-5 dark:border-white/10 dark:bg-slate-950/20">
                 <Panel title="Itinerary">
-                  {totalSlides > 0 ? (
-                    <div className="relative px-1 sm:px-2">
-                      <div className="overflow-hidden rounded-xl" ref={carouselRef}>
-                        <div
-                          className="flex transition-transform duration-500 ease-out"
-                          style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+                  {itineraryDays.length > 0 ? (
+                    <div className="space-y-4 overflow-y-auto pr-2" style={{ maxHeight: "600px" }}>
+                      {itineraryDays.map((day) => (
+                        <article
+                          key={day.day}
+                          className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow duration-300 hover:shadow-lg dark:border-white/10 dark:bg-slate-900/95"
                         >
-                          {itineraryDays.map((day) => (
-                            <div key={day.day} className="w-full flex-shrink-0 px-2">
-                              <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-slate-900/55">
-                                <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3 dark:border-white/10">
-                                  <span className="text-lg font-bold text-slate-800 dark:text-slate-100">Day {day.day}</span>
-                                  <span className="rounded-full border border-teal-100 bg-teal-50 px-3 py-1 text-xs font-bold text-teal-600 dark:border-cyan-400/20 dark:bg-cyan-400/10 dark:text-cyan-300">
-                                    {day.theme}
+                          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                            <div>
+                              <p className="text-xs uppercase tracking-[0.35em] text-teal-400/80">Day {day.day}</p>
+                              <h3 className="mt-3 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+                                {day.theme}
+                              </h3>
+                            </div>
+                            <div className="rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-teal-700 dark:border-cyan-400/20 dark:bg-cyan-400/10 dark:text-cyan-200">
+                              {day.activities.length} activities
+                            </div>
+                          </div>
+
+                          <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+                            This day is centered around {day.theme.toLowerCase()}. Expect a balanced mix of arrival, local exploration,
+                            and curated experiences tailored to your destination.
+                          </p>
+
+                          <div className="mt-5 space-y-3">
+                            {day.activities.map((activity, idx) => (
+                              <div
+                                key={idx}
+                                className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-slate-950/40"
+                              >
+                                <div className="flex items-center justify-between gap-3">
+                                  <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                    {activity}
+                                  </span>
+                                  <span className="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                    {idx === 0 ? "Morning" : idx === 1 ? "Afternoon" : idx === 2 ? "Evening" : "Plan"}
                                   </span>
                                 </div>
-                                <ul className="list-disc space-y-2 pl-5 text-sm font-medium leading-relaxed text-slate-600 dark:text-slate-300">
-                                  {day.activities.map((activity, idx) => (
-                                    <li key={idx}>{activity}</li>
-                                  ))}
-                                </ul>
+                                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
+                                  A suggested highlight for this activity: {activity.toLowerCase()} will help you soak in the local vibe and keep your day moving smoothly.
+                                </p>
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {totalSlides > 1 && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={prevSlide}
-                            className="absolute left-2 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-slate-200 bg-white shadow-lg transition-all hover:scale-110 hover:bg-slate-50 sm:left-3 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
-                            aria-label="Previous day"
-                          >
-                            <ChevronLeft size={20} className="text-slate-700 dark:text-slate-200" />
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={nextSlide}
-                            className="absolute right-2 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-slate-200 bg-white shadow-lg transition-all hover:scale-110 hover:bg-slate-50 sm:right-3 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
-                            aria-label="Next day"
-                          >
-                            <ChevronRight size={20} className="text-slate-700 dark:text-slate-200" />
-                          </button>
-
-                          <div className="mt-4 flex items-center justify-center gap-2">
-                            {itineraryDays.map((_, index) => (
-                              <button
-                                key={index}
-                                type="button"
-                                onClick={() => goToSlide(index)}
-                                className={`rounded-full transition-all ${
-                                  index === currentSlide
-                                    ? "h-2 w-8 bg-teal-500 dark:bg-cyan-400"
-                                    : "h-2 w-2 bg-slate-300 hover:bg-slate-400 dark:bg-slate-600 dark:hover:bg-slate-500"
-                                }`}
-                                aria-label={`Go to day ${index + 1}`}
-                              />
                             ))}
                           </div>
-                        </>
-                      )}
+                        </article>
+                      ))}
                     </div>
                   ) : (
                     <p className="text-sm text-slate-500 dark:text-slate-400">No itinerary available yet.</p>
