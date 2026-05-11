@@ -153,7 +153,53 @@ function DestinationSuggestionCard({ suggestion, imageData, isImageLoading, onSe
 
 const makeSearchUrl = (base, query) => `${base}${encodeURIComponent(query)}`;
 
-function makeBookingLinks(destination, guidance) {
+/** URL path segment for Redbus / Confirmtkt style links (lowercase, hyphenated). */
+function slugifyBookingPlace(name) {
+  if (!name || typeof name !== "string") return "";
+  const core = name.split(",")[0].trim();
+  const slug = core
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug || "india";
+}
+
+/** ConfirmTkt uses Title-Case hyphen segments in `/trains/{From}-to-{To}-train-tickets`. */
+function titleCaseSlug(slug) {
+  if (!slug) return "";
+  return slug
+    .split("-")
+    .map((part) => (part ? part.charAt(0).toUpperCase() + part.slice(1) : ""))
+    .join("-");
+}
+
+function trainBookingUrl(destination, fromLabel) {
+  const destClean = (destination || "").split(",")[0].trim();
+  const toSlug = slugifyBookingPlace(destClean);
+  const fromRaw =
+    fromLabel && !/^current location$/i.test(String(fromLabel).trim()) ? String(fromLabel).split(",")[0].trim() : "";
+  const fromSlug = slugifyBookingPlace(fromRaw);
+  if (fromSlug && toSlug && fromSlug !== toSlug) {
+    const fromSeg = titleCaseSlug(fromSlug);
+    const toSeg = titleCaseSlug(toSlug);
+    return `https://www.confirmtkt.com/trains/${fromSeg}-to-${toSeg}-train-tickets`;
+  }
+  return `https://www.google.co.in/search?q=${encodeURIComponent(`IRCTC train booking to ${destClean}`)}`;
+}
+
+function busBookingUrl(destination, fromLabel) {
+  const destClean = (destination || "").split(",")[0].trim();
+  const toSlug = slugifyBookingPlace(destClean);
+  const fromRaw =
+    fromLabel && !/^current location$/i.test(String(fromLabel).trim()) ? String(fromLabel).split(",")[0].trim() : "";
+  const fromSlug = slugifyBookingPlace(fromRaw);
+  if (fromSlug && toSlug && fromSlug !== toSlug) {
+    return `https://www.redbus.in/bus-tickets/${fromSlug}-to-${toSlug}`;
+  }
+  return `https://www.redbus.in/buses/${toSlug}-bus-tickets`;
+}
+
+function makeBookingLinks(destination, guidance, fromLabel = "") {
   const travelSuggestions = guidance?.travel_suggestions || [];
   const stay = guidance?.stay_suggestions?.[0];
 
@@ -175,14 +221,14 @@ function makeBookingLinks(destination, guidance) {
       icon: Train,
       tone: "#a78bfa",
       detail: trainPrice,
-      url: makeSearchUrl("https://www.google.com/search?q=", `book train to ${destination}`),
+      url: trainBookingUrl(destination, fromLabel),
     },
     {
       label: "Buses",
       icon: Bus,
       tone: "#34d399",
       detail: busPrice,
-      url: makeSearchUrl("https://www.redbus.in/search?toCityName=", destination),
+      url: busBookingUrl(destination, fromLabel),
     },
     {
       label: "Hotels",
@@ -226,8 +272,8 @@ export default function TripGuide() {
       : [];
 
   const links = useMemo(
-    () => (hasDestination ? makeBookingLinks(form.destination, guidance) : []),
-    [form.destination, guidance, hasDestination]
+    () => (hasDestination ? makeBookingLinks(form.destination, guidance, actualFromLocation) : []),
+    [form.destination, guidance, hasDestination, actualFromLocation]
   );
 
   useEffect(() => {
