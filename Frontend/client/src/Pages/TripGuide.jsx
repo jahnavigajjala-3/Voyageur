@@ -2,6 +2,7 @@ import { createElement, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Bus, CalendarDays, Hotel, Image, IndianRupee, MapPin, Mountain, Plane, Search, Train } from "lucide-react";
 import { getTripGuidance } from "../api/api";
+import { fetchLocationImage } from "../services/unsplashService";
 
 const FEEDS = ["Mountains", "Beaches", "Urban", "Nature", "Culture", "Adventure"];
 const BUDGETS = ["economy", "midrange", "luxury"];
@@ -15,7 +16,6 @@ const quickPlaces = ["Goa", "Mumbai", "Bengaluru", "Jaipur", "Kochi", "Delhi"];
 const iconsByMode = { Flight: Plane, Train, Bus };
 
 const makeSearchUrl = (base, query) => `${base}${encodeURIComponent(query)}`;
-const makeImageUrl = (keyword) => `https://source.unsplash.com/1200x800/?${encodeURIComponent(keyword || "travel")}`;
 
 function makeBookingLinks(destination, guidance) {
   const stay = guidance?.stay_suggestions?.[0];
@@ -64,11 +64,46 @@ export default function TripGuide() {
   const [guidance, setGuidance] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [images, setImages] = useState({});
+  const [loadingImages, setLoadingImages] = useState(false);
 
   const imageKeywords = guidance?.destination_visuals?.length
     ? guidance.destination_visuals
     : [`${form.destination} ${form.feed_preference}`, `${form.destination} travel`, `${form.destination} hotel`];
   const links = useMemo(() => makeBookingLinks(form.destination, guidance), [form.destination, guidance]);
+
+  // Fetch images from Unsplash API
+  useEffect(() => {
+    const loadImages = async () => {
+      setLoadingImages(true);
+      const newImages = {};
+      
+      for (const keyword of imageKeywords) {
+        try {
+          const imageData = await fetchLocationImage(keyword, {
+            width: keyword === imageKeywords[0] ? 1200 : 600,
+            height: keyword === imageKeywords[0] ? 800 : 400,
+            orientation: 'landscape'
+          });
+          newImages[keyword] = imageData;
+        } catch (err) {
+          console.error(`Failed to load image for ${keyword}:`, err);
+          newImages[keyword] = {
+            url: `https://dummyimage.com/1200x800/f8fafc/0f172a&text=${encodeURIComponent(keyword)}`,
+            alt: keyword,
+            source: 'fallback'
+          };
+        }
+      }
+      
+      setImages(newImages);
+      setLoadingImages(false);
+    };
+
+    if (imageKeywords.length > 0) {
+      loadImages();
+    }
+  }, [imageKeywords]);
 
   const fetchGuidance = async (payload = form) => {
     setLoading(true);
@@ -153,13 +188,28 @@ export default function TripGuide() {
             borderColor: 'rgb(var(--border-primary))',
           }}>
             <div className="h-[360px] relative bg-slate-100 dark:bg-slate-900 flex-shrink-0">
-              <img
-                key={primaryKeyword}
-                src={makeImageUrl(primaryKeyword)}
-                alt={primaryKeyword}
-                className="w-full h-full object-cover block"
-                onError={(e) => { e.currentTarget.src = `https://dummyimage.com/1200x800/f8fafc/0f172a&text=${encodeURIComponent(form.destination)}`; }}
-              />
+              {loadingImages ? (
+                <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-900">
+                  <div className="text-center">
+                    <div className="w-8 h-8 border-2 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                    <p className="text-xs text-slate-500">Loading image...</p>
+                  </div>
+                </div>
+              ) : images[primaryKeyword]?.url ? (
+                <img
+                  key={primaryKeyword}
+                  src={images[primaryKeyword].url}
+                  alt={images[primaryKeyword].alt}
+                  className="w-full h-full object-cover block"
+                  onError={(e) => { e.currentTarget.src = `https://dummyimage.com/1200x800/f8fafc/0f172a&text=${encodeURIComponent(form.destination)}`; }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center" style={{
+                  background: images[primaryKeyword]?.gradient || 'linear-gradient(135deg, rgba(14,30,80,0.8) 0%, rgba(7,20,55,0.9) 100%)'
+                }}>
+                  <p className="text-white text-2xl font-bold">{form.destination}</p>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
               <div className="absolute bottom-5 left-5 right-5 text-white">
                 <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium bg-white/20 backdrop-blur-md border border-white/30 text-white shadow-sm">
@@ -176,16 +226,33 @@ export default function TripGuide() {
             <div className="grid gap-3 p-5 md:grid-cols-3">
               {imageKeywords.map((keyword) => (
                 <div key={keyword} className="overflow-hidden rounded-xl bg-slate-50 border border-slate-200 shadow-sm flex flex-col dark:bg-slate-900/40 dark:border-white/10">
-                  <img
-                    src={makeImageUrl(keyword)}
-                    alt={keyword}
-                    className="w-full h-[108px] object-cover block"
-                    onError={(e) => { e.currentTarget.src = `https://dummyimage.com/600x400/f8fafc/0f172a&text=${encodeURIComponent(keyword)}`; }}
-                  />
+                  {loadingImages ? (
+                    <div className="w-full h-[108px] flex items-center justify-center bg-slate-100 dark:bg-slate-900">
+                      <div className="w-4 h-4 border-2 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                  ) : images[keyword]?.url ? (
+                    <img
+                      src={images[keyword].url}
+                      alt={images[keyword].alt}
+                      className="w-full h-[108px] object-cover block"
+                      onError={(e) => { e.currentTarget.src = `https://dummyimage.com/600x400/f8fafc/0f172a&text=${encodeURIComponent(keyword)}`; }}
+                    />
+                  ) : (
+                    <div className="w-full h-[108px] flex items-center justify-center" style={{
+                      background: images[keyword]?.gradient || 'linear-gradient(135deg, rgba(56,189,248,0.15) 0%, rgba(99,102,241,0.2) 100%)'
+                    }}>
+                      <Image size={24} className="text-white/50" />
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 px-3 py-2.5 text-xs text-slate-600 font-medium bg-white border-t border-slate-100 dark:bg-slate-900/70 dark:border-white/10 dark:text-slate-300">
                     <Image size={13} className="text-teal-500 dark:text-cyan-300" />
                     <span className="truncate">{keyword}</span>
                   </div>
+                  {images[keyword]?.author && images[keyword]?.source === 'unsplash' && (
+                    <div className="px-3 py-1.5 text-[9px] text-slate-400 border-t border-slate-100 dark:border-white/10">
+                      Photo by <a href={images[keyword].authorUrl} target="_blank" rel="noopener noreferrer" className="underline hover:text-teal-500">{images[keyword].author}</a>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
