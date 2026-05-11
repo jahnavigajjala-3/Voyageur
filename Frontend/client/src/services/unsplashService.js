@@ -36,23 +36,19 @@ function generateSearchQueries(locationName) {
   }
 
   const cleanName = locationName.trim();
+  // Use just the city name (no extra words) for best Unsplash results
   const queries = [
+    `${cleanName} city`,
     `${cleanName} skyline`,
-    `${cleanName} aerial view`,
-    `${cleanName} city night`,
-    `${cleanName} landscape`,
+    `${cleanName} aerial`,
+    `${cleanName} landmark`,
     `${cleanName} travel`,
-    `${cleanName} urban`,
-    `${cleanName} architecture`
+    `${cleanName} architecture`,
+    `${cleanName}`,
   ];
 
-  // Add more generic queries for better fallback
-  queries.push(
-    'travel destination',
-    'cityscape',
-    'urban photography',
-    'landscape photography'
-  );
+  // Generic fallbacks
+  queries.push('travel destination', 'cityscape', 'urban photography');
 
   return queries;
 }

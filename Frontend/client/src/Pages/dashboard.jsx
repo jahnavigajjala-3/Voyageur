@@ -9,7 +9,7 @@ import { sendChatMessage, getNearbyHospitals, getWeather } from "../api/api";
 import useLocation from "../hooks/useLocation";
 import { getRiskColorsByLevel, getRiskColor } from "../utils/riskColors";
 import { MapPin, Navigation, Home, Compass, MessageSquare, LogOut, ShieldCheck, Map, ChevronDown, Trash2 } from "lucide-react";
-import { getLocationDisplayName } from "../services/geocodingService";
+import { getLocationDisplayName, reverseGeocode } from "../services/geocodingService";
 
 const NAV_ITEMS = [
   { icon: Home, label: "Home", path: "/dashboard" },
@@ -81,6 +81,7 @@ export default function Dashboard() {
   const [nearbyHospitalCount, setNearbyHospitalCount] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [locationName, setLocationName] = useState("");
+  const [locationCity, setLocationCity] = useState(""); // city-only for image search
   const [routeLocationNames, setRouteLocationNames] = useState({}); // Cache for route history location names
 
   // ─── Weather state ────────────────────────────────────────────────────────
@@ -110,9 +111,18 @@ export default function Dashboard() {
         const weatherData = await getWeather(location.lat, location.lng);
         setWeather(weatherData);
         
-        // Fetch location name (city) — null means geocoding failed, keep empty
-        const cityName = await getLocationDisplayName(location.lat, location.lng);
-        setLocationName(cityName || "");
+        // Fetch location name — null means geocoding failed, keep empty
+        const loc = await reverseGeocode(location.lat, location.lng);
+        if (loc) {
+          const city = loc.city || loc.state || "";
+          const specific = loc.specific;
+          // Display name: "Neighbourhood, City" or just "City"
+          const displayName = (specific && city && specific.toLowerCase() !== city.toLowerCase())
+            ? `${specific}, ${city}`
+            : (specific || city || "");
+          setLocationName(displayName);
+          setLocationCity(city); // city-only for Unsplash image search
+        }
       } catch (err) {
         console.error("Weather fetch failed:", err);
       } finally {
@@ -758,7 +768,7 @@ export default function Dashboard() {
                     }}
                   >
                     <LocationImageCard
-                      locationName={locationName}
+                      locationName={locationCity || locationName}
                       locationType="current"
                       width="100%"
                       height="240px"
