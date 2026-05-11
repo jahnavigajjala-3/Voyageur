@@ -1,8 +1,10 @@
-import { createElement, useEffect, useMemo, useState } from "react";
+import { createElement, useEffect, useMemo, useState, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Bus, CalendarDays, Hotel, Image, IndianRupee, MapPin, Mountain, Plane, Search, Train } from "lucide-react";
+import { ArrowLeft, Bus, CalendarDays, ChevronLeft, ChevronRight, Hotel, Image, MapPin, Mountain, Plane, Search, Train } from "lucide-react";
 import { getTripGuidance } from "../api/api";
 import { fetchLocationImage } from "../services/unsplashService";
+import useLocation from "../hooks/useLocation";
+import { getLocationDisplayName } from "../services/geocodingService";
 
 const FEEDS = ["Mountains", "Beaches", "Urban", "Nature", "Culture", "Adventure"];
 const BUDGETS = ["economy", "midrange", "luxury"];
@@ -18,40 +20,49 @@ const iconsByMode = { Flight: Plane, Train, Bus };
 const makeSearchUrl = (base, query) => `${base}${encodeURIComponent(query)}`;
 
 function makeBookingLinks(destination, guidance) {
+  const travelSuggestions = guidance?.travel_suggestions || [];
   const stay = guidance?.stay_suggestions?.[0];
+  
+  // Find prices from travel suggestions
+  const flightPrice = travelSuggestions.find(t => t.mode === "Flight")?.estimated_price || "Compare prices";
+  const trainPrice = travelSuggestions.find(t => t.mode === "Train")?.estimated_price || "Compare prices";
+  const busPrice = travelSuggestions.find(t => t.mode === "Bus")?.estimated_price || "Compare prices";
+  const hotelPrice = stay?.price_per_night || "Compare stays";
+  
   return [
     {
       label: "Flights",
       icon: Plane,
       tone: "#38bdf8",
-      detail: "Compare live airfares",
+      detail: flightPrice,
       url: makeSearchUrl("https://www.google.com/travel/flights?q=", `flights to ${destination}`),
     },
     {
       label: "Trains",
       icon: Train,
       tone: "#a78bfa",
-      detail: "Search rail options",
+      detail: trainPrice,
       url: makeSearchUrl("https://www.google.com/search?q=", `book train to ${destination}`),
     },
     {
       label: "Buses",
       icon: Bus,
       tone: "#34d399",
-      detail: "Open bus booking",
+      detail: busPrice,
       url: makeSearchUrl("https://www.redbus.in/search?toCityName=", destination),
     },
     {
       label: "Hotels",
       icon: Hotel,
       tone: "#fbbf24",
-      detail: stay ? `${stay.type} · ${stay.price_per_night}` : "Compare stays",
+      detail: hotelPrice,
       url: makeSearchUrl("https://www.booking.com/searchresults.html?ss=", destination),
     },
   ];
 }
 
 export default function TripGuide() {
+  const { location } = useLocation();
   const [form, setForm] = useState({
     from_location: "Current Location",
     transit_preference: "airport",
@@ -66,11 +77,32 @@ export default function TripGuide() {
   const [error, setError] = useState("");
   const [images, setImages] = useState({});
   const [loadingImages, setLoadingImages] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [actualFromLocation, setActualFromLocation] = useState("Current Location");
+  const carouselRef = useRef(null);
 
   const imageKeywords = guidance?.destination_visuals?.length
     ? guidance.destination_visuals
     : [`${form.destination} ${form.feed_preference}`, `${form.destination} travel`, `${form.destination} hotel`];
   const links = useMemo(() => makeBookingLinks(form.destination, guidance), [form.destination, guidance]);
+
+  // Get actual location name when GPS coordinates are available
+  useEffect(() => {
+    const fetchActualLocation = async () => {
+      if (location?.lat && location?.lng && form.from_location.toLowerCase().includes("current")) {
+        try {
+          const cityName = await getLocationDisplayName(location.lat, location.lng);
+          setActualFromLocation(cityName);
+        } catch (err) {
+          console.error("Failed to get location name:", err);
+          setActualFromLocation("Current Location");
+        }
+      } else if (!form.from_location.toLowerCase().includes("current")) {
+        setActualFromLocation(form.from_location);
+      }
+    };
+    fetchActualLocation();
+  }, [location, form.from_location]);
 
   // Fetch images from Unsplash API
   useEffect(() => {
@@ -109,8 +141,19 @@ export default function TripGuide() {
     setLoading(true);
     setError("");
     try {
+      // If from_location is "Current Location" and we have GPS, use actual city name
+      let fromLocation = payload.from_location;
+      if (fromLocation.toLowerCase().includes("current") && location?.lat && location?.lng) {
+        try {
+          fromLocation = await getLocationDisplayName(location.lat, location.lng);
+        } catch (err) {
+          console.warn("Could not get location name, using 'Current Location'");
+        }
+      }
+      
       const data = await getTripGuidance({
         ...payload,
+        from_location: fromLocation,
         duration: Number(payload.duration) || 1,
       });
       setGuidance(data);
@@ -153,6 +196,26 @@ export default function TripGuide() {
     setForm(next);
     fetchGuidance(next);
   };
+
+  const itineraryDays = guidance?.itinerary || [];
+  const totalSlides = itineraryDays.length;
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % totalSlides);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
+  };
+
+  const goToSlide = (index) => {
+    setCurrentSlide(index);
+  };
+
+  // Reset carousel when guidance changes
+  useEffect(() => {
+    setCurrentSlide(0);
+  }, [guidance]);
 
   const primaryKeyword = imageKeywords[0];
 
@@ -214,7 +277,7 @@ export default function TripGuide() {
               <div className="absolute bottom-5 left-5 right-5 text-white">
                 <div className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium bg-white/20 backdrop-blur-md border border-white/30 text-white shadow-sm">
                   <MapPin size={13} />
-                  {guidance?.departure_hub || "Choosing departure hub"}
+                  {guidance?.departure_hub || `From ${actualFromLocation}`}
                 </div>
                 <h2 className="mt-3 text-3xl font-bold font-serif">{form.feed_preference} trip to {form.destination}</h2>
                 <p className="mt-2 max-w-2xl text-sm text-white/90 leading-relaxed font-medium">
@@ -258,37 +321,77 @@ export default function TripGuide() {
             </div>
 
             <div className="grid gap-4 border-t border-slate-100 p-5 bg-slate-50 flex-1 dark:border-white/10 dark:bg-slate-950/20">
-              <Panel title="Travel Suggestions">
-                <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
-                {(guidance?.travel_suggestions || []).map((item) => {
-                  const Icon = iconsByMode[item.mode] || Plane;
-                  return (
-                    <div key={item.mode} className="rounded-xl p-3.5 min-w-[240px] bg-white border border-slate-200 shadow-sm dark:bg-slate-900/55 dark:border-white/10">
-                      <div className="flex items-center justify-between gap-3 mb-2">
-                        <span className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">{createElement(Icon, { size: 16, className: "text-teal-500 dark:text-cyan-300" })}{item.mode}</span>
-                        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 dark:bg-emerald-400/10 dark:border-emerald-400/20 dark:text-emerald-300">{item.estimated_price}</span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 leading-relaxed font-medium dark:text-slate-300">{item.reason}</p>
-                    </div>
-                  );
-                })}
-                </div>
-              </Panel>
-
               <Panel title="Itinerary">
-                <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
-                  {(guidance?.itinerary || []).map((day) => (
-                    <div key={day.day} className="rounded-xl p-4 min-w-[250px] max-w-[280px] bg-white border border-slate-200 shadow-sm dark:bg-slate-900/55 dark:border-white/10">
-                      <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100 dark:border-white/10">
-                        <span className="text-sm font-bold text-slate-800 dark:text-slate-100">Day {day.day}</span>
-                        <span className="text-[10px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-100 dark:bg-cyan-400/10 dark:border-cyan-400/20 dark:text-cyan-300">{day.theme}</span>
+                {totalSlides > 0 ? (
+                  <div className="relative">
+                    {/* Carousel Container */}
+                    <div className="overflow-hidden rounded-xl" ref={carouselRef}>
+                      <div 
+                        className="flex transition-transform duration-500 ease-out"
+                        style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+                      >
+                        {itineraryDays.map((day) => (
+                          <div key={day.day} className="w-full flex-shrink-0 px-2">
+                            <div className="rounded-xl p-5 bg-white border border-slate-200 shadow-sm dark:bg-slate-900/55 dark:border-white/10">
+                              <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-white/10">
+                                <span className="text-lg font-bold text-slate-800 dark:text-slate-100">Day {day.day}</span>
+                                <span className="text-xs font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-full border border-teal-100 dark:bg-cyan-400/10 dark:border-cyan-400/20 dark:text-cyan-300">
+                                  {day.theme}
+                                </span>
+                              </div>
+                              <ul className="list-disc pl-5 text-sm text-slate-600 leading-relaxed font-medium space-y-2 dark:text-slate-300">
+                                {day.activities.map((activity, idx) => (
+                                  <li key={idx}>{activity}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <ul className="list-disc pl-4 text-xs text-slate-600 leading-relaxed font-medium space-y-1.5 dark:text-slate-300">
-                        {day.activities.map((activity) => <li key={activity}>{activity}</li>)}
-                      </ul>
                     </div>
-                  ))}
-                </div>
+
+                    {/* Navigation Controls */}
+                    {totalSlides > 1 && (
+                      <>
+                        {/* Previous Button */}
+                        <button
+                          onClick={prevSlide}
+                          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 w-10 h-10 flex items-center justify-center rounded-full bg-white border-2 border-slate-200 shadow-lg hover:bg-slate-50 hover:scale-110 transition-all z-10 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700"
+                          aria-label="Previous day"
+                        >
+                          <ChevronLeft size={20} className="text-slate-700 dark:text-slate-200" />
+                        </button>
+
+                        {/* Next Button */}
+                        <button
+                          onClick={nextSlide}
+                          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 w-10 h-10 flex items-center justify-center rounded-full bg-white border-2 border-slate-200 shadow-lg hover:bg-slate-50 hover:scale-110 transition-all z-10 dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700"
+                          aria-label="Next day"
+                        >
+                          <ChevronRight size={20} className="text-slate-700 dark:text-slate-200" />
+                        </button>
+
+                        {/* Dots Indicator */}
+                        <div className="flex items-center justify-center gap-2 mt-4">
+                          {itineraryDays.map((_, index) => (
+                            <button
+                              key={index}
+                              onClick={() => goToSlide(index)}
+                              className={`transition-all rounded-full ${
+                                index === currentSlide
+                                  ? 'w-8 h-2 bg-teal-500 dark:bg-cyan-400'
+                                  : 'w-2 h-2 bg-slate-300 hover:bg-slate-400 dark:bg-slate-600 dark:hover:bg-slate-500'
+                              }`}
+                              aria-label={`Go to day ${index + 1}`}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">No itinerary available</p>
+                )}
               </Panel>
             </div>
           </div>
@@ -357,15 +460,6 @@ export default function TripGuide() {
               </div>
               {error && <p className="mt-3 text-xs text-rose-500 font-medium">{error}</p>}
             </form>
-
-            <Panel title="Stay Suggestions">
-              {(guidance?.stay_suggestions || []).map((stay) => (
-                <div key={stay.hotel_name} className="rounded-xl p-3.5 bg-white border border-slate-200 shadow-sm hover:border-slate-300 transition-colors cursor-default dark:bg-slate-900/55 dark:border-white/10 dark:hover:border-white/20">
-                  <div className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100"><Hotel size={16} className="text-amber-500" />{stay.hotel_name}</div>
-                  <p className="mt-1.5 text-xs text-slate-500 font-medium dark:text-slate-300">{stay.type} · <span className="text-emerald-600 font-bold dark:text-emerald-300">{stay.price_per_night}</span></p>
-                </div>
-              ))}
-            </Panel>
 
             <Panel title="Booking Redirects">
               {links.map(({ label, icon: Icon, tone, detail, url }) => (

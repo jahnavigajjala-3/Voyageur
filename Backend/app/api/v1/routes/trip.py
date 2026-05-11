@@ -15,72 +15,203 @@ HUBS = {
         "airport": "Chhatrapati Shivaji Maharaj International Airport",
         "railway": "Chhatrapati Shivaji Maharaj Terminus",
         "bus": "Mumbai Central Bus Depot",
+        "coords": (19.0760, 72.8777),
     },
     "delhi": {
         "airport": "Indira Gandhi International Airport",
         "railway": "New Delhi Railway Station",
         "bus": "Kashmiri Gate ISBT",
+        "coords": (28.7041, 77.1025),
     },
     "bengaluru": {
         "airport": "Kempegowda International Airport",
         "railway": "KSR Bengaluru City Junction",
         "bus": "Kempegowda Bus Station",
+        "coords": (12.9716, 77.5946),
     },
     "bangalore": {
         "airport": "Kempegowda International Airport",
         "railway": "KSR Bengaluru City Junction",
         "bus": "Kempegowda Bus Station",
+        "coords": (12.9716, 77.5946),
     },
     "hyderabad": {
         "airport": "Rajiv Gandhi International Airport",
         "railway": "Secunderabad Junction",
         "bus": "Mahatma Gandhi Bus Station",
+        "coords": (17.3850, 78.4867),
     },
     "chennai": {
         "airport": "Chennai International Airport",
         "railway": "MGR Chennai Central Railway Station",
         "bus": "Chennai Mofussil Bus Terminus",
+        "coords": (13.0827, 80.2707),
     },
     "kolkata": {
         "airport": "Netaji Subhas Chandra Bose International Airport",
         "railway": "Howrah Junction",
         "bus": "Esplanade Bus Terminus",
+        "coords": (22.5726, 88.3639),
     },
     "pune": {
         "airport": "Pune International Airport",
         "railway": "Pune Junction",
         "bus": "Swargate Bus Stand",
+        "coords": (18.5204, 73.8567),
     },
     "goa": {
         "airport": "Manohar International Airport, Mopa",
         "railway": "Madgaon Junction",
         "bus": "Panaji Bus Stand",
+        "coords": (15.2993, 74.1240),
+    },
+    "jaipur": {
+        "airport": "Jaipur International Airport",
+        "railway": "Jaipur Junction",
+        "bus": "Sindhi Camp Bus Stand",
+        "coords": (26.9124, 75.7873),
+    },
+    "kochi": {
+        "airport": "Cochin International Airport",
+        "railway": "Ernakulam Junction",
+        "bus": "Ernakulam KSRTC Bus Stand",
+        "coords": (9.9312, 76.2673),
     },
 }
 
 BUDGET_COPY = {
     "economy": {
-        "flight": "₹3,000-₹7,000",
-        "train": "₹600-₹1,800",
-        "bus": "₹500-₹1,500",
-        "stay": ("Backpacker Hub", "Hostel", "₹700-₹1,800"),
+        "flight_base": 3000,
+        "flight_per_km": 0.8,
+        "train_base": 600,
+        "train_per_km": 0.3,
+        "bus_base": 500,
+        "bus_per_km": 0.25,
+        "stay_base": 700,
+        "stay_multiplier": 1.0,
+        "stay_name": "Backpacker Hub",
+        "stay_type": "Hostel",
         "reason": "keeps costs low with hostels, public transit, shared buses, and sleeper/second-sitting train options",
     },
     "midrange": {
-        "flight": "₹6,000-₹12,000",
-        "train": "₹1,200-₹3,000",
-        "bus": "₹1,000-₹2,500",
-        "stay": ("Comfort City Stay", "Hotel", "₹2,500-₹5,500"),
+        "flight_base": 6000,
+        "flight_per_km": 1.5,
+        "train_base": 1200,
+        "train_per_km": 0.6,
+        "bus_base": 1000,
+        "bus_per_km": 0.5,
+        "stay_base": 2500,
+        "stay_multiplier": 1.0,
+        "stay_name": "Comfort City Stay",
+        "stay_type": "Hotel",
         "reason": "balances comfort and price with AC trains, reliable buses, standard flights, and 3-star hotels",
     },
     "luxury": {
-        "flight": "₹12,000-₹35,000",
-        "train": "₹3,000-₹7,000",
-        "bus": "₹2,500-₹6,000",
-        "stay": ("Signature Grand Resort", "Resort", "₹9,000-₹25,000"),
+        "flight_base": 12000,
+        "flight_per_km": 3.0,
+        "train_base": 3000,
+        "train_per_km": 1.2,
+        "bus_base": 2500,
+        "bus_per_km": 1.0,
+        "stay_base": 9000,
+        "stay_multiplier": 1.0,
+        "stay_name": "Signature Grand Resort",
+        "stay_type": "Resort",
         "reason": "prioritizes premium cabins, flexible flights, private transfers, and luxury stays",
     },
 }
+
+# Destination popularity multipliers (tourist hotspots cost more)
+DESTINATION_MULTIPLIERS = {
+    "goa": 1.3,
+    "mumbai": 1.2,
+    "delhi": 1.15,
+    "jaipur": 1.25,
+    "udaipur": 1.3,
+    "shimla": 1.35,
+    "manali": 1.4,
+    "kerala": 1.25,
+    "kochi": 1.2,
+    "ooty": 1.3,
+    "darjeeling": 1.35,
+    "andaman": 1.5,
+    "leh": 1.6,
+    "ladakh": 1.6,
+}
+
+
+def _calculate_distance(from_city: str, to_city: str) -> float:
+    """Calculate approximate distance between two cities in kilometers."""
+    from_lower = from_city.lower().strip()
+    to_lower = to_city.lower().strip()
+    
+    # Find coordinates
+    from_coords = None
+    to_coords = None
+    
+    for city, data in HUBS.items():
+        if city in from_lower or from_lower in city:
+            from_coords = data.get("coords")
+        if city in to_lower or to_lower in city:
+            to_coords = data.get("coords")
+    
+    # If we can't find coordinates, estimate based on common routes
+    if not from_coords or not to_coords:
+        # Return average distance for unknown routes
+        return 800.0
+    
+    # Simple Haversine-like distance calculation
+    lat1, lon1 = from_coords
+    lat2, lon2 = to_coords
+    
+    # Approximate distance using Pythagorean theorem (good enough for India)
+    # 1 degree latitude ≈ 111 km
+    # 1 degree longitude ≈ 111 km * cos(latitude)
+    avg_lat = (lat1 + lat2) / 2
+    import math
+    lat_diff = (lat2 - lat1) * 111
+    lon_diff = (lon2 - lon1) * 111 * math.cos(math.radians(avg_lat))
+    distance = math.sqrt(lat_diff**2 + lon_diff**2)
+    
+    return max(distance, 50)  # Minimum 50km
+
+
+def _calculate_prices(from_location: str, destination: str, budget_key: str) -> dict:
+    """Calculate dynamic prices based on distance and destination popularity."""
+    budget = BUDGET_COPY[budget_key]
+    
+    # Calculate distance
+    distance = _calculate_distance(from_location, destination)
+    
+    # Get destination multiplier (tourist hotspots cost more)
+    dest_lower = destination.lower().strip()
+    dest_multiplier = 1.0
+    for dest, multiplier in DESTINATION_MULTIPLIERS.items():
+        if dest in dest_lower or dest_lower in dest:
+            dest_multiplier = multiplier
+            break
+    
+    # Calculate prices with distance and popularity
+    flight_price = int((budget["flight_base"] + distance * budget["flight_per_km"]) * dest_multiplier)
+    train_price = int((budget["train_base"] + distance * budget["train_per_km"]) * dest_multiplier)
+    bus_price = int((budget["bus_base"] + distance * budget["bus_per_km"]) * dest_multiplier)
+    stay_price = int(budget["stay_base"] * dest_multiplier * budget["stay_multiplier"])
+    
+    # Format as ranges (±20% variation)
+    def format_range(price):
+        low = int(price * 0.8)
+        high = int(price * 1.2)
+        return f"₹{low:,}-₹{high:,}"
+    
+    return {
+        "flight": format_range(flight_price),
+        "train": format_range(train_price),
+        "bus": format_range(bus_price),
+        "stay": format_range(stay_price),
+        "stay_name": budget["stay_name"],
+        "stay_type": budget["stay_type"],
+        "reason": budget["reason"],
+    }
 
 FEED_ACTIVITIES = {
     "mountains": ["sunrise viewpoint", "guided ridge walk", "local cafe with valley views"],
@@ -276,8 +407,11 @@ def trip_guidance(
     current_user=Depends(get_optional_user),
 ):
     destination = _clean(request.destination, "Destination")
+    from_location = _clean(request.from_location, "Current Location")
     budget_key = _budget_key(request.budget_scale)
-    budget = BUDGET_COPY[budget_key]
+    
+    # Calculate dynamic prices based on distance and destination
+    prices = _calculate_prices(from_location, destination, budget_key)
 
     return {
         "departure_hub": _nearest_hub(request.from_location, request.transit_preference),
@@ -285,25 +419,25 @@ def trip_guidance(
         "travel_suggestions": [
             {
                 "mode": "Flight",
-                "estimated_price": budget["flight"],
-                "reason": f"Best when time matters; {budget['reason']}.",
+                "estimated_price": prices["flight"],
+                "reason": f"Best when time matters; {prices['reason']}.",
             },
             {
                 "mode": "Train",
-                "estimated_price": budget["train"],
-                "reason": f"Good balance for Indian city travel; {budget['reason']}.",
+                "estimated_price": prices["train"],
+                "reason": f"Good balance for Indian city travel; {prices['reason']}.",
             },
             {
                 "mode": "Bus",
-                "estimated_price": budget["bus"],
-                "reason": f"Useful for short or direct routes; {budget['reason']}.",
+                "estimated_price": prices["bus"],
+                "reason": f"Useful for short or direct routes; {prices['reason']}.",
             },
         ],
         "stay_suggestions": [
             {
-                "hotel_name": f"{destination} {budget['stay'][0]}",
-                "type": budget["stay"][1],
-                "price_per_night": budget["stay"][2],
+                "hotel_name": f"{destination} {prices['stay_name']}",
+                "type": prices["stay_type"],
+                "price_per_night": prices["stay"],
             }
         ],
         "itinerary": _itinerary(destination, request.feed_preference, request.duration),
