@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { createElement } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { createElement, useContext } from "react";
 import {
   ArrowRight,
   ClipboardList,
@@ -13,6 +13,7 @@ import {
   Sun,
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
+import { AuthContext } from "../context/AuthContext";
 
 const features = [
   {
@@ -130,6 +131,13 @@ function DashboardPreview() {
 
 export default function Home() {
   const { isDarkMode, toggleTheme } = useTheme();
+  const { continueAsGuest } = useContext(AuthContext);
+  const navigate = useNavigate();
+
+  const openAsGuest = () => {
+    continueAsGuest();
+    navigate("/dashboard");
+  };
 
   const scrollToFeatures = (e) => {
     e.preventDefault();
@@ -162,15 +170,18 @@ export default function Home() {
             >
               {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
-            <Link to="/login" className="hidden text-base font-semibold text-slate-950 transition hover:text-cyan-700 dark:text-white dark:hover:text-cyan-300 sm:block">
+            <Link
+              to="/login"
+              className="hidden text-base font-semibold text-slate-950 transition hover:text-cyan-700 dark:text-white dark:hover:text-cyan-300 sm:block"
+            >
               Sign in
             </Link>
-            <Link
-              to="/dashboard"
+            <button
+              onClick={openAsGuest}
               className="voyageur-primary-btn inline-flex items-center gap-3 rounded-xl px-6 py-3 text-base font-semibold transition"
             >
               Open app <ArrowRight className="h-5 w-5" />
-            </Link>
+            </button>
           </div>
         </div>
       </nav>
@@ -196,12 +207,12 @@ export default function Home() {
             </p>
 
             <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link
-                to="/dashboard"
+              <button
+                onClick={openAsGuest}
                 className="voyageur-primary-btn inline-flex min-w-72 items-center justify-center gap-3 rounded-xl px-8 py-4 text-base font-semibold transition"
               >
                 Try the dashboard <ArrowRight className="h-5 w-5" />
-              </Link>
+              </button>
               <Link
                 to="/signup"
                 className="voyageur-secondary-btn inline-flex min-w-72 items-center justify-center rounded-xl px-8 py-4 text-base font-semibold transition hover:bg-white dark:hover:bg-white/5"
@@ -254,12 +265,12 @@ export default function Home() {
               Open the dashboard and see your next trip through clearer eyes.
             </p>
             <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
-              <Link
-                to="/dashboard"
+              <button
+                onClick={openAsGuest}
                 className="voyageur-primary-btn inline-flex items-center justify-center rounded-xl px-10 py-4 text-base font-semibold transition"
               >
                 Open dashboard
-              </Link>
+              </button>
               <Link
                 to="/chat"
                 className="voyageur-secondary-btn inline-flex items-center justify-center rounded-xl px-10 py-4 text-base font-semibold transition"
