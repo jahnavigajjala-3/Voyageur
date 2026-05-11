@@ -1,6 +1,7 @@
 import { useContext, useRef, useState, useEffect, useMemo } from "react";
 import { AuthContext } from "../context/AuthContext";
 import { useRouteContext } from "../context/RouteContext";
+import { useTheme } from "../context/ThemeContext";
 import CrimeMap from "../components/CrimeMap";
 import LocationImageCard from "../components/LocationImageCard";
 import { useNavigate } from "react-router-dom";
@@ -46,16 +47,6 @@ function getStepIcon(text = "") {
 const stepIcon = getStepIcon;
 
 // ─── Weather helpers ────────────────────────────────────────────────────────
-function getWeatherIcon(code) {
-  if (code === 0) return "☀️";
-  if ([1, 2, 3].includes(code)) return "⛅";
-  if ([45, 48].includes(code)) return "🌫️";
-  if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code)) return "🌧️";
-  if ([71, 73, 75, 77, 85, 86].includes(code)) return "🌨️";
-  if ([95, 96, 99].includes(code)) return "⛈️";
-  return "🌤️";
-}
-
 function getWeatherLabel(code) {
   if (code === 0) return "Clear";
   if ([1, 2, 3].includes(code)) return "Cloudy";
@@ -69,6 +60,7 @@ function getWeatherLabel(code) {
 
 export default function Dashboard() {
   const { user, logout, isGuest } = useContext(AuthContext);
+  const { isDarkMode, toggleTheme } = useTheme();
   const {
     routes: safeRoutes,
     selectedRouteId,
@@ -136,189 +128,213 @@ export default function Dashboard() {
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex min-h-screen w-full"
-      style={{
-        background: "radial-gradient(ellipse at 15% 40%, rgba(14,30,80,0.55) 0%, transparent 55%), radial-gradient(ellipse at 85% 15%, rgba(7,20,55,0.45) 0%, transparent 50%), radial-gradient(ellipse at 50% 90%, rgba(4,12,35,0.6) 0%, transparent 60%), #04060f",
-        fontFamily: "'Inter','Segoe UI',sans-serif",
-      }}>
-
-      {/* ── Ambient background orbs ── */}
-      <div className="ambient-orb" style={{ width: "500px", height: "500px", top: "-120px", left: "-80px", background: "rgba(14,30,100,0.35)", animationDelay: "0s" }} />
-      <div className="ambient-orb" style={{ width: "400px", height: "400px", bottom: "-100px", right: "200px", background: "rgba(7,18,60,0.3)", animationDelay: "-6s" }} />
-      <div className="ambient-orb" style={{ width: "300px", height: "300px", top: "40%", right: "-60px", background: "rgba(10,22,70,0.25)", animationDelay: "-12s" }} />
+    <div className="voyageur-page-bg flex min-h-screen w-full" style={{ color: 'rgb(var(--text-primary))' }}>
 
       {/* ── SIDEBAR ── */}
-      <aside className="voyageour-sidebar flex flex-col items-center py-7 px-3 gap-4"
+      <aside className="voyageour-sidebar flex flex-col py-6 px-4 gap-6 border-r transition-colors duration-200"
         style={{
-          width: "64px", minHeight: "100vh",
+          width: "240px", minHeight: "100vh",
           position: "sticky", top: 0, zIndex: 20, flexShrink: 0,
+          background: 'rgb(var(--bg-secondary) / 0.82)',
+          borderColor: 'rgb(var(--border-primary))',
+          backdropFilter: 'blur(18px)',
         }}>
 
         {/* Logo mark */}
-        <div className="flex items-center justify-center mb-3"
-          style={{
-            width: "36px", height: "36px", borderRadius: "10px",
-            background: "linear-gradient(135deg, rgba(56,189,248,0.2), rgba(99,102,241,0.15))",
-            border: "1px solid rgba(56,189,248,0.22)",
-            boxShadow: "0 0 16px rgba(56,189,248,0.1)",
-            fontSize: "14px", color: "rgba(125,211,252,0.9)",
-          }}>✦</div>
-
-        <nav className="flex flex-col gap-1.5 flex-1">
-          {NAV_ITEMS.map((item) => (
-            <button key={item.label}
-              onClick={() => { setActiveNav(item.label); if (item.path !== "#") navigate(item.path); }}
-              title={item.label}
-              className={`nav-btn flex items-center justify-center rounded-xl ${activeNav === item.label ? "active-nav" : ""}`}
-              style={{
-                width: "40px", height: "40px", fontSize: "14px",
-                background: activeNav === item.label ? "rgba(56,189,248,0.12)" : "transparent",
-                border: activeNav === item.label ? "1px solid rgba(56,189,248,0.28)" : "1px solid transparent",
-                color: activeNav === item.label ? "rgba(125,211,252,1)" : "rgba(255,255,255,0.3)",
-              }}>{item.icon}</button>
-          ))}
-        </nav>
-
-        {/* Guest badge */}
-        {isGuest && (
-          <button
-            onClick={() => navigate("/login")}
-            title="Sign in to save trips and sync data"
-            className="nav-btn flex items-center justify-center rounded-xl"
-            style={{
-              width: "40px", height: "40px", fontSize: "9px", fontWeight: "700",
-              background: "rgba(234,179,8,0.08)",
-              border: "1px solid rgba(234,179,8,0.2)",
-              color: "rgba(253,224,71,0.75)",
-              letterSpacing: "0.02em", lineHeight: 1.1, textAlign: "center",
-            }}
-          >GUEST</button>
-        )}
-
-        {/* AI live indicator */}
-        <div className="flex flex-col items-center gap-1.5 mb-2">
-          <div className="live-dot-cyan" />
-          <span style={{ fontSize: "7px", color: "rgba(56,189,248,0.45)", letterSpacing: "0.1em", writingMode: "vertical-rl", transform: "rotate(180deg)" }}>LIVE</span>
+        <div className="flex items-center gap-2 mb-2 px-2 cursor-pointer" onClick={() => navigate("/")}>
+          <div className="flex items-center justify-center rounded-lg shadow-sm"
+            style={{ 
+              width: "32px", 
+              height: "32px",
+              background: 'linear-gradient(135deg, rgb(var(--accent-cyan)), rgb(var(--accent-primary)))',
+              color: 'white',
+            }}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+              <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+            </svg>
+          </div>
+          <span className="font-serif text-lg font-bold tracking-tight transition-colors" style={{ color: 'rgb(var(--text-primary))' }}>Voyageur</span>
         </div>
 
-        <button onClick={handleLogout} title={isGuest ? "Exit guest mode" : "Logout"}
-          className="nav-btn flex items-center justify-center rounded-xl"
-          style={{ width: "40px", height: "40px", fontSize: "12px", background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.12)", color: "rgba(252,165,165,0.5)" }}>⏻</button>
+        <div className="px-2 mb-1">
+          <p className="text-[10px] font-bold tracking-wider uppercase mb-3 transition-colors" style={{ color: 'rgb(var(--text-tertiary))' }}>Workspace</p>
+          <nav className="flex flex-col gap-1">
+            {NAV_ITEMS.map((item) => (
+              <button key={item.label}
+                onClick={() => { setActiveNav(item.label); if (item.path !== "#") navigate(item.path); }}
+                className={`nav-btn flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium w-full text-left ${activeNav === item.label ? "active-nav" : ""}`}
+              >
+                <span className="text-lg w-5 text-center">{item.icon}</span>
+                {item.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        <div className="mt-auto px-2 flex flex-col gap-2">
+          {/* AI live indicator */}
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors duration-200" style={{
+            background: 'rgb(var(--accent-cyan) / 0.1)',
+            borderColor: 'rgb(var(--accent-cyan) / 0.2)',
+          }}>
+            <div className="live-dot-cyan" />
+            <span className="text-xs font-medium transition-colors" style={{ color: 'rgb(var(--accent-cyan))' }}>AI Online</span>
+          </div>
+
+          <button onClick={handleLogout}
+            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium w-full text-left transition-colors"
+            style={{ color: 'rgb(var(--text-secondary))' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgb(var(--bg-tertiary))';
+              e.currentTarget.style.color = 'rgb(var(--text-primary))';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = 'rgb(var(--text-secondary))';
+            }}
+          >
+            <span className="text-lg w-5 text-center">⏻</span>
+            {isGuest ? "Exit guest" : "Logout"}
+          </button>
+        </div>
       </aside>
 
       {/* ── MAIN ── */}
-      <main className="flex-1 flex flex-col overflow-hidden" style={{ minWidth: 0, position: "relative", zIndex: 1 }}>
+      <main className="flex-1 flex flex-col overflow-hidden transition-colors duration-200" style={{ 
+        minWidth: 0, 
+        position: "relative", 
+        zIndex: 1,
+        background: 'transparent',
+      }}>
 
         {/* ── HEADER ── */}
-        <header className="flex items-center justify-between px-7 py-4"
-          style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+        <header className="flex items-center justify-between px-8 py-4 border-b transition-colors duration-200" style={{
+          borderColor: 'rgb(var(--border-primary))',
+          background: 'rgb(var(--bg-secondary) / 0.78)',
+          backdropFilter: 'blur(18px)',
+        }}>
+          <div className="flex-1" /> {/* Spacer */}
 
-          <div className="card-enter-1 flex items-center gap-4">
-            <div>
-              <h1 className="text-xl font-bold tracking-tight"
-                style={{ background: "linear-gradient(90deg, #f0f4ff 0%, #7dd3fc 45%, #818cf8 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", letterSpacing: "-0.02em" }}>
-                VOYAGEOUR
-              </h1>
-              <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.28)", letterSpacing: "0.03em" }}>
-                {isGuest
-                  ? "Exploring as guest · Sign in to save trips"
-                  : user?.name ? `${greeting}, ${user.name} — AI travel intelligence active` : "AI travel intelligence active"}
-              </p>
-            </div>
-            <div style={{ width: "1px", height: "26px", background: "linear-gradient(to bottom, transparent, rgba(56,189,248,0.28), transparent)" }} />
-            <div className="ai-active-pill flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-semibold tracking-widest">
-              <div className="live-dot-cyan" style={{ width: "5px", height: "5px" }} />
-              AI ACTIVE
-            </div>
-          </div>
-
-          {/* Weather badge */}
-          {weather && (
-            <div className="card-enter-2 flex items-center gap-2.5 px-3.5 py-2 rounded-xl"
-              style={{
-                background: "rgba(8,12,28,0.72)", backdropFilter: "blur(20px)",
-                border: "1px solid rgba(255,255,255,0.07)",
-                boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+          {/* Right Actions */}
+          <div className="flex items-center justify-end gap-4">
+            <button 
+              onClick={toggleTheme}
+              className="w-10 h-10 flex items-center justify-center rounded-lg border transition-all duration-200"
+              style={{ 
+                borderColor: 'rgb(var(--border-primary))',
+                color: 'rgb(var(--text-secondary))',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgb(var(--bg-tertiary))';
+                e.currentTarget.style.color = 'rgb(var(--text-primary))';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = 'rgb(var(--text-secondary))';
+              }}
+              title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {isDarkMode ? (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+                </svg>
+              )}
+            </button>
+            <div className="flex items-center gap-2 pl-4 border-l transition-colors" style={{ borderColor: 'rgb(var(--border-primary))' }}>
+              <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm transition-colors" style={{
+                background: 'rgb(var(--accent-cyan) / 0.15)',
+                color: 'rgb(var(--accent-cyan))',
               }}>
-              <span style={{ fontSize: "18px" }}>{getWeatherIcon(weather.weathercode)}</span>
-              <div>
-                <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.88)", lineHeight: 1 }}>{weather.temperature}°C</p>
-                <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.35)", marginTop: "1px" }}>{getWeatherLabel(weather.weathercode)} · {weather.windspeed} km/h</p>
+                {isGuest ? "G" : (user?.name?.substring(0, 2).toUpperCase() || "U")}
+              </div>
+              <div className="hidden sm:block text-left">
+                <p className="text-sm font-semibold leading-tight transition-colors" style={{ color: 'rgb(var(--text-primary))' }}>{isGuest ? "Guest" : user?.name}</p>
+                <p className="text-xs transition-colors" style={{ color: 'rgb(var(--text-secondary))' }}>{isGuest ? "Free plan" : "Pro plan"}</p>
               </div>
             </div>
-          )}
+          </div>
         </header>
 
-        {/* Holographic header line */}
-        <div className="holo-line" />
-
-        <div className="flex flex-1 gap-4 p-5 overflow-auto" style={{ minHeight: 0 }}>
-          <div className="flex-1 flex flex-col" style={{ minWidth: 0 }}>
-            <GlassMapCard
-              onRiskUpdate={setLiveRisk}
-              onClickedRiskUpdate={setClickedRisk}
-              mapRef={mapRef}
-              onHospitalsChange={setHospitalsFor}
-              safeRoutes={safeRoutes}
-              selectedRouteId={selectedRouteId}
-              onRouteSelect={setSelectedRouteId}
-              isLoadingRoutes={isLoadingRoutes}
-              user={user}
-              userLocation={location}
-            />
+        <div className="flex flex-1 gap-6 p-8 overflow-auto" style={{ minHeight: 0 }}>
+          <div className="flex-1 flex flex-col gap-6" style={{ minWidth: 0 }}>
+            <div className="mb-2">
+              <h1 className="font-serif text-3xl font-bold tracking-tight transition-colors" style={{ color: 'rgb(var(--text-primary))' }}>
+                {isGuest ? "Good evening, Guest" : user?.name ? `${greeting}, ${user.name}` : "Good evening"}
+              </h1>
+              <p className="mt-1 transition-colors" style={{ color: 'rgb(var(--text-secondary))' }}>Here's what's happening on your trips today.</p>
+            </div>
+            
+            <div className="flex-1 rounded-2xl border shadow-sm overflow-hidden flex flex-col transition-colors duration-200" style={{
+              background: 'rgb(var(--bg-elevated) / var(--surface-glass-opacity))',
+              borderColor: 'rgb(var(--border-primary))',
+              boxShadow: 'var(--shadow-lg)',
+              backdropFilter: 'blur(18px)',
+            }}>
+              <GlassMapCard
+                onRiskUpdate={setLiveRisk}
+                onClickedRiskUpdate={setClickedRisk}
+                mapRef={mapRef}
+                onHospitalsChange={setHospitalsFor}
+                safeRoutes={safeRoutes}
+                selectedRouteId={selectedRouteId}
+                onRouteSelect={setSelectedRouteId}
+                isLoadingRoutes={isLoadingRoutes}
+                user={user}
+                userLocation={location}
+              />
+            </div>
           </div>
-          <aside className="flex flex-col gap-3.5" style={{ width: "340px", flexShrink: 0 }}>
+          <aside className="flex flex-col gap-6" style={{ width: "360px", flexShrink: 0 }}>
 
             {/* Route History Panel */}
             {routeHistory.length > 0 && (
-              <div className="voyageour-panel card-enter-3 rounded-2xl p-4 relative overflow-hidden">
-                <div style={{ position: "absolute", top: 0, left: "20%", right: "20%", height: "1px", background: "linear-gradient(90deg, transparent, rgba(56,189,248,0.3), transparent)" }} />
-                <div className="flex items-center justify-between mb-3">
+              <div className="voyageour-panel rounded-2xl p-5 relative overflow-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm transition-colors duration-200">
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
-                    <span style={{ fontSize: "11px", color: "rgba(56,189,248,0.8)" }}>◈</span>
-                    <p className="text-[10px] font-semibold" style={{ color: "rgba(255,255,255,0.32)", letterSpacing: "0.12em" }}>RECENT ROUTES</p>
+                    <p className="text-xs font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase transition-colors">Recent Routes</p>
                   </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full"
-                    style={{ background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.18)", color: "rgba(125,211,252,0.6)" }}>
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors">
                     {routeHistory.length}
                   </span>
                 </div>
-                <div className="flex flex-col gap-1.5 max-h-52 overflow-y-auto">
+                <div className="flex flex-col gap-3 max-h-52 overflow-y-auto">
                   {routeHistory.slice(0, 5).map((historyItem, index) => (
                     <div key={historyItem.id}
-                      className="glass-card p-3 rounded-xl"
-                      style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                      className="group p-3 rounded-xl border border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                       <div className="flex items-start gap-2">
                         {/* Clickable route info */}
                         <div className="flex-1 cursor-pointer"
                           onClick={() => mapRef.current?.triggerRoute(historyItem.origin, historyItem.destination, true)}>
                           <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-[11px] font-medium" style={{ color: "rgba(255,255,255,0.62)" }}>Route {index + 1}</span>
-                            <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.25)" }}>
+                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors">Route {index + 1}</span>
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium transition-colors">
                               {new Date(historyItem.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                             </span>
                           </div>
-                          <div className="text-[10px] flex flex-col gap-0.5" style={{ color: "rgba(255,255,255,0.42)" }}>
-                            <div className="truncate flex items-center gap-1.5">
-                              <span style={{ color: "#22c55e", fontSize: "7px" }}>●</span>
+                          <div className="text-[11px] flex flex-col gap-1 text-slate-500 dark:text-slate-400 transition-colors">
+                            <div className="truncate flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                               {historyItem.origin.lat.toFixed(4)}, {historyItem.origin.lng.toFixed(4)}
                             </div>
-                            <div className="truncate flex items-center gap-1.5">
-                              <span style={{ color: "#ef4444", fontSize: "7px" }}>●</span>
+                            <div className="truncate flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
                               {historyItem.destination.lat.toFixed(4)}, {historyItem.destination.lng.toFixed(4)}
                             </div>
                           </div>
                           {historyItem.routes?.length > 0 && (
-                            <div className="mt-2 flex items-center gap-1.5">
-                              <span className="text-[10px] px-1.5 py-0.5 rounded-md font-semibold"
-                                style={{
-                                  background: historyItem.routes[0].type === "safest" ? "rgba(34,197,94,0.1)" : "rgba(59,130,246,0.1)",
-                                  color: historyItem.routes[0].type === "safest" ? "#86efac" : "#93c5fd",
-                                  border: `1px solid ${historyItem.routes[0].type === "safest" ? "rgba(34,197,94,0.22)" : "rgba(59,130,246,0.22)"}`,
-                                }}>
+                            <div className="mt-3 flex items-center gap-2">
+                              <span className={`text-[10px] px-2 py-0.5 rounded-md font-semibold transition-colors ${
+                                  historyItem.routes[0].type === "safest" 
+                                    ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800" 
+                                    : "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800"
+                                }`}>
                                 {historyItem.routes[0].type.toUpperCase()}
                               </span>
-                              <span className="text-[10px] ml-auto" style={{ color: "rgba(255,255,255,0.28)" }}>
+                              <span className="text-[10px] font-medium ml-auto text-slate-500 dark:text-slate-400 transition-colors">
                                 {historyItem.routes[0].safety_score?.toFixed ? historyItem.routes[0].safety_score.toFixed(1) : historyItem.routes[0].safety_score}/10
                               </span>
                             </div>
@@ -328,15 +344,7 @@ export default function Dashboard() {
                         <button
                           onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(historyItem.id); }}
                           title="Delete route"
-                          style={{
-                            flexShrink: 0, width: "30px", height: "30px",
-                            background: "transparent", border: "none",
-                            color: "rgba(252,165,165,0.6)", cursor: "pointer",
-                            fontSize: "16px", display: "flex", alignItems: "center", justifyContent: "center",
-                            borderRadius: "8px", transition: "all 0.15s ease",
-                          }}
-                          onMouseEnter={(e) => { e.currentTarget.style.color = "#fca5a5"; e.currentTarget.style.background = "rgba(239,68,68,0.12)"; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(252,165,165,0.6)"; e.currentTarget.style.background = "transparent"; }}
+                          className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-rose-50 hover:text-rose-500 transition-all"
                         >🗑</button>
                       </div>
                     </div>
@@ -349,49 +357,35 @@ export default function Dashboard() {
             {confirmDeleteId && (
               <div style={{
                 position: "fixed", inset: 0, zIndex: 9998,
-                background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
-                display: "flex", alignItems: "center", justifyContent: "center",
+                background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)",
+                display: "flex", alignItems: "center", justifyItems: "center",
               }}
                 onClick={() => setConfirmDeleteId(null)}
               >
-                <div onClick={(e) => e.stopPropagation()} style={{
-                  background: "rgba(10,10,25,0.95)", backdropFilter: "blur(24px)",
-                  border: "1px solid rgba(255,255,255,0.1)", borderRadius: "16px",
-                  padding: "24px", width: "280px",
-                  boxShadow: "0 20px 60px rgba(0,0,0,0.7)",
-                }}>
-                  <p className="text-sm font-semibold mb-2" style={{ color: "rgba(255,255,255,0.9)" }}>Delete route?</p>
-                  <p className="text-xs mb-5" style={{ color: "rgba(255,255,255,0.4)" }}>
+                <div onClick={(e) => e.stopPropagation()} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 w-72 shadow-xl m-auto transition-colors duration-200">
+                  <p className="text-base font-bold text-slate-900 dark:text-slate-100 mb-2 transition-colors">Delete route?</p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 transition-colors">
                     Are you sure you want to delete this route?
                   </p>
-                  <div className="flex gap-2">
-                    <button onClick={() => setConfirmDeleteId(null)} style={{
-                      flex: 1, padding: "8px", borderRadius: "10px",
-                      background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
-                      color: "rgba(255,255,255,0.6)", fontSize: "12px", cursor: "pointer",
-                    }}>Cancel</button>
-                    <button onClick={() => { deleteRoute(confirmDeleteId); setConfirmDeleteId(null); }} style={{
-                      flex: 1, padding: "8px", borderRadius: "10px",
-                      background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)",
-                      color: "#fca5a5", fontSize: "12px", fontWeight: "600", cursor: "pointer",
-                    }}>Delete</button>
+                  <div className="flex gap-3">
+                    <button onClick={() => setConfirmDeleteId(null)} className="flex-1 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                      Cancel
+                    </button>
+                    <button onClick={() => { deleteRoute(confirmDeleteId); setConfirmDeleteId(null); }} className="flex-1 py-2 rounded-xl bg-rose-500 text-white font-semibold hover:bg-rose-600 transition-colors shadow-sm">
+                      Delete
+                    </button>
                   </div>
                 </div>
               </div>
             )}
 
             {/* Location Image Card */}
-            <div className="voyageour-panel card-enter-2 rounded-2xl overflow-hidden"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                boxShadow: 'none',
-              }}>
+            <div className="voyageour-panel rounded-2xl overflow-hidden p-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm transition-colors duration-200">
               <LocationImageCard
                 locationName={locationName}
                 locationType="current"
                 width="100%"
-                height="280px"
+                height="240px"
                 showTitle={true}
               />
             </div>
@@ -491,54 +485,48 @@ function FloatingChat({ open, onToggle, weather, safeRoutes = [], selectedRouteI
   return (
     <>
       {open && (
-        <div className="anim-fade-up fixed flex flex-col"
+        <div className="anim-fade-up fixed flex flex-col bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-700/50 rounded-2xl shadow-xl transition-colors duration-200"
           style={{
             bottom: "88px", right: "24px", width: "360px", height: "500px", zIndex: 9999,
-            background: "rgba(5,8,20,0.94)", backdropFilter: "blur(36px) saturate(180%)",
-            border: "1px solid rgba(56,189,248,0.15)", borderRadius: "20px",
-            boxShadow: "0 32px 80px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.05)",
             overflow: "hidden",
           }}>
           {/* Top accent line */}
-          <div style={{ position: "absolute", top: 0, left: "15%", right: "15%", height: "1px", background: "linear-gradient(90deg, transparent, rgba(56,189,248,0.5), transparent)" }} />
+          <div style={{ position: "absolute", top: 0, left: "15%", right: "15%", height: "2px", background: "linear-gradient(90deg, transparent, #0ea5e9, transparent)" }} />
 
-          <div className="flex items-center justify-between px-4 py-3 flex-shrink-0"
-            style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+          <div className="flex items-center justify-between px-4 py-3 flex-shrink-0 border-b border-slate-100 dark:border-slate-800 transition-colors">
             <div className="flex items-center gap-2.5">
-              <div className="anim-float flex items-center justify-center rounded-xl text-xs font-bold"
-                style={{ width: "30px", height: "30px", background: "linear-gradient(135deg, rgba(56,189,248,0.6), rgba(99,102,241,0.55))", boxShadow: "0 0 14px rgba(56,189,248,0.25)", color: "#fff" }}>AI</div>
+              <div className="flex items-center justify-center rounded-xl text-xs font-bold bg-teal-500 text-white w-8 h-8 shadow-sm">AI</div>
               <div>
-                <p className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.85)" }}>AI Assistant</p>
-                <div className="flex items-center gap-1">
-                  <div className="live-dot" style={{ width: "5px", height: "5px" }} />
-                  <span className="text-[10px]" style={{ color: "rgba(255,255,255,0.3)" }}>Online</span>
+                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors">AI Assistant</p>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 transition-colors">Online</span>
                 </div>
               </div>
             </div>
             <button onClick={onToggle}
-              className="flex items-center justify-center rounded-lg"
-              style={{ width: "26px", height: "26px", fontSize: "11px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.35)", cursor: "pointer" }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.1)"; e.currentTarget.style.color = "#fca5a5"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "rgba(255,255,255,0.35)"; }}>✕</button>
+              className="flex items-center justify-center rounded-lg w-7 h-7 text-xs bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+              title="Close chat">✕</button>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3"
-            style={{ background: "radial-gradient(ellipse at top, rgba(56,189,248,0.03) 0%, transparent 60%)" }}>
+          <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3 bg-slate-50/50 dark:bg-slate-900 transition-colors">
             {messages.map((msg, i) => (
               <div key={i} className="anim-fade-in flex" style={{ justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
-                <div className={`text-xs leading-relaxed whitespace-pre-wrap ${msg.role === "user" ? "chat-bubble-user" : "chat-bubble-ai"}`}
-                  style={{
-                    maxWidth: "82%", padding: "10px 13px",
-                    borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                  }}>{msg.content}</div>
+                <div className={`text-xs leading-relaxed whitespace-pre-wrap px-3 py-2 shadow-sm font-medium ${
+                  msg.role === "user"
+                    ? "rounded-[16px_16px_4px_16px] bg-teal-600 text-white"
+                    : "rounded-[16px_16px_16px_4px] bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
+                }`} style={{ maxWidth: "82%" }}>
+                  {msg.content}
+                </div>
               </div>
             ))}
             {loading && (
               <div className="flex justify-start">
-                <div className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl chat-bubble-ai">
+                <div className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
                   {[0,1,2].map((d) => (
-                    <span key={d} className="w-1.5 h-1.5 rounded-full"
-                      style={{ background: "rgba(125,211,252,0.55)", animation: `pulse-dot 1.2s ease-in-out ${d * 0.2}s infinite` }} />
+                    <span key={d} className="w-1.5 h-1.5 rounded-full bg-teal-400"
+                      style={{ animation: `pulse-dot 1.2s ease-in-out ${d * 0.2}s infinite` }} />
                   ))}
                 </div>
               </div>
@@ -546,33 +534,27 @@ function FloatingChat({ open, onToggle, weather, safeRoutes = [], selectedRouteI
             <div ref={bottomRef} />
           </div>
 
-          <div className="px-3 py-3 flex-shrink-0 flex gap-2" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+          <div className="px-3 py-3 flex-shrink-0 flex gap-2 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors">
             <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKey}
-              placeholder="Ask anything..." className="glass-input flex-1 px-3 py-2 rounded-xl text-xs"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.85)" }} />
+              placeholder="Ask anything..." className="flex-1 px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-400 dark:focus:border-teal-500 transition-colors"
+            />
             <button onClick={handleSend} disabled={loading || !input.trim()}
-              className="ctrl-btn flex items-center justify-center rounded-xl flex-shrink-0"
+              className="flex items-center justify-center rounded-xl flex-shrink-0 w-9 h-9 text-sm font-bold transition-all duration-200 disabled:opacity-50"
               style={{
-                width: "34px", height: "34px", fontSize: "14px", cursor: "pointer",
-                background: input.trim() && !loading ? "linear-gradient(135deg, rgba(56,189,248,0.65), rgba(99,102,241,0.6))" : "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(56,189,248,0.2)",
-                color: input.trim() && !loading ? "#fff" : "rgba(255,255,255,0.2)",
-                boxShadow: input.trim() && !loading ? "0 0 14px rgba(56,189,248,0.25)" : "none",
-                transition: "all 0.2s ease",
+                background: input.trim() && !loading ? "#0d9488" : "#f1f5f9",
+                border: input.trim() && !loading ? "1px solid #0f766e" : "1px solid #e2e8f0",
+                color: input.trim() && !loading ? "#fff" : "#94a3b8",
               }}>↑</button>
           </div>
         </div>
       )}
 
-      <button onClick={onToggle} className="fixed flex items-center justify-center"
+      <button onClick={onToggle} className="fixed flex items-center justify-center rounded-full shadow-lg transition-all duration-300 z-[9999]"
         style={{
-          bottom: "24px", right: "24px", width: "52px", height: "52px", zIndex: 9999,
-          borderRadius: "50%", cursor: "pointer",
-          background: open ? "rgba(56,189,248,0.2)" : "linear-gradient(135deg, rgba(56,189,248,0.75), rgba(99,102,241,0.7))",
-          border: "1px solid rgba(56,189,248,0.35)",
-          boxShadow: open ? "0 0 0 4px rgba(56,189,248,0.08)" : "0 8px 28px rgba(56,189,248,0.35), 0 0 0 1px rgba(56,189,248,0.15)",
-          color: "#fff", fontSize: open ? "16px" : "18px",
-          transition: "all 0.28s cubic-bezier(0.34,1.56,0.64,1)",
+          bottom: "24px", right: "24px", width: "52px", height: "52px", cursor: "pointer",
+          background: open ? "#f8fafc" : "#0d9488",
+          border: open ? "1px solid #e2e8f0" : "1px solid #0f766e",
+          color: open ? "#64748b" : "#fff", fontSize: open ? "16px" : "18px",
           transform: open ? "scale(0.9) rotate(45deg)" : "scale(1) rotate(0deg)",
         }}
         title="AI Assistant">{open ? "✕" : "✦"}</button>
@@ -724,18 +706,9 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
 
   if (isLoading) {
     return (
-      <div style={{
-        borderTop: "1px solid rgba(255,255,255,0.05)",
-        padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px",
-        background: "rgba(0,0,0,0.25)",
-      }}>
-        <div style={{
-          width: "14px", height: "14px", borderRadius: "50%",
-          border: "2px solid rgba(56,189,248,0.2)", borderTopColor: "rgba(56,189,248,0.8)",
-          animation: "spin 0.8s linear infinite", flexShrink: 0,
-        }} />
-        <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.35)" }}>Computing safe routes…</span>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <div className="border-t border-slate-200 dark:border-slate-800 p-3 px-4 flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 transition-colors">
+        <div className="w-4 h-4 rounded-full border-2 border-teal-200 dark:border-teal-800 border-t-teal-500 animate-spin flex-shrink-0" />
+        <span className="text-xs text-slate-500 dark:text-slate-400 transition-colors">Computing safe routes…</span>
       </div>
     );
   }
@@ -748,90 +721,81 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
   const isLoadingSteps = current?.id ? !!loadingSteps[current.id] : false;
 
   return (
-    <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", background: "rgba(0,0,0,0.25)" }}>
+    <div className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 transition-colors">
       {/* ── Route bar ── */}
-      <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+      <div className="p-3 px-4 flex items-center gap-3 flex-wrap">
         {/* Tabs */}
-        <div style={{ display: "flex", gap: "5px", flexShrink: 0 }}>
+        <div className="flex gap-2 flex-shrink-0">
           {availableTabs.map(([key, cfg]) => {
             const r = byType[key];
             const isActive = activeTab === key;
             return (
-              <button key={key} onClick={() => handleTab(key)} style={{
-                display: "flex", alignItems: "center", gap: "5px",
-                padding: "5px 10px", borderRadius: "8px", cursor: "pointer",
-                background: isActive ? cfg.bg : "rgba(255,255,255,0.04)",
-                border: `1px solid ${isActive ? cfg.border : "rgba(255,255,255,0.07)"}`,
-                color: isActive ? cfg.color : "rgba(255,255,255,0.4)",
-                fontSize: "11px", fontWeight: isActive ? 600 : 400, transition: "all 0.15s ease",
-              }}>
+              <button key={key} onClick={() => handleTab(key)} 
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs transition-colors border ${
+                  isActive 
+                    ? "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 shadow-sm font-semibold" 
+                    : "bg-transparent border-transparent text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300 font-medium"
+                }`}>
                 <span>{cfg.icon}</span>
                 <span>{cfg.label}</span>
                 {r && (
-                  <span style={{ fontSize: "10px", fontWeight: 700, color: isActive ? getRiskColor(r.safety_score) : "rgba(255,255,255,0.3)" }}>
+                  <span className={`text-[10px] ml-1 ${isActive ? "" : "opacity-80"}`} style={{ color: getRiskColor(r.safety_score), fontWeight: isActive ? 700 : 600 }}>
                     {r.safety_score?.toFixed ? r.safety_score.toFixed(1) : r.safety_score}
-                    <span style={{ fontSize: "8px", fontWeight: 400, opacity: 0.7 }}> risk</span>
+                    <span className="text-[8px] font-normal opacity-70 ml-0.5 text-slate-500 dark:text-slate-400 transition-colors">risk</span>
                   </span>
                 )}
               </button>
             );
           })}
           {availableTabs.length === 1 && (
-            <span style={{
-              fontSize: "10px", color: "rgba(255,255,255,0.25)",
-              padding: "5px 8px", alignSelf: "center",
-            }}>Only one route available for this trip</span>
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 px-2 self-center transition-colors">
+              Only one route available for this trip
+            </span>
           )}
         </div>
 
-        <div style={{ width: "1px", height: "28px", background: "rgba(255,255,255,0.08)", flexShrink: 0 }} />
+        <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 flex-shrink-0 transition-colors" />
 
         {current && (
           <>
-            <div style={{
-              width: "36px", height: "36px", borderRadius: "50%", flexShrink: 0,
-              border: `2px solid ${scoreColor}`,
-              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-              background: `${scoreColor}15`,
-            }}>
-              <span style={{ fontSize: "11px", fontWeight: 700, color: scoreColor, lineHeight: 1 }}>
+            <div className="w-9 h-9 rounded-full flex-shrink-0 flex flex-col items-center justify-center bg-white dark:bg-slate-800 shadow-sm transition-colors"
+              style={{ border: `2px solid ${scoreColor}` }}>
+              <span className="text-[11px] font-bold leading-none" style={{ color: scoreColor }}>
                 {current.safety_score?.toFixed ? current.safety_score.toFixed(1) : current.safety_score}
               </span>
-              <span style={{ fontSize: "7px", color: "rgba(255,255,255,0.3)", lineHeight: 1 }}>risk/10</span>
+              <span className="text-[7px] text-slate-400 dark:text-slate-500 leading-none mt-0.5 transition-colors">risk/10</span>
             </div>
 
-            <div style={{ display: "flex", gap: "14px", flex: 1, minWidth: 0 }}>
+            <div className="flex gap-4 flex-1 min-w-0">
               {[
                 { label: "RISK",     val: current.risk_level?.toUpperCase() || "—", color: riskColor },
-                { label: "DISTANCE", val: `${(current.distance / 1000).toFixed(1)} km`, color: "rgba(255,255,255,0.75)" },
-                { label: "DURATION", val: `${Math.round(current.duration / 60)} min`,   color: "rgba(255,255,255,0.75)" },
+                { label: "DISTANCE", val: `${(current.distance / 1000).toFixed(1)} km`, color: "#94a3b8" },
+                { label: "DURATION", val: `${Math.round(current.duration / 60)} min`,   color: "#94a3b8" },
               ].map(({ label, val, color }) => (
                 <div key={label}>
-                  <p style={{ fontSize: "9px", color: "rgba(255,255,255,0.3)", marginBottom: "1px" }}>{label}</p>
-                  <p style={{ fontSize: "11px", fontWeight: 600, color }}>{val}</p>
+                  <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium mb-0.5 transition-colors">{label}</p>
+                  <p className="text-[11px] font-bold" style={{ color }}>{val}</p>
                 </div>
               ))}
             </div>
 
-            <div style={{ width: "80px", flexShrink: 0 }}>
-              <div style={{ height: "4px", background: "rgba(255,255,255,0.08)", borderRadius: "2px", overflow: "hidden" }}>
-                <div style={{
-                  height: "100%", borderRadius: "2px",
-                  width: `${((current.safety_score - 1) / 9) * 100}%`,
-                  background: scoreColor, boxShadow: `0 0 4px ${scoreColor}80`,
-                  transition: "width 0.4s ease",
-                }} />
+            <div className="w-20 flex-shrink-0">
+              <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden transition-colors">
+                <div className="h-full rounded-full transition-all duration-300"
+                  style={{
+                    width: `${((current.safety_score - 1) / 9) * 100}%`,
+                    background: scoreColor,
+                  }} />
               </div>
-              <p style={{ fontSize: "9px", color: "rgba(255,255,255,0.25)", marginTop: "3px", textAlign: "right" }}>Risk score</p>
+              <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-1 text-right font-medium transition-colors">Risk score</p>
             </div>
 
-            <button onClick={() => onRouteSelect?.(current.id)} style={{
-              padding: "5px 12px", borderRadius: "8px", cursor: "pointer", flexShrink: 0,
-              background: selectedRouteId === current.id ? "rgba(56,189,248,0.18)" : "rgba(56,189,248,0.07)",
-              border: `1px solid ${selectedRouteId === current.id ? "rgba(56,189,248,0.4)" : "rgba(56,189,248,0.15)"}`,
-              color: selectedRouteId === current.id ? "#7dd3fc" : "rgba(125,211,252,0.6)",
-              fontSize: "11px", fontWeight: 500, transition: "all 0.15s ease",
-            }}>
+            <button onClick={() => onRouteSelect?.(current.id)} 
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors flex-shrink-0 ${
+                selectedRouteId === current.id 
+                  ? "bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-800" 
+                  : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
+              }`}>
               {selectedRouteId === current.id ? "✓ Selected" : "Select"}
             </button>
           </>
@@ -839,11 +803,10 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
       </div>
 
       {/* ── Directions toggle ── */}
-      <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+      <div className="border-t border-slate-200 dark:border-slate-800 transition-colors">
         <button
           onClick={() => {
             setDirectionsOpen(v => !v);
-            // Trigger step fetch if not yet loaded
             if (!directionsOpen && current?.id && !stepsMap[current.id] && !loadingSteps[current.id]) {
               setLoadingSteps(prev => ({ ...prev, [current.id]: true }));
               fetchStepsForRoute(current).then(steps => {
@@ -852,46 +815,36 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
               });
             }
           }}
-          style={{
-            width: "100%", padding: "8px 14px",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            background: "transparent", border: "none", cursor: "pointer",
-            color: "rgba(255,255,255,0.5)", fontSize: "11px",
-          }}
+          className="w-full px-4 py-2.5 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <div className="flex items-center gap-2">
             <span>🗺️</span>
-            <span style={{ fontWeight: 500 }}>
+            <span className="font-semibold text-slate-700 dark:text-slate-300 transition-colors">
               Directions
               {steps.length > 0 && (
-                <span style={{ marginLeft: "6px", fontSize: "10px", color: "rgba(255,255,255,0.3)" }}>
+                <span className="ml-1.5 text-[10px] text-slate-400 dark:text-slate-500 font-normal transition-colors">
                   ({steps.length} steps)
                 </span>
               )}
             </span>
             {userLocation && steps.length > 0 && (
-              <span style={{
-                fontSize: "9px", padding: "1px 6px", borderRadius: "4px",
-                background: "rgba(34,197,94,0.15)", color: "#86efac", fontWeight: 600,
-              }}>LIVE</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-bold transition-colors">
+                LIVE
+              </span>
             )}
           </div>
-          <span style={{ fontSize: "10px", transition: "transform 0.2s", transform: directionsOpen ? "rotate(180deg)" : "none" }}>▼</span>
+          <span className={`text-[10px] transition-transform duration-200 ${directionsOpen ? "rotate-180" : ""}`}>▼</span>
         </button>
 
         {directionsOpen && (
-          <div style={{ maxHeight: "260px", overflowY: "auto", padding: "4px 8px 8px" }}>
+          <div className="max-h-64 overflow-y-auto px-2 pb-2">
             {isLoadingSteps ? (
-              <div style={{ padding: "16px", textAlign: "center" }}>
-                <div style={{
-                  display: "inline-block", width: "16px", height: "16px", borderRadius: "50%",
-                  border: "2px solid rgba(56,189,248,0.25)", borderTopColor: "rgba(56,189,248,0.85)",
-                  animation: "spin 0.8s linear infinite",
-                }} />
-                <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.3)", marginTop: "8px" }}>Loading directions…</p>
+              <div className="p-4 text-center">
+                <div className="inline-block w-4 h-4 rounded-full border-2 border-teal-200 dark:border-teal-800 border-t-teal-500 animate-spin" />
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-2 transition-colors">Loading directions…</p>
               </div>
             ) : steps.length === 0 ? (
-              <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.3)", padding: "12px", textAlign: "center" }}>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 p-3 text-center transition-colors">
                 No directions available
               </p>
             ) : (
@@ -905,41 +858,35 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
                     key={idx}
                     ref={el => stepRefs.current[refKey] = el}
                     onClick={() => setCurrentStepIdx(idx)}
-                    style={{
-                      display: "flex", alignItems: "flex-start", gap: "10px",
-                      padding: "8px 10px", borderRadius: "10px", cursor: "pointer",
-                      marginBottom: "2px",
-                      background: isActive ? "rgba(56,189,248,0.1)" : "transparent",
-                      border: isActive ? "1px solid rgba(56,189,248,0.25)" : "1px solid transparent",
-                      transition: "all 0.15s ease",
-                    }}
+                    className={`flex items-start gap-3 p-2 rounded-xl cursor-pointer mb-0.5 transition-colors border ${
+                      isActive 
+                        ? "bg-teal-50 dark:bg-teal-900/30 border-teal-100 dark:border-teal-800" 
+                        : "bg-transparent border-transparent hover:bg-slate-100 dark:hover:bg-slate-800"
+                    }`}
                   >
                     {/* Step icon */}
-                    <div style={{
-                      width: "26px", height: "26px", borderRadius: "8px", flexShrink: 0,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: "13px",
-                      background: isFirst ? "rgba(34,197,94,0.2)" : isLast ? "rgba(239,68,68,0.2)" : isActive ? "rgba(56,189,248,0.2)" : "rgba(255,255,255,0.06)",
-                      border: isFirst ? "1px solid rgba(34,197,94,0.4)" : isLast ? "1px solid rgba(239,68,68,0.4)" : isActive ? "1px solid rgba(56,189,248,0.35)" : "1px solid rgba(255,255,255,0.08)",
-                    }}>
+                    <div className={`w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center text-[13px] border transition-colors ${
+                      isFirst ? "bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400" 
+                      : isLast ? "bg-rose-50 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400" 
+                      : isActive ? "bg-teal-100 dark:bg-teal-900/40 border-teal-200 dark:border-teal-800 text-teal-700 dark:text-teal-400" 
+                      : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400"
+                    }`}>
                       {stepIcon(step.text)}
                     </div>
 
                     {/* Text */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{
-                        fontSize: "11px", lineHeight: 1.4,
-                        color: isActive ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.65)",
-                        fontWeight: isActive ? 600 : 400,
-                      }}>{step.text}</p>
-                      <p style={{ fontSize: "10px", color: isActive ? "rgba(125,211,252,0.8)" : "rgba(255,255,255,0.3)", marginTop: "2px" }}>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[11px] leading-snug transition-colors ${isActive ? "text-teal-900 dark:text-teal-100 font-semibold" : "text-slate-600 dark:text-slate-400 font-medium"}`}>
+                        {step.text}
+                      </p>
+                      <p className={`text-[10px] mt-0.5 ${isActive ? "text-teal-600" : "text-slate-400"}`}>
                         {fmtDist(step.distance)}
                       </p>
                     </div>
 
                     {/* Live indicator */}
                     {isActive && userLocation && (
-                      <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#22c55e", boxShadow: "0 0 6px #22c55e", flexShrink: 0, alignSelf: "center" }} />
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0 self-center" />
                     )}
                   </div>
                 );
@@ -991,11 +938,6 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
     }
   }, [activeStep]);
 
-  const handleSwap = () => {
-    setRouteFrom(routeTo); setRouteTo(routeFrom);
-    setRouteFromCoords(routeToCoords); setRouteToCoords(routeFromCoords);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!routeFrom || !routeTo) return;
@@ -1028,38 +970,21 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
     crimeMapRef.current?.focusStep?.(index);
   };
 
-  const pinBtnStyle = (field) => ({
-    width: "28px", height: "28px", fontSize: "11px", flexShrink: 0,
-    background: pickingFor === field ? "rgba(56,189,248,0.2)" : "rgba(56,189,248,0.06)",
-    border: pickingFor === field ? "1px solid rgba(56,189,248,0.45)" : "1px solid rgba(56,189,248,0.15)",
-    color: pickingFor === field ? "rgba(125,211,252,1)" : "rgba(125,211,252,0.45)",
-    boxShadow: pickingFor === field ? "0 0 10px rgba(56,189,248,0.2)" : "none",
-    borderRadius: "10px", transition: "all 0.18s ease", cursor: "pointer",
-  });
-
   return (
-    <div className="card-enter-2 rounded-2xl overflow-hidden flex flex-col voyageour-panel"
-      style={{
-        boxShadow: "0 32px 64px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05)",
-        position: "relative",
-      }}>
-      {/* Top accent line */}
-      <div style={{ position: "absolute", top: 0, left: "10%", right: "10%", height: "1px", background: "linear-gradient(90deg, transparent, rgba(56,189,248,0.4), rgba(99,102,241,0.3), transparent)", zIndex: 1 }} />
-
-      <div className="px-5 py-4 flex flex-col gap-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+    <div className="flex-1 flex flex-col relative w-full h-full bg-white dark:bg-slate-900 z-10 transition-colors">
+      <div className="px-5 py-4 flex flex-col gap-3 border-b border-slate-200 dark:border-slate-800 transition-colors">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span style={{ fontSize: "11px", color: "rgba(56,189,248,0.7)" }}>◈</span>
+            <span className="text-xs text-teal-600 dark:text-teal-400 transition-colors">◈</span>
             <div>
-              <p className="text-sm font-semibold" style={{ color: "rgba(255,255,255,0.82)" }}>Live Map</p>
-              <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.28)" }}>Crime risk · Hospitals · Routes</p>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors">Live Map</p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 transition-colors">Crime risk · Hospitals · Routes</p>
             </div>
           </div>
           {routeSummary && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs"
-              style={{ background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.2)", color: "rgba(125,211,252,0.9)" }}>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs bg-teal-50 dark:bg-teal-900/30 border border-teal-100 dark:border-teal-800 text-teal-700 dark:text-teal-400 transition-colors">
               <span>🕐 {routeSummary.time}</span>
-              <span style={{ color: "rgba(255,255,255,0.18)" }}>·</span>
+              <span className="text-teal-200 dark:text-teal-600">·</span>
               <span>📍 {routeSummary.dist}</span>
             </div>
           )}
@@ -1069,18 +994,16 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
           <div className="flex gap-2 items-center">
             <input value={routeFrom} onChange={(e) => { setRouteFrom(e.target.value); setRouteFromCoords(null); }}
               placeholder={pickingFor === "from" ? "Click on map…" : "From — origin"}
-              className="glass-input flex-1 px-3 py-2.5 rounded-xl text-xs"
-              style={{ background: pickingFor === "from" ? "rgba(56,189,248,0.06)" : "rgba(255,255,255,0.04)", border: pickingFor === "from" ? "1px solid rgba(56,189,248,0.3)" : "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.82)" }} />
+              className={`flex-1 px-3 py-2.5 rounded-xl text-xs border focus:outline-none transition-colors ${pickingFor === "from" ? "bg-teal-50 dark:bg-teal-900/40 border-teal-300 dark:border-teal-600 text-teal-900 dark:text-teal-100" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:border-teal-400 dark:focus:border-teal-500"}`}
+            />
             <button type="button" title="Use current location"
               onClick={() => { setRouteFrom("Current Location"); setPickingFor(null); }}
-              className="ctrl-btn flex items-center gap-1.5 px-3 py-2.5 rounded-xl flex-shrink-0"
-              style={{ fontSize: "11px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.18)", color: "rgba(134,239,172,0.8)", cursor: "pointer" }}>
+              className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl flex-shrink-0 text-[11px] font-medium bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors">
               <Navigation size={12} /> Current
             </button>
             <button type="button" title="Pick on map"
               onClick={() => setPickingFor((p) => p === "from" ? null : "from")}
-              className="ctrl-btn flex items-center gap-1.5 px-3 py-2.5 rounded-xl flex-shrink-0"
-              style={{ fontSize: "11px", background: pickingFor === "from" ? "rgba(56,189,248,0.2)" : "rgba(56,189,248,0.06)", border: pickingFor === "from" ? "1px solid rgba(56,189,248,0.45)" : "1px solid rgba(56,189,248,0.15)", color: "rgba(125,211,252,0.9)", cursor: "pointer" }}>
+              className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl flex-shrink-0 text-[11px] font-medium transition-colors ${pickingFor === "from" ? "bg-teal-100 dark:bg-teal-900/40 border-teal-300 dark:border-teal-600 text-teal-800 dark:text-teal-300" : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"}`}>
               <MapPin size={12} /> Map
             </button>
           </div>
@@ -1088,32 +1011,28 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
           <div className="flex gap-2 items-center">
             <input value={routeTo} onChange={(e) => { setRouteTo(e.target.value); setRouteToCoords(null); }}
               placeholder={pickingFor === "to" ? "Click on map…" : "To — destination"}
-              className="glass-input flex-1 px-3 py-2.5 rounded-xl text-xs"
-              style={{ background: pickingFor === "to" ? "rgba(56,189,248,0.06)" : "rgba(255,255,255,0.04)", border: pickingFor === "to" ? "1px solid rgba(56,189,248,0.3)" : "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.82)" }} />
+              className={`flex-1 px-3 py-2.5 rounded-xl text-xs border focus:outline-none transition-colors ${pickingFor === "to" ? "bg-teal-50 dark:bg-teal-900/40 border-teal-300 dark:border-teal-600 text-teal-900 dark:text-teal-100" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:border-teal-400 dark:focus:border-teal-500"}`}
+            />
             <button type="button" title="Pick on map"
               onClick={() => setPickingFor((p) => p === "to" ? null : "to")}
-              className="ctrl-btn flex items-center gap-1.5 px-3 py-2.5 rounded-xl flex-shrink-0"
-              style={{ fontSize: "11px", background: pickingFor === "to" ? "rgba(56,189,248,0.2)" : "rgba(56,189,248,0.06)", border: pickingFor === "to" ? "1px solid rgba(56,189,248,0.45)" : "1px solid rgba(56,189,248,0.15)", color: "rgba(125,211,252,0.9)", cursor: "pointer" }}>
+              className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl flex-shrink-0 text-[11px] font-medium transition-colors ${pickingFor === "to" ? "bg-teal-100 dark:bg-teal-900/40 border-teal-300 dark:border-teal-600 text-teal-800 dark:text-teal-300" : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"}`}>
               <MapPin size={12} /> Map
             </button>
             <button type="submit" disabled={routeLoading}
-              className="ctrl-btn px-4 py-2.5 rounded-xl text-xs font-bold flex-shrink-0"
-              style={{ background: routeLoading ? "rgba(56,189,248,0.12)" : "linear-gradient(135deg, rgba(56,189,248,0.6), rgba(99,102,241,0.55))", border: "1px solid rgba(56,189,248,0.22)", color: "#fff", opacity: routeLoading ? 0.7 : 1, cursor: "pointer", whiteSpace: "nowrap" }}>
+              className={`px-4 py-2.5 rounded-xl text-xs font-bold flex-shrink-0 transition-colors shadow-sm ${routeLoading ? "bg-teal-100 dark:bg-teal-900/50 text-teal-600 dark:text-teal-400 cursor-not-allowed" : "bg-teal-600 text-white hover:bg-teal-500 hover:-translate-y-0.5"}`}>
               {routeLoading ? "…" : "Search"}
             </button>
             <button type="button" onClick={handleClear}
-              className="ctrl-btn px-3 py-2.5 rounded-xl text-xs flex-shrink-0"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", color: "rgba(255,255,255,0.3)", cursor: "pointer" }}>Clear</button>
+              className="px-3 py-2.5 rounded-xl text-xs flex-shrink-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-300 transition-colors">Clear</button>
           </div>
         </form>
 
         {pickingFor && (
-          <div className="anim-fade-in flex items-center gap-2 px-3 py-2 rounded-xl text-xs"
-            style={{ background: "rgba(56,189,248,0.07)", border: "1px solid rgba(56,189,248,0.2)", color: "rgba(125,211,252,0.9)" }}>
-            <span style={{ fontSize: "14px" }}>◎</span>
+          <div className="anim-fade-in flex items-center gap-2 px-3 py-2 rounded-xl text-xs bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-300 transition-colors">
+            <span className="text-[14px]">◎</span>
             Click anywhere on the map to set the{" "}
-            <strong style={{ color: "#7dd3fc" }}>{pickingFor === "from" ? "starting point" : "destination"}</strong>
-            <button type="button" onClick={() => setPickingFor(null)} className="ml-auto text-xs" style={{ color: "rgba(125,211,252,0.45)", cursor: "pointer" }}>cancel</button>
+            <strong className="text-teal-900 dark:text-teal-100">{pickingFor === "from" ? "starting point" : "destination"}</strong>
+            <button type="button" onClick={() => setPickingFor(null)} className="ml-auto text-xs text-teal-600 dark:text-teal-400 hover:text-teal-800 dark:hover:text-teal-300 underline transition-colors">cancel</button>
           </div>
         )}
       </div>
@@ -1143,19 +1062,19 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
       )}
 
       {directionsOpen && routeDirections.length > 0 && (
-        <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", background: "rgba(0,0,0,0.25)", maxHeight: "260px", display: "flex", flexDirection: "column" }}>
+        <div className="border-t border-slate-200 bg-white/95 dark:border-slate-800 dark:bg-slate-900/90" style={{ maxHeight: "260px", display: "flex", flexDirection: "column" }}>
           <div className="flex items-center justify-between px-4 py-2.5"
-            style={{ borderBottom: "1px solid rgba(255,255,255,0.05)", flexShrink: 0 }}>
+            style={{ flexShrink: 0 }}>
             <div className="flex items-center gap-2">
               <span style={{ fontSize: "13px" }}>🗺️</span>
-              <span className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.8)" }}>Turn-by-Turn Directions</span>
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">Turn-by-Turn Directions</span>
               <span className="text-xs px-2 py-0.5 rounded-full"
-                style={{ background: "rgba(56,189,248,0.1)", border: "1px solid rgba(56,189,248,0.18)", color: "rgba(125,211,252,0.8)" }}>
+                style={{ background: "rgb(var(--accent-primary) / 0.08)", border: "1px solid rgb(var(--accent-primary) / 0.18)", color: "rgb(var(--accent-primary))" }}>
                 {routeDirections.length} steps
               </span>
             </div>
             <button onClick={() => setDirectionsOpen(false)}
-              className="text-xs flex items-center justify-center rounded-lg"
+              className="text-xs flex items-center justify-center rounded-lg bg-slate-50 text-slate-400 border border-slate-200 hover:text-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 dark:hover:text-slate-200"
               style={{ width: "22px", height: "22px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.35)" }}>✕</button>
           </div>
 
@@ -1172,34 +1091,34 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
                   onClick={() => handleStepClick(index)}
                   className="flex items-start gap-3 px-3 py-2.5 rounded-xl cursor-pointer"
                   style={{
-                    background: isActive ? "rgba(56,189,248,0.1)" : "transparent",
-                    border: isActive ? "1px solid rgba(56,189,248,0.25)" : "1px solid transparent",
-                    boxShadow: isActive ? "0 0 12px rgba(56,189,248,0.1)" : "none",
+                    background: isActive ? "rgb(var(--accent-primary) / 0.08)" : "transparent",
+                    border: isActive ? "1px solid rgb(var(--accent-primary) / 0.18)" : "1px solid transparent",
+                    boxShadow: isActive ? "0 8px 20px -18px rgb(var(--accent-primary))" : "none",
                     transition: "all 0.18s ease", marginBottom: "2px",
                   }}
-                  onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.border = "1px solid rgba(255,255,255,0.07)"; } }}
+                  onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = "rgb(var(--bg-tertiary))"; e.currentTarget.style.border = "1px solid rgb(var(--border-primary))"; } }}
                   onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.border = "1px solid transparent"; } }}>
 
                   <div className="flex flex-col items-center gap-1 flex-shrink-0" style={{ paddingTop: "1px" }}>
                     <div className="flex items-center justify-center rounded-lg text-sm font-bold"
                       style={{
                         width: "28px", height: "28px",
-                        background: isFirst ? "rgba(34,197,94,0.2)" : isLast ? "rgba(239,68,68,0.2)" : isActive ? "rgba(56,189,248,0.25)" : "rgba(255,255,255,0.07)",
-                        border: isFirst ? "1px solid rgba(34,197,94,0.4)" : isLast ? "1px solid rgba(239,68,68,0.4)" : isActive ? "1px solid rgba(56,189,248,0.35)" : "1px solid rgba(255,255,255,0.1)",
-                        color: isFirst ? "#4ade80" : isLast ? "#f87171" : isActive ? "#7dd3fc" : "rgba(255,255,255,0.5)",
+                        background: isFirst ? "rgb(var(--success) / 0.12)" : isLast ? "rgb(var(--danger) / 0.12)" : isActive ? "rgb(var(--accent-primary) / 0.16)" : "rgb(var(--bg-tertiary))",
+                        border: isFirst ? "1px solid rgb(var(--success) / 0.28)" : isLast ? "1px solid rgb(var(--danger) / 0.28)" : isActive ? "1px solid rgb(var(--accent-primary) / 0.28)" : "1px solid rgb(var(--border-primary))",
+                        color: isFirst ? "rgb(var(--success))" : isLast ? "rgb(var(--danger))" : isActive ? "rgb(var(--accent-primary))" : "rgb(var(--text-tertiary))",
                         fontSize: "13px",
                       }}>{icon}</div>
                     {!isLast && (
-                      <div style={{ width: "2px", height: "14px", background: isActive ? "rgba(56,189,248,0.4)" : "rgba(255,255,255,0.08)", borderRadius: "2px" }} />
+                      <div style={{ width: "2px", height: "14px", background: isActive ? "rgb(var(--accent-primary) / 0.38)" : "rgb(var(--border-primary))", borderRadius: "2px" }} />
                     )}
                   </div>
 
                   <div className="flex-1" style={{ minWidth: 0 }}>
                     <p className="text-xs leading-snug"
-                      style={{ color: isActive ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.7)", fontWeight: isActive ? "600" : "400" }}>
+                      style={{ color: isActive ? "rgb(var(--text-primary))" : "rgb(var(--text-secondary))", fontWeight: isActive ? "600" : "400" }}>
                       {step.text}
                     </p>
-                    <p className="text-xs mt-0.5" style={{ color: isActive ? "rgba(125,211,252,0.8)" : "rgba(255,255,255,0.3)" }}>
+                    <p className="text-xs mt-0.5" style={{ color: isActive ? "rgb(var(--accent-primary))" : "rgb(var(--text-tertiary))" }}>
                       {distLabel}
                     </p>
                   </div>
@@ -1217,10 +1136,10 @@ function GlassMapCard({ onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsCh
       )}
 
       {!directionsOpen && routeDirections.length > 0 && (
-        <div className="px-5 py-2.5" style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+        <div className="px-5 py-2.5 border-t border-slate-200 dark:border-slate-800">
           <button onClick={() => setDirectionsOpen(true)}
             className="w-full py-2 rounded-xl text-xs font-medium flex items-center justify-center gap-2"
-            style={{ background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.15)", color: "rgba(125,211,252,0.85)" }}>
+            style={{ background: "rgb(var(--accent-primary) / 0.08)", border: "1px solid rgb(var(--accent-primary) / 0.15)", color: "rgb(var(--accent-primary))" }}>
             ↑ Show Directions ({routeDirections.length} steps)
           </button>
         </div>
@@ -1254,21 +1173,21 @@ function RiskPanel({ liveRisk, clickedRisk, mapRef, hospitalsFor, onClearSelecti
 // ─── ClearModal ───────────────────────────────────────────────────────────
 function ClearModal({ onCancel, onConfirm }) {
   return (
-    <div className="fixed inset-0 flex items-center justify-center"
-      style={{ zIndex: 99999, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(6px)" }}
+    <div className="fixed inset-0 flex items-center justify-center z-[99999] bg-slate-900/40 backdrop-blur-sm transition-colors"
       onClick={onCancel}>
-      <div className="anim-fade-up rounded-2xl p-6"
-        style={{ width: "290px", background: "rgba(5,8,20,0.97)", backdropFilter: "blur(32px) saturate(180%)", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 32px 64px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,0.05)" }}
+      <div className="anim-fade-up rounded-2xl p-6 w-[290px] bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 transition-colors"
         onClick={(e) => e.stopPropagation()}>
-        <p className="text-sm font-semibold mb-1.5" style={{ color: "rgba(255,255,255,0.9)" }}>Clear selected location?</p>
-        <p className="text-xs mb-5" style={{ color: "rgba(255,255,255,0.38)", lineHeight: 1.7 }}>
+        <p className="text-base font-bold text-slate-900 dark:text-slate-100 mb-2 transition-colors">Clear selected location?</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed transition-colors">
           This will remove:<br />· Selected location marker<br />· Hospitals on map<br />· Any active routes
         </p>
-        <div className="flex gap-2">
-          <button onClick={onCancel} className="flex-1 py-2 rounded-xl text-xs font-medium"
-            style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.5)" }}>Cancel</button>
-          <button onClick={onConfirm} className="flex-1 py-2 rounded-xl text-xs font-semibold"
-            style={{ background: "rgba(239,68,68,0.15)", border: "1px solid rgba(239,68,68,0.3)", color: "#fca5a5" }}>Clear</button>
+        <div className="flex gap-3">
+          <button onClick={onCancel} className="flex-1 py-2 rounded-xl text-sm font-semibold border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+            Cancel
+          </button>
+          <button onClick={onConfirm} className="flex-1 py-2 rounded-xl text-sm font-semibold bg-rose-500 text-white shadow-sm hover:bg-rose-600 transition-colors">
+            Clear
+          </button>
         </div>
       </div>
     </div>
@@ -1288,55 +1207,135 @@ function RiskCard({ title, risk, delay = "", onFocus, onHospitals, onClear, hosp
   const hasData  = risk && !risk.error;
 
   return (
-    <div className={`${delay} glass-card rounded-2xl p-5 relative overflow-hidden voyageour-panel`}
-      style={{ boxShadow: "0 16px 40px rgba(0,0,0,0.4)" }}>
-      {/* Top accent line */}
-      <div style={{ position: "absolute", top: 0, left: "25%", right: "25%", height: "1px", background: `linear-gradient(90deg, transparent, ${colors.glow}, transparent)` }} />
-      <div className="anim-glow absolute rounded-full blur-3xl pointer-events-none"
-        style={{ width: "80px", height: "80px", top: "-20px", right: "-20px", background: colors.glow }} />
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-[10px] font-semibold" style={{ color: "rgba(255,255,255,0.3)", letterSpacing: "0.12em" }}>{title.toUpperCase()}</p>
+    <div className={`${delay} voyageour-panel rounded-2xl p-5 relative overflow-hidden transition-colors duration-200`}
+      style={{ 
+        background: 'rgb(var(--bg-elevated))',
+        border: '1px solid rgb(var(--border-primary))',
+        boxShadow: 'var(--shadow-sm)'
+      }}>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-xs font-bold tracking-wider uppercase transition-colors" 
+          style={{ color: 'rgb(var(--text-tertiary))' }}>
+          {title}
+        </p>
         {onClear && (
-          <button onClick={onClear} title="Clear selection" className="flex items-center justify-center rounded-lg"
-            style={{ width: "20px", height: "20px", fontSize: "10px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.18)", color: "rgba(252,165,165,0.55)", transition: "all 0.15s ease" }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.2)"; e.currentTarget.style.color = "#fca5a5"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(239,68,68,0.08)"; e.currentTarget.style.color = "rgba(252,165,165,0.55)"; }}>✕</button>
+          <button onClick={onClear} title="Clear selection" 
+            className="flex items-center justify-center rounded-lg w-6 h-6 transition-colors"
+            style={{ color: 'rgb(var(--text-tertiary))' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgb(var(--danger) / 0.1)';
+              e.currentTarget.style.color = 'rgb(var(--danger))';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = 'rgb(var(--text-tertiary))';
+            }}>
+            ✕
+          </button>
         )}
       </div>
       {!risk ? (
         <div className="flex flex-col gap-2">
-          <div className="h-3 rounded-full" style={{ background: "rgba(255,255,255,0.06)", width: "60%" }} />
-          <div className="h-2 rounded-full" style={{ background: "rgba(255,255,255,0.04)", width: "40%" }} />
+          <div className="h-3 rounded-full w-[60%] transition-colors" 
+            style={{ background: 'rgb(var(--bg-tertiary))' }} />
+          <div className="h-2 rounded-full w-[40%] transition-colors" 
+            style={{ background: 'rgb(var(--bg-tertiary))' }} />
         </div>
       ) : risk.error ? (
-        <p className="text-xs" style={{ color: "#fca5a5" }}>{risk.error}</p>
+        <p className="text-sm font-medium transition-colors" 
+          style={{ color: 'rgb(var(--danger))' }}>
+          {risk.error}
+        </p>
       ) : (
         <>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl mb-3"
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl mb-4 shadow-sm"
             style={{ background: colors.bg, border: `1px solid ${colors.border}` }}>
-            <span className="pulse-ring relative w-2 h-2 rounded-full flex-shrink-0" style={{ background: colors.accent }} />
-            <span className="text-sm font-bold" style={{ color: colors.text }}>{level} RISK</span>
+            <span className="w-2 h-2 rounded-full flex-shrink-0 animate-pulse" 
+              style={{ background: colors.accent }} />
+            <span className="text-xs font-bold tracking-wide" 
+              style={{ color: colors.text, fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+              {level} RISK
+            </span>
           </div>
-          {district && <p className="text-sm font-medium mb-0.5" style={{ color: "rgba(255,255,255,0.8)" }}>{district}</p>}
-          {state    && <p className="text-xs mb-3" style={{ color: "rgba(255,255,255,0.35)" }}>{state}</p>}
+          {district && (
+            <p className="text-base font-bold mb-0.5 transition-colors" 
+              style={{ 
+                color: 'rgb(var(--text-primary))',
+                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+              }}>
+              {district}
+            </p>
+          )}
+          {state && (
+            <p className="text-xs font-medium mb-4 transition-colors" 
+              style={{ 
+                color: 'rgb(var(--text-secondary))',
+                fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+              }}>
+              {state}
+            </p>
+          )}
           {score !== undefined && (
-            <div className="mb-4">
-              <div className="flex justify-between items-center mb-1.5">
-                <span className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>Crime Score</span>
-                <span className="text-xs font-bold tabular-nums" style={{ color: colors.text }}>{score10} / 10</span>
+            <div className="mb-5">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs font-semibold transition-colors" 
+                  style={{ 
+                    color: 'rgb(var(--text-secondary))',
+                    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+                  }}>
+                  Crime Score
+                </span>
+                <span className="text-xs font-bold" 
+                  style={{ 
+                    color: colors.text,
+                    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+                  }}>
+                  {score10} / 10
+                </span>
               </div>
-              <div className="rounded-full overflow-hidden" style={{ height: "3px", background: "rgba(255,255,255,0.06)" }}>
-                <div className="score-bar-fill h-full rounded-full"
-                  style={{ width: `${barPct}%`, background: `linear-gradient(90deg, ${colors.accent}cc, ${colors.accent})`, boxShadow: `0 0 6px ${colors.glow}` }} />
+              <div className="rounded-full overflow-hidden h-1.5 transition-colors"
+                style={{ background: 'rgb(var(--bg-tertiary))' }}>
+                <div className="h-full rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${barPct}%`, background: colors.accent }} />
               </div>
             </div>
           )}
           {hasData && (
-            <div className="flex gap-2">
-              <button onClick={onFocus} className="ctrl-btn flex-1 py-1.5 rounded-xl text-xs font-medium"
-                style={{ background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.15)", color: "rgba(125,211,252,0.85)" }}>Focus on Map</button>
-              <button onClick={onHospitals} className="ctrl-btn flex-1 py-1.5 rounded-xl text-xs font-medium"
-                style={{ background: hospitalsActive ? "rgba(22,163,74,0.25)" : "rgba(34,197,94,0.08)", border: hospitalsActive ? "1px solid rgba(22,163,74,0.5)" : "1px solid rgba(34,197,94,0.18)", color: hospitalsActive ? "#4ade80" : "rgba(134,239,172,0.55)", transition: "all 0.2s ease" }}>
+            <div className="flex gap-3">
+              <button onClick={onFocus} 
+                className="flex-1 py-2 rounded-xl text-xs font-bold transition-colors shadow-sm"
+                style={{
+                  background: 'rgb(var(--bg-tertiary))',
+                  border: '1px solid rgb(var(--border-primary))',
+                  color: 'rgb(var(--text-secondary))',
+                  fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgb(var(--bg-secondary))';
+                  e.currentTarget.style.color = 'rgb(var(--text-primary))';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgb(var(--bg-tertiary))';
+                  e.currentTarget.style.color = 'rgb(var(--text-secondary))';
+                }}>
+                Focus on Map
+              </button>
+              <button onClick={onHospitals} 
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors shadow-sm`}
+                style={{
+                  background: hospitalsActive ? 'rgb(var(--success) / 0.15)' : 'rgb(var(--success) / 0.08)',
+                  border: hospitalsActive ? '1px solid rgb(var(--success) / 0.3)' : '1px solid rgb(var(--success) / 0.15)',
+                  color: hospitalsActive ? 'rgb(var(--success))' : 'rgb(var(--success) / 0.8)',
+                  fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgb(var(--success) / 0.2)';
+                  e.currentTarget.style.color = 'rgb(var(--success))';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = hospitalsActive ? 'rgb(var(--success) / 0.15)' : 'rgb(var(--success) / 0.08)';
+                  e.currentTarget.style.color = hospitalsActive ? 'rgb(var(--success))' : 'rgb(var(--success) / 0.8)';
+                }}>
                 {hospitalsActive ? "Hide Hospitals" : "Show Hospitals"}
               </button>
             </div>
