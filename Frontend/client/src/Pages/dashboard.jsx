@@ -1400,6 +1400,17 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
   );
 }
 
+// Photon bbox: India (minLon,minLat,maxLon,maxLat). Used with country filter — bbox alone can include neighbours.
+const INDIA_PHOTON_BBOX = "68.0,6.0,97.9,37.5";
+
+function isIndiaPhotonFeature(feat) {
+  const p = feat?.properties || {};
+  const cc = String(p.countrycode || "").toLowerCase();
+  if (cc === "in") return true;
+  const country = String(p.country || "").toLowerCase();
+  return country === "india";
+}
+
 // ─── PlaceAutocomplete ────────────────────────────────────────────────────
 function PlaceAutocomplete({ value, onChange, onSelect, placeholder, inputClassName }) {
   const [suggestions, setSuggestions] = useState([]);
@@ -1428,14 +1439,17 @@ function PlaceAutocomplete({ value, onChange, onSelect, placeholder, inputClassN
       setLoading(true);
       try {
         const res = await fetch(
-          `https://photon.komoot.io/api/?q=${encodeURIComponent(v)}&limit=6&lang=en`
+          `https://photon.komoot.io/api/?q=${encodeURIComponent(v)}&limit=20&lang=en&bbox=${INDIA_PHOTON_BBOX}`
         );
         const data = await res.json();
-        const items = (data.features || []).map((f) => {
-          const p = f.properties;
-          const parts = [p.name, p.city || p.town || p.village, p.state, p.country].filter(Boolean);
-          return { label: parts.join(", "), name: p.name, coords: { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] } };
-        });
+        const items = (data.features || [])
+          .filter(isIndiaPhotonFeature)
+          .slice(0, 8)
+          .map((f) => {
+            const p = f.properties;
+            const parts = [p.name, p.city || p.town || p.village, p.state, p.country].filter(Boolean);
+            return { label: parts.join(", "), name: p.name, coords: { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] } };
+          });
         setSuggestions(items);
         setOpen(items.length > 0);
       } catch {
