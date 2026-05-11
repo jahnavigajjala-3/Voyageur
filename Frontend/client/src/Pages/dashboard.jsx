@@ -81,6 +81,7 @@ export default function Dashboard() {
   const [nearbyHospitalCount, setNearbyHospitalCount] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [locationName, setLocationName] = useState("");
+  const [routeLocationNames, setRouteLocationNames] = useState({}); // Cache for route history location names
 
   // ─── Weather state ────────────────────────────────────────────────────────
   const [weather, setWeather]               = useState(null);
@@ -143,6 +144,53 @@ export default function Dashboard() {
     fetchNearbyHospitals();
     return () => { active = false; };
   }, [location]);
+
+  // ─── Fetch location names for route history ──────────────────────────────
+  useEffect(() => {
+    const fetchLocationNames = async () => {
+      const newNames = {};
+      for (const historyItem of routeHistory.slice(0, 5)) {
+        const originKey = `${historyItem.origin.lat},${historyItem.origin.lng}`;
+        const destKey = `${historyItem.destination.lat},${historyItem.destination.lng}`;
+        
+        if (!routeLocationNames[originKey]) {
+          try {
+            const name = await getLocationDisplayName(historyItem.origin.lat, historyItem.origin.lng);
+            newNames[originKey] = name;
+          } catch (err) {
+            console.warn("Failed to fetch origin name:", err);
+            newNames[originKey] = `${historyItem.origin.lat.toFixed(4)}, ${historyItem.origin.lng.toFixed(4)}`;
+          }
+        }
+        
+        if (!routeLocationNames[destKey]) {
+          try {
+            const name = await getLocationDisplayName(historyItem.destination.lat, historyItem.destination.lng);
+            newNames[destKey] = name;
+          } catch (err) {
+            console.warn("Failed to fetch destination name:", err);
+            newNames[destKey] = `${historyItem.destination.lat.toFixed(4)}, ${historyItem.destination.lng.toFixed(4)}`;
+          }
+        }
+      }
+      
+      if (Object.keys(newNames).length > 0) {
+        setRouteLocationNames(prev => ({ ...prev, ...newNames }));
+      }
+    };
+    
+    if (routeHistory.length > 0) {
+      fetchLocationNames();
+    }
+  }, [routeHistory]);
+  
+  // Clear geocoding cache on mount to ensure fresh English names
+  useEffect(() => {
+    import('../services/geocodingService').then(module => {
+      module.clearGeocodingCache();
+      console.log('Geocoding cache cleared - location names will now be fetched in English');
+    });
+  }, []);
   // ─────────────────────────────────────────────────────────────────────────
 
   const surfaceCard = {
@@ -792,13 +840,13 @@ export default function Dashboard() {
                                 <div className="flex items-start gap-2">
                                   <span className="inline-flex mt-1 h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
                                   <span className="leading-snug">
-                                    Origin: {historyItem.origin.lat.toFixed(4)}, {historyItem.origin.lng.toFixed(4)}
+                                    Origin: {routeLocationNames[`${historyItem.origin.lat},${historyItem.origin.lng}`] || `${historyItem.origin.lat.toFixed(4)}, ${historyItem.origin.lng.toFixed(4)}`}
                                   </span>
                                 </div>
                                 <div className="flex items-start gap-2">
                                   <span className="inline-flex mt-1 h-1.5 w-1.5 rounded-full bg-rose-500 shrink-0" />
                                   <span className="leading-snug">
-                                    Destination: {historyItem.destination.lat.toFixed(4)}, {historyItem.destination.lng.toFixed(4)}
+                                    Destination: {routeLocationNames[`${historyItem.destination.lat},${historyItem.destination.lng}`] || `${historyItem.destination.lat.toFixed(4)}, ${historyItem.destination.lng.toFixed(4)}`}
                                   </span>
                                 </div>
                               </div>
@@ -1497,9 +1545,35 @@ function GlassMapCard({ liveRisk, onRiskUpdate, onClickedRiskUpdate, mapRef, onH
     crimeMapRef.current?.clearRoute();
   };
 
-  const handleRoutePick = (coords) => {
-    if (pickingFor === "from") { setRouteFrom(coords.name); setRouteFromCoords(coords); }
-    if (pickingFor === "to")   { setRouteTo(coords.name);   setRouteToCoords(coords); }
+  const handleRoutePick = async (coords) => {
+    // Fetch location name for picked coordinates
+    try {
+      const locationName = await getLocationDisplayName(coords.lat, coords.lng);
+      const coordsWithName = { ...coords, name: locationName };
+      
+      if (pickingFor === "from") { 
+        setRouteFrom(locationName); 
+        setRouteFromCoords(coordsWithName); 
+      }
+      if (pickingFor === "to") { 
+        setRouteTo(locationName); 
+        setRouteToCoords(coordsWithName); 
+      }
+    } catch (err) {
+      console.warn("Failed to fetch location name:", err);
+      // Fallback to coordinates
+      const fallbackName = `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`;
+      const coordsWithName = { ...coords, name: fallbackName };
+      
+      if (pickingFor === "from") { 
+        setRouteFrom(fallbackName); 
+        setRouteFromCoords(coordsWithName); 
+      }
+      if (pickingFor === "to") { 
+        setRouteTo(fallbackName); 
+        setRouteToCoords(coordsWithName); 
+      }
+    }
     setPickingFor(null);
   };
 

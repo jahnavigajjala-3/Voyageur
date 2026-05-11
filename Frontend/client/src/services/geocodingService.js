@@ -33,12 +33,14 @@ export async function reverseGeocode(lat, lng) {
         lon: lng.toString(),
         format: 'json',
         addressdetails: '1',
-        zoom: '10' // City-level detail
+        zoom: '10', // City-level detail
+        'accept-language': 'en' // Force English names
       }),
       {
         headers: {
           'User-Agent': 'VoyageurTravelApp/1.0',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Accept-Language': 'en'
         }
       }
     );
