@@ -161,7 +161,7 @@ function slugifyBookingPlace(name) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-  return slug || "india";
+  return slug;
 }
 
 /** ConfirmTkt uses Title-Case hyphen segments in `/trains/{From}-to-{To}-train-tickets`. */
@@ -191,24 +191,44 @@ function trainBookingUrl(destination, fromLabel) {
   return `https://www.irctc.co.in/nget/train-search`;
 }
 
-function busBookingUrl(destination, fromLabel) {
+/** Google search across major Indian bus OTAs (Redbus, AbhiBus, MakeMyTrip). */
+function googleBusBookingSearchUrl(destination, fromLabel) {
   const destClean = (destination || "").split(",")[0].trim();
   const fromRaw =
     fromLabel && !/^current location$/i.test(String(fromLabel).trim())
       ? String(fromLabel).split(",")[0].trim()
       : "";
+  const fromSeg = fromRaw.split(",")[0].trim();
+  const route = fromSeg ? `bus tickets from ${fromSeg} to ${destClean}` : `bus tickets to ${destClean}`;
+  const q = `${route} (site:redbus.in OR site:abhibus.com OR site:makemytrip.com)`;
+  return `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+}
 
-  // Redbus path uses Title-Case city names, e.g. /bus-tickets/Bengaluru-to-Goa
-  const toSeg = titleCaseSlug(slugifyBookingPlace(destClean));
-  const fromSeg = titleCaseSlug(slugifyBookingPlace(fromRaw));
+/** Site-scoped Google search (used for MakeMyTrip where direct route URLs vary). */
+function googleBusProviderSearchUrl(siteHost, destination, fromLabel) {
+  const destClean = (destination || "").split(",")[0].trim();
+  const fromRaw =
+    fromLabel && !/^current location$/i.test(String(fromLabel).trim())
+      ? String(fromLabel).split(",")[0].trim()
+      : "";
+  const fromSeg = fromRaw.split(",")[0].trim();
+  const q = fromSeg
+    ? `site:${siteHost} bus ${fromSeg} to ${destClean}`
+    : `site:${siteHost} bus to ${destClean}`;
+  return `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+}
 
-  if (fromSeg && toSeg && fromSeg !== toSeg) {
-    // Primary: Redbus route page (works in browser, SPA)
-    // Fallback appended as a Google search so user can switch if needed
-    return `https://www.redbus.in/bus-tickets/${fromSeg}-to-${toSeg}`;
-  }
-  // No origin — open Google Travel bus search (universally works)
-  return `https://www.google.com/search?q=${encodeURIComponent(`bus tickets from anywhere to ${destClean} site:redbus.in OR site:abhibus.com`)}`;
+/** Redbus often uses lowercase slugs in paths, e.g. /bus-tickets/delhi-to-mumbai */
+function redbusDirectBusUrl(destination, fromLabel) {
+  const destClean = (destination || "").split(",")[0].trim();
+  const fromRaw =
+    fromLabel && !/^current location$/i.test(String(fromLabel).trim())
+      ? String(fromLabel).split(",")[0].trim()
+      : "";
+  const toSeg = slugifyBookingPlace(destClean);
+  const fromSeg = slugifyBookingPlace(fromRaw);
+  if (!fromSeg || !toSeg || fromSeg === toSeg) return null;
+  return `https://www.redbus.in/bus-tickets/${fromSeg}-to-${toSeg}`;
 }
 
 function makeBookingLinks(destination, guidance, fromLabel = "") {
@@ -225,6 +245,8 @@ function makeBookingLinks(destination, guidance, fromLabel = "") {
     fromLabel && !/^current location$/i.test(String(fromLabel).trim())
       ? String(fromLabel).split(",")[0].trim()
       : "";
+
+  const busRedbusDirect = redbusDirectBusUrl(destination, fromLabel);
 
   return [
     {
@@ -250,12 +272,24 @@ function makeBookingLinks(destination, guidance, fromLabel = "") {
       icon: Bus,
       tone: "#34d399",
       detail: busPrice,
-      url: busBookingUrl(destination, fromLabel),
-      // Always-works fallback via Google Maps directions transit mode
-      fallbackUrl: fromClean
-        ? `https://www.google.com/maps/dir/${encodeURIComponent(fromClean)}/${encodeURIComponent(destClean)}/@?travelmode=transit`
-        : `https://www.google.com/search?q=${encodeURIComponent(`bus from ${fromClean || "anywhere"} to ${destClean}`)}`,
-      fallbackLabel: "Google Maps",
+      url: googleBusBookingSearchUrl(destination, fromLabel),
+      fallbackUrl:
+        busRedbusDirect ||
+        (fromClean
+          ? `https://www.google.com/maps/dir/${encodeURIComponent(fromClean)}/${encodeURIComponent(destClean)}/@?travelmode=transit`
+          : `https://www.google.com/search?q=${encodeURIComponent(`bus to ${destClean}`)}`),
+      fallbackLabel: busRedbusDirect ? "Redbus (direct)" : "Google Maps",
+      fallbackHint: "alternate",
+      additionalLinks: [
+        {
+          href: "https://www.abhibus.com/bus-ticket-booking",
+          label: "AbhiBus",
+        },
+        {
+          href: googleBusProviderSearchUrl("makemytrip.com", destination, fromLabel),
+          label: "MakeMyTrip",
+        },
+      ],
     },
     {
       label: "Hotels",
@@ -861,50 +895,68 @@ export default function TripGuide() {
 
             {hasDestination && (
               <Panel title="Booking Redirects">
-                {links.map(({ label, icon: Icon, tone, detail, url, fallbackUrl, fallbackLabel }) => (
-                  <div key={label} className="flex flex-col gap-1.5">
-                    <a
-                      href={url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow dark:border-white/10 dark:bg-slate-900/55 dark:hover:border-white/20"
-                    >
-                      <span
-                        className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg"
-                        style={{ background: `${tone}15`, color: tone, border: `1px solid ${tone}30` }}
-                      >
-                        {createElement(Icon, { size: 17 })}
-                      </span>
-                      <span className="flex-1">
-                        <span className="block text-sm font-bold text-slate-800 transition-colors group-hover:text-slate-900 dark:text-slate-100 dark:group-hover:text-white">
-                          {label}
-                        </span>
-                        <span className="mt-0.5 block text-xs font-medium text-slate-500 dark:text-slate-300">{detail}</span>
-                      </span>
-                      <span className="rounded border border-teal-100 bg-teal-50 px-2 py-1 text-[10px] font-bold text-teal-600 opacity-0 transition-opacity group-hover:opacity-100 dark:border-cyan-400/20 dark:bg-cyan-400/10 dark:text-cyan-300">
-                        Open ↗
-                      </span>
-                    </a>
-                    {fallbackUrl && fallbackLabel && (
+                {links.map(
+                  ({ label, icon: Icon, tone, detail, url, fallbackUrl, fallbackLabel, fallbackHint, additionalLinks }) => (
+                    <div key={label} className="flex flex-col gap-1.5">
                       <a
-                        href={fallbackUrl}
+                        href={url}
                         target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center justify-center gap-1.5 rounded-lg border border-dashed py-1.5 text-[11px] font-medium transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                        style={{
-                          borderColor: "rgb(var(--border-primary))",
-                          color: "rgb(var(--text-tertiary))",
-                        }}
+                        rel="noopener noreferrer"
+                        className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow dark:border-white/10 dark:bg-slate-900/55 dark:hover:border-white/20"
                       >
-                        <span>If link fails →</span>
-                        <span className="font-semibold" style={{ color: "rgb(var(--text-secondary))" }}>
-                          {fallbackLabel}
+                        <span
+                          className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg"
+                          style={{ background: `${tone}15`, color: tone, border: `1px solid ${tone}30` }}
+                        >
+                          {createElement(Icon, { size: 17 })}
                         </span>
-                        <span>↗</span>
+                        <span className="flex-1">
+                          <span className="block text-sm font-bold text-slate-800 transition-colors group-hover:text-slate-900 dark:text-slate-100 dark:group-hover:text-white">
+                            {label}
+                          </span>
+                          <span className="mt-0.5 block text-xs font-medium text-slate-500 dark:text-slate-300">{detail}</span>
+                        </span>
+                        <span className="rounded border border-teal-100 bg-teal-50 px-2 py-1 text-[10px] font-bold text-teal-600 opacity-0 transition-opacity group-hover:opacity-100 dark:border-cyan-400/20 dark:bg-cyan-400/10 dark:text-cyan-300">
+                          Open ↗
+                        </span>
                       </a>
-                    )}
-                  </div>
-                ))}
+                      {fallbackUrl && fallbackLabel && (
+                        <a
+                          href={fallbackUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-1.5 rounded-lg border border-dashed py-1.5 text-[11px] font-medium transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                          style={{
+                            borderColor: "rgb(var(--border-primary))",
+                            color: "rgb(var(--text-tertiary))",
+                          }}
+                        >
+                          <span>{fallbackHint === "alternate" ? "Also try →" : "If link fails →"}</span>
+                          <span className="font-semibold" style={{ color: "rgb(var(--text-secondary))" }}>
+                            {fallbackLabel}
+                          </span>
+                          <span>↗</span>
+                        </a>
+                      )}
+                      {additionalLinks && additionalLinks.length > 0 && (
+                        <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 px-0.5 pt-0.5">
+                          {additionalLinks.map((link) => (
+                            <a
+                              key={link.label}
+                              href={link.href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] font-semibold underline-offset-2 hover:underline"
+                              style={{ color: "rgb(var(--text-tertiary))" }}
+                            >
+                              {link.label} ↗
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                )}
               </Panel>
             )}
 
