@@ -97,17 +97,26 @@ export async function reverseGeocode(lat, lng) {
 export async function getLocationDisplayName(lat, lng) {
   try {
     const location = await reverseGeocode(lat, lng);
-    
-    // Prefer city name, fall back to coordinates
+
     if (location.city) {
       return location.city;
-    } else if (location.state) {
-      return location.state;
-    } else {
-      return `Location (${lat.toFixed(2)}, ${lng.toFixed(2)})`;
     }
+    if (location.state) {
+      return location.state;
+    }
+    // Nominatim often omits `city` for rural areas — use first segments of display_name for Unsplash-friendly queries
+    if (location.displayName) {
+      const parts = location.displayName.split(",").map((p) => p.trim()).filter(Boolean);
+      if (parts.length >= 2) {
+        return `${parts[0]}, ${parts[1]}`;
+      }
+      if (parts[0]) {
+        return parts[0];
+      }
+    }
+    return `Location (${lat.toFixed(2)}, ${lng.toFixed(2)})`;
   } catch (error) {
-    console.error('Failed to get location name:', error);
+    console.error("Failed to get location name:", error);
     return `Location (${lat.toFixed(2)}, ${lng.toFixed(2)})`;
   }
 }
