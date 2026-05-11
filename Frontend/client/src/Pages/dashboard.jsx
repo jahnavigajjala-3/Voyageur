@@ -145,47 +145,98 @@ export default function Dashboard() {
   }, [location]);
   // ─────────────────────────────────────────────────────────────────────────
 
+  const surfaceCard = {
+    background: "rgb(var(--bg-elevated) / 0.92)",
+    borderColor: "rgb(var(--border-primary))",
+    boxShadow: "0 0 0 1px rgb(255 255 255 / 0.04), 0 24px 48px -24px rgb(0 0 0 / 0.45)",
+  };
+
   return (
-    <div className="voyageur-page-bg flex min-h-screen w-full" style={{ color: 'rgb(var(--text-primary))' }}>
-
-      {/* ── SIDEBAR ── */}
-      <aside className="voyageour-sidebar flex flex-col py-6 px-4 gap-6 border-r transition-colors duration-200"
+    <div
+      className="voyageur-page-bg flex min-h-screen w-full"
+      style={{ color: "rgb(var(--text-primary))" }}
+    >
+      {/* ── Command rail (navigation) ── */}
+      <aside
+        className="voyageour-sidebar flex flex-col border-r transition-colors duration-200"
         style={{
-          width: "240px", minHeight: "100vh",
-          position: "sticky", top: 0, zIndex: 20, flexShrink: 0,
-          background: 'rgb(var(--bg-secondary) / 0.82)',
-          borderColor: 'rgb(var(--border-primary))',
-          backdropFilter: 'blur(18px)',
-        }}>
-
-        {/* Logo mark */}
-        <div className="flex items-center gap-2 mb-2 px-2 cursor-pointer" onClick={() => navigate("/")}>
-          <div className="flex items-center justify-center rounded-lg shadow-sm"
-            style={{ 
-              width: "32px", 
-              height: "32px",
-              background: 'linear-gradient(135deg, rgb(var(--accent-cyan)), rgb(var(--accent-primary)))',
-              color: 'white',
-            }}>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+          width: "min(280px, 22vw)",
+          minWidth: "240px",
+          minHeight: "100vh",
+          position: "sticky",
+          top: 0,
+          zIndex: 20,
+          flexShrink: 0,
+          padding: "28px 20px 32px",
+          gap: "32px",
+          background: "rgb(var(--bg-secondary) / 0.88)",
+          borderColor: "rgb(var(--border-primary))",
+          backdropFilter: "blur(22px)",
+        }}
+      >
+        <div
+          className="flex items-center gap-3 px-1 cursor-pointer select-none"
+          onClick={() => navigate("/")}
+        >
+          <div
+            className="flex items-center justify-center rounded-lg"
+            style={{
+              width: "40px",
+              height: "40px",
+              background:
+                "linear-gradient(145deg, rgb(var(--accent-cyan)), rgb(var(--accent-primary)))",
+              color: "white",
+              boxShadow: "0 12px 28px -14px rgb(var(--accent-cyan) / 0.55)",
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
               <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
             </svg>
           </div>
-          <span className="font-serif text-lg font-bold tracking-tight transition-colors" style={{ color: 'rgb(var(--text-primary))' }}>Voyageur</span>
+          <div className="min-w-0">
+            <p
+              className="text-[11px] font-semibold uppercase tracking-[0.22em] leading-none mb-1.5"
+              style={{ color: "rgb(var(--text-tertiary))" }}
+            >
+              Voyageur
+            </p>
+            <span
+              className="font-serif text-xl font-semibold tracking-tight block truncate"
+              style={{ color: "rgb(var(--text-primary))" }}
+            >
+              Intelligence
+            </span>
+          </div>
         </div>
 
-        <div className="px-2 mb-1">
-          <p className="text-[10px] font-bold tracking-wider uppercase mb-3 transition-colors" style={{ color: 'rgb(var(--text-tertiary))' }}>Workspace</p>
-          <nav className="flex flex-col gap-1">
+        <div className="px-1 flex flex-col gap-3 flex-1 min-h-0">
+          <p
+            className="text-xs font-semibold uppercase tracking-[0.2em] px-1"
+            style={{ color: "rgb(var(--text-tertiary))" }}
+          >
+            Workspace
+          </p>
+          <nav className="flex flex-col gap-1.5">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               return (
-                <button key={item.label}
-                  onClick={() => { setActiveNav(item.label); if (item.path !== "#") navigate(item.path); }}
-                  className={`nav-btn flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium w-full text-left ${activeNav === item.label ? "active-nav" : ""}`}
+                <button
+                  key={item.label}
+                  onClick={() => {
+                    setActiveNav(item.label);
+                    if (item.path !== "#") navigate(item.path);
+                  }}
+                  className={`nav-btn flex items-center gap-3.5 rounded-xl px-3.5 py-3 text-[15px] font-medium w-full text-left leading-snug ${
+                    activeNav === item.label ? "active-nav" : ""
+                  }`}
                 >
-                  <span className="text-lg w-5 text-center">
-                    <Icon className="h-5 w-5" />
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg shrink-0"
+                    style={{
+                      background: activeNav === item.label ? "rgb(var(--bg-elevated))" : "transparent",
+                      border: "1px solid rgb(var(--border-primary) / 0.35)",
+                    }}
+                  >
+                    <Icon className="h-5 w-5" strokeWidth={1.75} />
                   </span>
                   {item.label}
                 </button>
@@ -194,76 +245,111 @@ export default function Dashboard() {
           </nav>
         </div>
 
-        <div className="mt-auto px-2 flex flex-col gap-2">
-          {/* AI live indicator */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors duration-200" style={{
-            background: 'rgb(var(--accent-cyan) / 0.1)',
-            borderColor: 'rgb(var(--accent-cyan) / 0.2)',
-          }}>
-            <div className="live-dot-cyan" />
-            <span className="text-xs font-medium transition-colors" style={{ color: 'rgb(var(--accent-cyan))' }}>AI Online</span>
-          </div>
-
-          <button onClick={handleLogout}
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium w-full text-left transition-colors"
-            style={{ color: 'rgb(var(--text-secondary))' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgb(var(--bg-tertiary))';
-              e.currentTarget.style.color = 'rgb(var(--text-primary))';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.color = 'rgb(var(--text-secondary))';
+        <div className="mt-auto flex flex-col gap-3 px-1">
+          <div
+            className="flex items-center gap-3 px-3.5 py-3 rounded-xl border transition-colors duration-200"
+            style={{
+              background: "rgb(var(--accent-cyan) / 0.08)",
+              borderColor: "rgb(var(--accent-cyan) / 0.22)",
             }}
           >
-            <span className="text-lg w-5 text-center">⏻</span>
+            <div className="live-dot-cyan shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold leading-tight" style={{ color: "rgb(var(--text-primary))" }}>
+                Neural routing
+              </p>
+              <p className="text-xs mt-0.5 font-medium" style={{ color: "rgb(var(--accent-cyan))" }}>
+                AI online
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 rounded-xl px-3.5 py-3 text-[15px] font-medium w-full text-left transition-colors"
+            style={{ color: "rgb(var(--text-secondary))" }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgb(var(--bg-tertiary))";
+              e.currentTarget.style.color = "rgb(var(--text-primary))";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.color = "rgb(var(--text-secondary))";
+            }}
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg text-lg shrink-0" style={{ border: "1px solid rgb(var(--border-primary) / 0.35)" }}>
+              ⏻
+            </span>
             {isGuest ? "Exit guest" : "Logout"}
           </button>
         </div>
       </aside>
 
-      {/* ── MAIN ── */}
-      <main className="flex-1 flex flex-col overflow-hidden transition-colors duration-200" style={{ 
-        minWidth: 0, 
-        position: "relative", 
-        zIndex: 1,
-        background: 'transparent',
-      }}>
-
-        {/* ── HEADER ── */}
-        <header className="sticky top-0 z-10 flex flex-col gap-4 px-8 py-6 border-b bg-slate-50/90 dark:bg-slate-950/90 transition-colors duration-200 shadow-sm md:flex-row md:items-center md:justify-between" style={{
-          borderColor: 'rgb(var(--border-primary))',
-          backdropFilter: 'blur(18px)',
-        }}>
-          <div className="min-w-0">
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-950 dark:text-white" style={{ color: 'rgb(var(--text-primary))' }}>
+      {/* ── Mission surface ── */}
+      <main
+        className="flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden transition-colors duration-200"
+        style={{
+          position: "relative",
+          zIndex: 1,
+          background: "transparent",
+        }}
+      >
+        <header
+          className="shrink-0 z-10 flex flex-col gap-6 px-6 pt-8 pb-6 md:px-10 md:pt-10 md:pb-8 lg:flex-row lg:items-end lg:justify-between border-b transition-colors duration-200"
+          style={{
+            borderColor: "rgb(var(--border-primary))",
+            background: "rgb(var(--bg-primary) / 0.55)",
+            backdropFilter: "blur(20px)",
+          }}
+        >
+          <div className="min-w-0 max-w-3xl space-y-3">
+            <p
+              className="text-xs md:text-sm font-semibold uppercase tracking-[0.28em]"
+              style={{ color: "rgb(var(--text-tertiary))" }}
+            >
+              Mission control · Live situational layer
+            </p>
+            <h1
+              className="text-3xl sm:text-4xl lg:text-[2.75rem] font-semibold tracking-tight leading-[1.08]"
+              style={{ color: "rgb(var(--text-primary))" }}
+            >
               {isGuest ? "Good evening, Guest" : user?.name ? `${greeting}, ${user.name}` : "Good evening"}
             </h1>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400" style={{ color: 'rgb(var(--text-secondary))' }}>
-              Here's what's happening on your trips today.
+            <p className="text-base md:text-lg font-normal leading-relaxed max-w-2xl" style={{ color: "rgb(var(--text-secondary))" }}>
+              Surface risk, routing, and environmental context in one operating picture. Your fleet view stays anchored to live geography.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 justify-end">
-            {/* Weather Badge */}
+          <div className="flex flex-wrap items-center gap-3 justify-start lg:justify-end lg:pb-1">
             {weather && (
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors duration-200" style={{
-                borderColor: 'rgb(var(--border-primary))',
-                background: 'rgb(var(--bg-elevated))',
-              }}>
-                <span className="text-lg">
-                  {weather.weathercode === 0 ? '☀️' : 
-                   [1, 2, 3].includes(weather.weathercode) ? '⛅' :
-                   [45, 48].includes(weather.weathercode) ? '🌫️' :
-                   [51, 53, 55, 61, 63, 65, 80, 81, 82].includes(weather.weathercode) ? '🌧️' :
-                   [71, 73, 75, 77, 85, 86].includes(weather.weathercode) ? '❄️' :
-                   [95, 96, 99].includes(weather.weathercode) ? '⛈️' : '🌤️'}
+              <div
+                className="flex items-center gap-3 px-4 py-3 rounded-xl border min-w-[140px] transition-colors duration-200"
+                style={{
+                  borderColor: "rgb(var(--border-primary))",
+                  background: "rgb(var(--bg-elevated) / 0.9)",
+                  boxShadow: "0 18px 40px -28px rgb(0 0 0 / 0.55)",
+                }}
+              >
+                <span className="text-2xl leading-none">
+                  {weather.weathercode === 0
+                    ? "☀️"
+                    : [1, 2, 3].includes(weather.weathercode)
+                      ? "⛅"
+                      : [45, 48].includes(weather.weathercode)
+                        ? "🌫️"
+                        : [51, 53, 55, 61, 63, 65, 80, 81, 82].includes(weather.weathercode)
+                          ? "🌧️"
+                          : [71, 73, 75, 77, 85, 86].includes(weather.weathercode)
+                            ? "❄️"
+                            : [95, 96, 99].includes(weather.weathercode)
+                              ? "⛈️"
+                              : "🌤️"}
                 </span>
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold" style={{ color: 'rgb(var(--text-primary))' }}>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-lg font-semibold leading-none" style={{ color: "rgb(var(--text-primary))" }}>
                     {weather.temperature}°C
                   </span>
-                  <span className="text-[9px]" style={{ color: 'rgb(var(--text-tertiary))' }}>
+                  <span className="text-xs font-medium" style={{ color: "rgb(var(--text-tertiary))" }}>
                     {getWeatherLabel(weather.weathercode)}
                   </span>
                 </div>
@@ -272,12 +358,13 @@ export default function Dashboard() {
 
             <button
               onClick={toggleTheme}
-              className="w-10 h-10 flex items-center justify-center rounded-lg border transition-all duration-200"
+              className="h-12 w-12 flex items-center justify-center rounded-xl border transition-all duration-200"
               style={{
-                borderColor: 'rgb(var(--border-primary))',
-                color: 'rgb(var(--text-secondary))',
+                borderColor: "rgb(var(--border-primary))",
+                color: "rgb(var(--text-secondary))",
+                background: "rgb(var(--bg-elevated) / 0.65)",
               }}
-              title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
             >
               {isDarkMode ? (
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
@@ -292,8 +379,12 @@ export default function Dashboard() {
 
             <button
               onClick={handleLogout}
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
-              style={{ borderColor: 'rgb(var(--border-primary))' }}
+              className="inline-flex items-center gap-2 rounded-xl border px-5 py-3 text-sm font-semibold transition-colors"
+              style={{
+                borderColor: "rgb(var(--border-primary))",
+                background: "rgb(var(--bg-elevated) / 0.85)",
+                color: "rgb(var(--text-primary))",
+              }}
             >
               <LogOut className="h-4 w-4 text-rose-500" />
               Logout
@@ -301,338 +392,491 @@ export default function Dashboard() {
           </div>
         </header>
 
-        <div className="flex flex-1 gap-4 p-4" style={{ minHeight: 0, maxHeight: 'calc(100vh - 120px)', overflow: 'auto' }}>
-          <div className="flex-1 flex flex-col gap-4" style={{ minWidth: 0 }}>
-            
-            {/* Stat Cards Row - Live Risk and Selected Location */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {/* Live Risk Card - Compact */}
-              <div className="rounded-xl border p-4 transition-colors duration-200 lg:col-span-2" style={{
-                background: 'rgb(var(--bg-elevated))',
-                borderColor: 'rgb(var(--border-primary))',
-                boxShadow: 'var(--shadow-sm)',
-              }}>
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'rgb(var(--text-tertiary))' }}>
-                      Live Crime Risk
-                    </p>
-                    <p className="text-xs font-semibold tracking-tight truncate" style={{ color: 'rgb(var(--text-primary))' }}>
-                      {locationName || "Current location"}
-                    </p>
-                    <p className="text-[10px] mt-0.5 truncate" style={{ color: 'rgb(var(--text-secondary))' }}>
-                      {liveRisk?.detected_district || liveRisk?.district || "Live location risk summary"}
-                    </p>
+        <div
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
+          style={{
+            scrollbarGutter: "stable",
+          }}
+        >
+          <div className="mx-auto w-full max-w-[1920px] px-6 py-8 md:px-10 md:py-10 lg:px-12 lg:py-12">
+            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-8 xl:gap-10 xl:items-start">
+              {/* Primary theater: telemetry + map */}
+              <section className="flex flex-col gap-8 min-w-0 min-h-0">
+                <div>
+                  <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-5">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.24em]" style={{ color: "rgb(var(--text-tertiary))" }}>
+                        Live intelligence strip
+                      </p>
+                      <h2 className="mt-2 text-xl sm:text-2xl font-semibold tracking-tight" style={{ color: "rgb(var(--text-primary))" }}>
+                        Risk telemetry
+                      </h2>
+                      <p className="mt-1 text-sm sm:text-base max-w-xl" style={{ color: "rgb(var(--text-secondary))" }}>
+                        Anchored readouts for your position and any map selection. Actions stay one gesture from the canvas.
+                      </p>
+                    </div>
                   </div>
-                  <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg shadow-sm ml-2 flex-shrink-0" style={{
-                    background: liveRisk ? getRiskColorsByLevel(liveRisk.risk_level).bg : 'rgb(var(--bg-tertiary))',
-                    border: liveRisk ? `1px solid ${getRiskColorsByLevel(liveRisk.risk_level).border}` : '1px solid rgb(var(--border-primary))',
-                  }}>
-                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 animate-pulse" style={{
-                      background: liveRisk ? getRiskColorsByLevel(liveRisk.risk_level).accent : 'rgb(var(--text-tertiary))',
-                    }} />
-                    <span className="text-[10px] font-bold tracking-wide" style={{
-                      color: liveRisk ? getRiskColorsByLevel(liveRisk.risk_level).text : 'rgb(var(--text-tertiary))',
-                    }}>
-                      {liveRisk?.risk_level?.toUpperCase() || "UNKNOWN"}
-                    </span>
-                  </div>
-                </div>
 
-                {liveRisk ? (
-                  <div className="mt-2">
-                    <div className="flex items-center justify-between text-[10px] font-semibold mb-1.5" style={{ color: 'rgb(var(--text-secondary))' }}>
-                      <span>Crime Score</span>
-                      <span style={{ color: liveRisk ? getRiskColorsByLevel(liveRisk.risk_level).text : 'rgb(var(--text-tertiary))' }}>
-                        {liveRisk.risk_score != null ? Math.min((liveRisk.risk_score / 3000) * 10, 10).toFixed(1) : "—"} / 10
-                      </span>
-                    </div>
-                    <div className="rounded-full overflow-hidden h-1.5 transition-colors" style={{ background: 'rgb(var(--bg-tertiary))' }}>
-                      <div className="h-full rounded-full transition-all duration-500" style={{
-                        width: `${Math.min((liveRisk.risk_score ?? 0) / 3000 * 100, 100)}%`,
-                        background: getRiskColorsByLevel(liveRisk.risk_level || "UNKNOWN").accent
-                      }} />
-                    </div>
-                    
-                    <div className="flex gap-2 mt-2">
-                      <button
-                        onClick={() => mapRef.current?.focusMap("live")}
-                        className="flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-colors"
-                        style={{
-                          background: 'rgb(var(--bg-tertiary))',
-                          border: '1px solid rgb(var(--border-primary))',
-                          color: 'rgb(var(--text-secondary))',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'rgb(var(--bg-secondary))';
-                          e.currentTarget.style.color = 'rgb(var(--text-primary))';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'rgb(var(--bg-tertiary))';
-                          e.currentTarget.style.color = 'rgb(var(--text-secondary))';
-                        }}>
-                        Focus
-                      </button>
-                      <button
-                        onClick={() => mapRef.current?.showHospitalsFor("live")}
-                        className="flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-colors"
-                        style={{
-                          background: hospitalsFor === "live" ? 'rgb(var(--success) / 0.15)' : 'rgb(var(--success) / 0.08)',
-                          border: hospitalsFor === "live" ? '1px solid rgb(var(--success) / 0.3)' : '1px solid rgb(var(--success) / 0.15)',
-                          color: hospitalsFor === "live" ? 'rgb(var(--success))' : 'rgb(var(--success) / 0.8)',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'rgb(var(--success) / 0.2)';
-                          e.currentTarget.style.color = 'rgb(var(--success))';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = hospitalsFor === "live" ? 'rgb(var(--success) / 0.15)' : 'rgb(var(--success) / 0.08)';
-                          e.currentTarget.style.color = hospitalsFor === "live" ? 'rgb(var(--success))' : 'rgb(var(--success) / 0.8)';
-                        }}>
-                        {hospitalsFor === "live" ? "Hide" : "Hospitals"}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mt-2 text-xs" style={{ color: 'rgb(var(--text-secondary))' }}>
-                    Loading...
-                  </div>
-                )}
-              </div>
-
-              {/* Selected Location Card - Compact */}
-              {clickedRisk && (
-                <div className="rounded-xl border p-4 transition-colors duration-200 lg:col-span-2" style={{
-                  background: 'rgb(var(--bg-elevated))',
-                  borderColor: 'rgb(var(--border-primary))',
-                  boxShadow: 'var(--shadow-sm)',
-                }}>
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'rgb(var(--text-tertiary))' }}>
-                        Selected Location
-                      </p>
-                      <p className="text-xs font-semibold tracking-tight truncate" style={{ color: 'rgb(var(--text-primary))' }}>
-                        {clickedRisk.detected_district || clickedRisk.district || "Unknown"}
-                      </p>
-                      <p className="text-[10px] mt-0.5 truncate" style={{ color: 'rgb(var(--text-secondary))' }}>
-                        {clickedRisk.detected_state || clickedRisk.state || ""}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1.5 ml-2 flex-shrink-0">
-                      <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg shadow-sm" style={{
-                        background: getRiskColorsByLevel(clickedRisk.risk_level || "UNKNOWN").bg,
-                        border: `1px solid ${getRiskColorsByLevel(clickedRisk.risk_level || "UNKNOWN").border}`,
-                      }}>
-                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 animate-pulse" style={{
-                          background: getRiskColorsByLevel(clickedRisk.risk_level || "UNKNOWN").accent,
-                        }} />
-                        <span className="text-[10px] font-bold tracking-wide" style={{
-                          color: getRiskColorsByLevel(clickedRisk.risk_level || "UNKNOWN").text,
-                        }}>
-                          {clickedRisk.risk_level?.toUpperCase() || "UNKNOWN"}
-                        </span>
+                  <div
+                    className={`grid gap-5 ${
+                      clickedRisk ? "lg:grid-cols-2" : "lg:grid-cols-1"
+                    }`}
+                  >
+                    <div
+                      className="rounded-2xl border p-6 md:p-7 transition-colors duration-200"
+                      style={surfaceCard}
+                    >
+                      <div className="flex items-start justify-between gap-4 mb-4">
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <p className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: "rgb(var(--text-tertiary))" }}>
+                            Live crime risk
+                          </p>
+                          <p className="text-lg md:text-xl font-semibold tracking-tight truncate" style={{ color: "rgb(var(--text-primary))" }}>
+                            {locationName || "Current location"}
+                          </p>
+                          <p className="text-sm truncate" style={{ color: "rgb(var(--text-secondary))" }}>
+                            {liveRisk?.detected_district || liveRisk?.district || "Live location risk summary"}
+                          </p>
+                        </div>
+                        <div
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl shrink-0"
+                          style={{
+                            background: liveRisk ? getRiskColorsByLevel(liveRisk.risk_level).bg : "rgb(var(--bg-tertiary))",
+                            border: liveRisk
+                              ? `1px solid ${getRiskColorsByLevel(liveRisk.risk_level).border}`
+                              : "1px solid rgb(var(--border-primary))",
+                          }}
+                        >
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0 animate-pulse"
+                            style={{
+                              background: liveRisk
+                                ? getRiskColorsByLevel(liveRisk.risk_level).accent
+                                : "rgb(var(--text-tertiary))",
+                            }}
+                          />
+                          <span
+                            className="text-xs font-bold tracking-wide"
+                            style={{
+                              color: liveRisk ? getRiskColorsByLevel(liveRisk.risk_level).text : "rgb(var(--text-tertiary))",
+                            }}
+                          >
+                            {liveRisk?.risk_level?.toUpperCase() || "UNKNOWN"}
+                          </span>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => { mapRef.current?.clearAll(); setClickedRisk(null); setHospitalsFor(null); }}
-                        className="flex items-center justify-center rounded-lg w-5 h-5 transition-colors"
-                        style={{ color: 'rgb(var(--text-tertiary))' }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'rgb(var(--danger) / 0.1)';
-                          e.currentTarget.style.color = 'rgb(var(--danger))';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'transparent';
-                          e.currentTarget.style.color = 'rgb(var(--text-tertiary))';
-                        }}>
-                        ✕
-                      </button>
-                    </div>
-                  </div>
 
-                  <div className="mt-2">
-                    <div className="flex items-center justify-between text-[10px] font-semibold mb-1.5" style={{ color: 'rgb(var(--text-secondary))' }}>
-                      <span>Crime Score</span>
-                      <span style={{ color: getRiskColorsByLevel(clickedRisk.risk_level || "UNKNOWN").text }}>
-                        {clickedRisk.risk_score != null ? Math.min((clickedRisk.risk_score / 3000) * 10, 10).toFixed(1) : "—"} / 10
-                      </span>
-                    </div>
-                    <div className="rounded-full overflow-hidden h-1.5 transition-colors" style={{ background: 'rgb(var(--bg-tertiary))' }}>
-                      <div className="h-full rounded-full transition-all duration-500" style={{
-                        width: `${Math.min((clickedRisk.risk_score ?? 0) / 3000 * 100, 100)}%`,
-                        background: getRiskColorsByLevel(clickedRisk.risk_level || "UNKNOWN").accent
-                      }} />
-                    </div>
-                    
-                    <div className="flex gap-2 mt-2">
-                      <button
-                        onClick={() => mapRef.current?.focusMap("selected")}
-                        className="flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-colors"
-                        style={{
-                          background: 'rgb(var(--bg-tertiary))',
-                          border: '1px solid rgb(var(--border-primary))',
-                          color: 'rgb(var(--text-secondary))',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'rgb(var(--bg-secondary))';
-                          e.currentTarget.style.color = 'rgb(var(--text-primary))';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'rgb(var(--bg-tertiary))';
-                          e.currentTarget.style.color = 'rgb(var(--text-secondary))';
-                        }}>
-                        Focus
-                      </button>
-                      <button
-                        onClick={() => mapRef.current?.showHospitalsFor("selected")}
-                        className="flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-colors"
-                        style={{
-                          background: hospitalsFor === "selected" ? 'rgb(var(--success) / 0.15)' : 'rgb(var(--success) / 0.08)',
-                          border: hospitalsFor === "selected" ? '1px solid rgb(var(--success) / 0.3)' : '1px solid rgb(var(--success) / 0.15)',
-                          color: hospitalsFor === "selected" ? 'rgb(var(--success))' : 'rgb(var(--success) / 0.8)',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'rgb(var(--success) / 0.2)';
-                          e.currentTarget.style.color = 'rgb(var(--success))';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = hospitalsFor === "selected" ? 'rgb(var(--success) / 0.15)' : 'rgb(var(--success) / 0.08)';
-                          e.currentTarget.style.color = hospitalsFor === "selected" ? 'rgb(var(--success))' : 'rgb(var(--success) / 0.8)';
-                        }}>
-                        {hospitalsFor === "selected" ? "Hide" : "Hospitals"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Empty space when no selected location */}
-              {!clickedRisk && <div className="lg:col-span-2"></div>}
-            </div>
-
-            {/* Map Section */}
-            <div className="flex-1 rounded-xl border shadow-sm flex flex-col transition-colors duration-200" style={{
-              background: 'rgb(var(--bg-elevated))',
-              borderColor: 'rgb(var(--border-primary))',
-              boxShadow: 'var(--shadow-md)',
-              overflow: 'visible',
-            }}>
-              <GlassMapCard
-                liveRisk={liveRisk}
-                onRiskUpdate={setLiveRisk}
-                onClickedRiskUpdate={setClickedRisk}
-                mapRef={mapRef}
-                onHospitalsChange={setHospitalsFor}
-                hospitalsFor={hospitalsFor}
-                nearbyHospitalCount={nearbyHospitalCount}
-                locationName={locationName}
-                safeRoutes={safeRoutes}
-                selectedRouteId={selectedRouteId}
-                onRouteSelect={setSelectedRouteId}
-                isLoadingRoutes={isLoadingRoutes}
-                user={user}
-                userLocation={location}
-              />
-            </div>
-          </div>
-          <aside className="flex flex-col gap-4" style={{ width: "360px", flexShrink: 0, paddingTop: "0px" }}>
-            {confirmDeleteId && (
-              <div style={{
-                position: "fixed", inset: 0, zIndex: 9998,
-                background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)",
-                display: "flex", alignItems: "center", justifyItems: "center",
-              }}
-                onClick={() => setConfirmDeleteId(null)}
-              >
-                <div onClick={(e) => e.stopPropagation()} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 w-72 shadow-xl m-auto transition-colors duration-200">
-                  <p className="text-base font-bold text-slate-900 dark:text-slate-100 mb-2 transition-colors">Delete route?</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 transition-colors">
-                    Are you sure you want to delete this route?
-                  </p>
-                  <div className="flex gap-3">
-                    <button onClick={() => setConfirmDeleteId(null)} className="flex-1 py-2 rounded-xl border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                      Cancel
-                    </button>
-                    <button onClick={() => { deleteRoute(confirmDeleteId); setConfirmDeleteId(null); }} className="flex-1 py-2 rounded-xl bg-rose-500 text-white font-semibold hover:bg-rose-600 transition-colors shadow-sm">
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Location Image Card */}
-            <div className="voyageour-panel rounded-2xl overflow-hidden p-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm transition-colors duration-200">
-              <LocationImageCard
-                locationName={locationName}
-                locationType="current"
-                width="100%"
-                height="240px"
-                showTitle={true}
-              />
-            </div>
-
-            {/* Route History Panel */}
-            {routeHistory.length > 0 && (
-              <div className="voyageour-panel rounded-2xl p-5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm transition-colors duration-200">
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-xs font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase transition-colors">Recent Routes</p>
-                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors">
-                    {routeHistory.length}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-3 max-h-72 overflow-y-auto">
-                  {routeHistory.slice(0, 5).map((historyItem, index) => (
-                    <div key={historyItem.id}
-                      className="group p-4 rounded-2xl border border-slate-100 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-1 cursor-pointer" onClick={() => mapRef.current?.triggerRoute(historyItem.origin, historyItem.destination, true)}>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors">Route {index + 1}</span>
-                            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium transition-colors">
-                              {new Date(historyItem.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      {liveRisk ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between text-sm font-semibold" style={{ color: "rgb(var(--text-secondary))" }}>
+                            <span>Crime score</span>
+                            <span style={{ color: liveRisk ? getRiskColorsByLevel(liveRisk.risk_level).text : "rgb(var(--text-tertiary))" }}>
+                              {liveRisk.risk_score != null ? Math.min((liveRisk.risk_score / 3000) * 10, 10).toFixed(1) : "—"} / 10
                             </span>
                           </div>
-                          <div className="text-sm text-slate-500 dark:text-slate-400 space-y-2 transition-colors">
-                            <div className="flex items-center gap-2">
-                              <span className="inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                              <span>Origin: {historyItem.origin.lat.toFixed(4)}, {historyItem.origin.lng.toFixed(4)}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="inline-flex h-2.5 w-2.5 rounded-full bg-rose-500" />
-                              <span>Destination: {historyItem.destination.lat.toFixed(4)}, {historyItem.destination.lng.toFixed(4)}</span>
-                            </div>
+                          <div className="rounded-full overflow-hidden h-2" style={{ background: "rgb(var(--bg-tertiary))" }}>
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${Math.min((liveRisk.risk_score ?? 0) / 3000 * 100, 100)}%`,
+                                background: getRiskColorsByLevel(liveRisk.risk_level || "UNKNOWN").accent,
+                              }}
+                            />
                           </div>
-                          {historyItem.routes?.length > 0 && (
-                            <div className="mt-4 grid grid-cols-[auto_1fr_auto] gap-3 items-center">
-                              <div className={`rounded-full px-3 py-1 text-[10px] font-semibold transition-colors ${
-                                  historyItem.routes[0].type === "safest"
-                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                                    : "bg-blue-50 text-blue-700 border border-blue-100"
-                                }`}>
-                                {historyItem.routes[0].type.toUpperCase()}
-                              </div>
-                              <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
-                                <div className="h-full rounded-full" style={{ width: `${Math.min((historyItem.routes[0].safety_score ?? 0) / 10 * 100, 100)}%`, background: historyItem.routes[0].type === "safest" ? "#22c55e" : "#3b82f6" }} />
-                              </div>
-                              <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">{historyItem.routes[0].safety_score?.toFixed(1) ?? "—"}/10</span>
-                            </div>
-                          )}
+                          <div className="flex gap-3 pt-1">
+                            <button
+                              onClick={() => mapRef.current?.focusMap("live")}
+                              className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors"
+                              style={{
+                                background: "rgb(var(--bg-tertiary))",
+                                border: "1px solid rgb(var(--border-primary))",
+                                color: "rgb(var(--text-secondary))",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = "rgb(var(--bg-secondary))";
+                                e.currentTarget.style.color = "rgb(var(--text-primary))";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = "rgb(var(--bg-tertiary))";
+                                e.currentTarget.style.color = "rgb(var(--text-secondary))";
+                              }}
+                            >
+                              Focus canvas
+                            </button>
+                            <button
+                              onClick={() => mapRef.current?.showHospitalsFor("live")}
+                              className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors"
+                              style={{
+                                background: hospitalsFor === "live" ? "rgb(var(--success) / 0.15)" : "rgb(var(--success) / 0.08)",
+                                border:
+                                  hospitalsFor === "live"
+                                    ? "1px solid rgb(var(--success) / 0.3)"
+                                    : "1px solid rgb(var(--success) / 0.15)",
+                                color: hospitalsFor === "live" ? "rgb(var(--success))" : "rgb(var(--success) / 0.8)",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = "rgb(var(--success) / 0.2)";
+                                e.currentTarget.style.color = "rgb(var(--success))";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background =
+                                  hospitalsFor === "live" ? "rgb(var(--success) / 0.15)" : "rgb(var(--success) / 0.08)";
+                                e.currentTarget.style.color =
+                                  hospitalsFor === "live" ? "rgb(var(--success))" : "rgb(var(--success) / 0.8)";
+                              }}
+                            >
+                              {hospitalsFor === "live" ? "Hide hospitals" : "Hospitals"}
+                            </button>
+                          </div>
                         </div>
+                      ) : (
+                        <p className="text-sm font-medium pt-1" style={{ color: "rgb(var(--text-secondary))" }}>
+                          Loading live risk…
+                        </p>
+                      )}
+                    </div>
+
+                    {clickedRisk && (
+                      <div className="rounded-2xl border p-6 md:p-7 transition-colors duration-200" style={surfaceCard}>
+                        <div className="flex items-start justify-between gap-4 mb-4">
+                          <div className="flex-1 min-w-0 space-y-1">
+                            <p className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: "rgb(var(--text-tertiary))" }}>
+                              Selected location
+                            </p>
+                            <p className="text-lg md:text-xl font-semibold tracking-tight truncate" style={{ color: "rgb(var(--text-primary))" }}>
+                              {clickedRisk.detected_district || clickedRisk.district || "Unknown"}
+                            </p>
+                            <p className="text-sm truncate" style={{ color: "rgb(var(--text-secondary))" }}>
+                              {clickedRisk.detected_state || clickedRisk.state || ""}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <div
+                              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl"
+                              style={{
+                                background: getRiskColorsByLevel(clickedRisk.risk_level || "UNKNOWN").bg,
+                                border: `1px solid ${getRiskColorsByLevel(clickedRisk.risk_level || "UNKNOWN").border}`,
+                              }}
+                            >
+                              <span
+                                className="w-2 h-2 rounded-full shrink-0 animate-pulse"
+                                style={{ background: getRiskColorsByLevel(clickedRisk.risk_level || "UNKNOWN").accent }}
+                              />
+                              <span
+                                className="text-xs font-bold tracking-wide"
+                                style={{ color: getRiskColorsByLevel(clickedRisk.risk_level || "UNKNOWN").text }}
+                              >
+                                {clickedRisk.risk_level?.toUpperCase() || "UNKNOWN"}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                mapRef.current?.clearAll();
+                                setClickedRisk(null);
+                                setHospitalsFor(null);
+                              }}
+                              className="flex items-center justify-center rounded-xl w-9 h-9 text-sm transition-colors"
+                              style={{ color: "rgb(var(--text-tertiary))" }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = "rgb(var(--danger) / 0.1)";
+                                e.currentTarget.style.color = "rgb(var(--danger))";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = "transparent";
+                                e.currentTarget.style.color = "rgb(var(--text-tertiary))";
+                              }}
+                              aria-label="Clear selection"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between text-sm font-semibold" style={{ color: "rgb(var(--text-secondary))" }}>
+                            <span>Crime score</span>
+                            <span style={{ color: getRiskColorsByLevel(clickedRisk.risk_level || "UNKNOWN").text }}>
+                              {clickedRisk.risk_score != null ? Math.min((clickedRisk.risk_score / 3000) * 10, 10).toFixed(1) : "—"} / 10
+                            </span>
+                          </div>
+                          <div className="rounded-full overflow-hidden h-2" style={{ background: "rgb(var(--bg-tertiary))" }}>
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${Math.min((clickedRisk.risk_score ?? 0) / 3000 * 100, 100)}%`,
+                                background: getRiskColorsByLevel(clickedRisk.risk_level || "UNKNOWN").accent,
+                              }}
+                            />
+                          </div>
+                          <div className="flex gap-3 pt-1">
+                            <button
+                              onClick={() => mapRef.current?.focusMap("selected")}
+                              className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors"
+                              style={{
+                                background: "rgb(var(--bg-tertiary))",
+                                border: "1px solid rgb(var(--border-primary))",
+                                color: "rgb(var(--text-secondary))",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = "rgb(var(--bg-secondary))";
+                                e.currentTarget.style.color = "rgb(var(--text-primary))";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = "rgb(var(--bg-tertiary))";
+                                e.currentTarget.style.color = "rgb(var(--text-secondary))";
+                              }}
+                            >
+                              Focus canvas
+                            </button>
+                            <button
+                              onClick={() => mapRef.current?.showHospitalsFor("selected")}
+                              className="flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors"
+                              style={{
+                                background: hospitalsFor === "selected" ? "rgb(var(--success) / 0.15)" : "rgb(var(--success) / 0.08)",
+                                border:
+                                  hospitalsFor === "selected"
+                                    ? "1px solid rgb(var(--success) / 0.3)"
+                                    : "1px solid rgb(var(--success) / 0.15)",
+                                color: hospitalsFor === "selected" ? "rgb(var(--success))" : "rgb(var(--success) / 0.8)",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = "rgb(var(--success) / 0.2)";
+                                e.currentTarget.style.color = "rgb(var(--success))";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background =
+                                  hospitalsFor === "selected" ? "rgb(var(--success) / 0.15)" : "rgb(var(--success) / 0.08)";
+                                e.currentTarget.style.color =
+                                  hospitalsFor === "selected" ? "rgb(var(--success))" : "rgb(var(--success) / 0.8)";
+                              }}
+                            >
+                              {hospitalsFor === "selected" ? "Hide hospitals" : "Hospitals"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div
+                  className="flex-1 min-h-[min(520px,62vh)] xl:min-h-[calc(100vh-320px)] flex flex-col rounded-2xl border overflow-hidden transition-colors duration-200"
+                  style={{
+                    ...surfaceCard,
+                    boxShadow: `${surfaceCard.boxShadow}, 0 40px 120px -48px rgb(0 0 0 / 0.65)`,
+                  }}
+                >
+                  <GlassMapCard
+                    liveRisk={liveRisk}
+                    onRiskUpdate={setLiveRisk}
+                    onClickedRiskUpdate={setClickedRisk}
+                    mapRef={mapRef}
+                    onHospitalsChange={setHospitalsFor}
+                    hospitalsFor={hospitalsFor}
+                    nearbyHospitalCount={nearbyHospitalCount}
+                    locationName={locationName}
+                    safeRoutes={safeRoutes}
+                    selectedRouteId={selectedRouteId}
+                    onRouteSelect={setSelectedRouteId}
+                    isLoadingRoutes={isLoadingRoutes}
+                    user={user}
+                    userLocation={location}
+                  />
+                </div>
+              </section>
+
+              {/* Operations rail */}
+              <aside
+                className="flex flex-col gap-6 min-w-0 xl:sticky xl:top-6 xl:self-start xl:max-h-[calc(100vh-48px)] xl:overflow-y-auto"
+                style={{ scrollbarGutter: "stable" }}
+              >
+                {confirmDeleteId && (
+                  <div
+                    style={{
+                      position: "fixed",
+                      inset: 0,
+                      zIndex: 9998,
+                      background: "rgba(0,0,0,0.5)",
+                      backdropFilter: "blur(4px)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyItems: "center",
+                    }}
+                    onClick={() => setConfirmDeleteId(null)}
+                  >
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="rounded-2xl p-6 w-72 shadow-xl m-auto transition-colors duration-200 border"
+                      style={{
+                        background: "rgb(var(--bg-elevated))",
+                        borderColor: "rgb(var(--border-primary))",
+                      }}
+                    >
+                      <p className="text-base font-bold mb-2 transition-colors" style={{ color: "rgb(var(--text-primary))" }}>
+                        Delete route?
+                      </p>
+                      <p className="text-sm mb-6 transition-colors" style={{ color: "rgb(var(--text-secondary))" }}>
+                        Are you sure you want to delete this route?
+                      </p>
+                      <div className="flex gap-3">
                         <button
-                          onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(historyItem.id); }}
-                          title="Delete route"
-                          className="flex-shrink-0 rounded-lg p-2 text-slate-400 transition-colors hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-rose-500"
+                          onClick={() => setConfirmDeleteId(null)}
+                          className="flex-1 py-2.5 rounded-xl border text-sm font-semibold transition-colors"
+                          style={{
+                            borderColor: "rgb(var(--border-primary))",
+                            color: "rgb(var(--text-secondary))",
+                          }}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          Cancel
+                        </button>
+                        <button
+                          onClick={() => {
+                            deleteRoute(confirmDeleteId);
+                            setConfirmDeleteId(null);
+                          }}
+                          className="flex-1 py-2.5 rounded-xl bg-rose-500 text-white text-sm font-semibold hover:bg-rose-600 transition-colors shadow-sm"
+                        >
+                          Delete
                         </button>
                       </div>
                     </div>
-                  ))}
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] px-0.5" style={{ color: "rgb(var(--text-tertiary))" }}>
+                    Context rail
+                  </p>
+                  <div
+                    className="voyageour-panel rounded-2xl overflow-hidden border p-1 transition-colors duration-200"
+                    style={{
+                      background: "rgb(var(--bg-elevated) / 0.95)",
+                      borderColor: "rgb(var(--border-primary))",
+                      boxShadow: "0 28px 64px -36px rgb(0 0 0 / 0.55)",
+                    }}
+                  >
+                    <LocationImageCard
+                      locationName={locationName}
+                      locationType="current"
+                      width="100%"
+                      height="280px"
+                      showTitle={true}
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
-          </aside>
+
+                {routeHistory.length > 0 && (
+                  <div
+                    className="voyageour-panel rounded-2xl p-6 border transition-colors duration-200"
+                    style={{
+                      background: "rgb(var(--bg-elevated) / 0.95)",
+                      borderColor: "rgb(var(--border-primary))",
+                      boxShadow: "0 28px 64px -36px rgb(0 0 0 / 0.55)",
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-5 gap-3">
+                      <div>
+                        <p className="text-xs font-semibold tracking-[0.2em] uppercase" style={{ color: "rgb(var(--text-tertiary))" }}>
+                          Recent routes
+                        </p>
+                        <p className="mt-1 text-lg font-semibold" style={{ color: "rgb(var(--text-primary))" }}>
+                          Flight log
+                        </p>
+                      </div>
+                      <span
+                        className="text-sm font-semibold px-3 py-1 rounded-full shrink-0"
+                        style={{
+                          background: "rgb(var(--bg-tertiary))",
+                          color: "rgb(var(--text-secondary))",
+                          border: "1px solid rgb(var(--border-primary))",
+                        }}
+                      >
+                        {routeHistory.length}
+                      </span>
+                    </div>
+                    <div className="flex flex-col gap-4 max-h-[min(420px,50vh)] overflow-y-auto pr-1">
+                      {routeHistory.slice(0, 5).map((historyItem, index) => (
+                        <div
+                          key={historyItem.id}
+                          className="group p-5 rounded-2xl border transition-colors"
+                          style={{
+                            borderColor: "rgb(var(--border-primary) / 0.6)",
+                            background: "rgb(var(--bg-secondary) / 0.5)",
+                          }}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div
+                              className="flex-1 cursor-pointer min-w-0"
+                              onClick={() => mapRef.current?.triggerRoute(historyItem.origin, historyItem.destination, true)}
+                            >
+                              <div className="flex items-center justify-between gap-2 mb-3">
+                                <span className="text-base font-semibold truncate" style={{ color: "rgb(var(--text-primary))" }}>
+                                  Route {index + 1}
+                                </span>
+                                <span className="text-xs font-medium shrink-0" style={{ color: "rgb(var(--text-tertiary))" }}>
+                                  {new Date(historyItem.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                </span>
+                              </div>
+                              <div className="text-sm space-y-2.5" style={{ color: "rgb(var(--text-secondary))" }}>
+                                <div className="flex items-start gap-2.5">
+                                  <span className="inline-flex mt-1.5 h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+                                  <span className="leading-snug">
+                                    Origin: {historyItem.origin.lat.toFixed(4)}, {historyItem.origin.lng.toFixed(4)}
+                                  </span>
+                                </div>
+                                <div className="flex items-start gap-2.5">
+                                  <span className="inline-flex mt-1.5 h-2 w-2 rounded-full bg-rose-500 shrink-0" />
+                                  <span className="leading-snug">
+                                    Destination: {historyItem.destination.lat.toFixed(4)}, {historyItem.destination.lng.toFixed(4)}
+                                  </span>
+                                </div>
+                              </div>
+                              {historyItem.routes?.length > 0 && (
+                                <div className="mt-5 grid grid-cols-[auto_1fr_auto] gap-3 items-center">
+                                  <div
+                                    className={`rounded-full px-3 py-1 text-[11px] font-semibold transition-colors ${
+                                      historyItem.routes[0].type === "safest"
+                                        ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                                        : "bg-blue-50 text-blue-700 border border-blue-100"
+                                    }`}
+                                  >
+                                    {historyItem.routes[0].type.toUpperCase()}
+                                  </div>
+                                  <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgb(var(--bg-tertiary))" }}>
+                                    <div
+                                      className="h-full rounded-full"
+                                      style={{
+                                        width: `${Math.min((historyItem.routes[0].safety_score ?? 0) / 10 * 100, 100)}%`,
+                                        background: historyItem.routes[0].type === "safest" ? "#22c55e" : "#3b82f6",
+                                      }}
+                                    />
+                                  </div>
+                                  <span className="text-xs font-semibold" style={{ color: "rgb(var(--text-primary))" }}>
+                                    {historyItem.routes[0].safety_score?.toFixed(1) ?? "—"}/10
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmDeleteId(historyItem.id);
+                              }}
+                              title="Delete route"
+                              className="flex-shrink-0 rounded-xl p-2.5 transition-colors hover:bg-rose-500/10"
+                              style={{ color: "rgb(var(--text-tertiary))" }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </aside>
+            </div>
+          </div>
         </div>
       </main>
 
@@ -962,31 +1206,32 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
 
   return (
     <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-sm transition-colors">
-      {/* ── Route bar ── */}
-      <div className="p-4 flex flex-wrap items-center gap-4">
-        {/* Tabs */}
-        <div className="flex gap-2 flex-shrink-0">
-          {availableTabs.map(([key, cfg]) => {
-            const r = byType[key];
-            const isActive = activeTab === key;
-            return (
-              <button key={key} onClick={() => handleTab(key)} 
-                className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-sm transition-colors border ${
-                  isActive 
-                    ? "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 shadow-sm font-semibold" 
-                    : "bg-transparent border-transparent text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300 font-medium"
-                }`}>
-                <cfg.icon className="h-4 w-4" />
-                <span>{cfg.label}</span>
-                {r && (
-                  <span className={`text-[11px] ml-1 ${isActive ? "" : "opacity-80"}`} style={{ color: getRiskColor(r.safety_score), fontWeight: isActive ? 700 : 600 }}>
-                    {r.safety_score?.toFixed ? r.safety_score.toFixed(1) : r.safety_score}
-                    <span className="text-[9px] font-normal opacity-70 ml-1 text-slate-500 dark:text-slate-400 transition-colors">risk</span>
-                  </span>
-                )}
-              </button>
-            );
-          })}
+      {/* ── Route bar (stacked rows avoid gauge overlapping RISK/DISTANCE/DURATION) ── */}
+      <div className="flex flex-col gap-4 p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap gap-2">
+            {availableTabs.map(([key, cfg]) => {
+              const r = byType[key];
+              const isActive = activeTab === key;
+              return (
+                <button key={key} onClick={() => handleTab(key)} 
+                  className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-sm transition-colors border ${
+                    isActive 
+                      ? "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 shadow-sm font-semibold" 
+                      : "bg-transparent border-transparent text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300 font-medium"
+                  }`}>
+                  <cfg.icon className="h-4 w-4" />
+                  <span>{cfg.label}</span>
+                  {r && (
+                    <span className={`text-[11px] ml-1 ${isActive ? "" : "opacity-80"}`} style={{ color: getRiskColor(r.safety_score), fontWeight: isActive ? 700 : 600 }}>
+                      {r.safety_score?.toFixed ? r.safety_score.toFixed(1) : r.safety_score}
+                      <span className="text-[9px] font-normal opacity-70 ml-1 text-slate-500 dark:text-slate-400 transition-colors">risk</span>
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
           {availableTabs.length === 1 && (
             <span className="text-[10px] text-slate-400 dark:text-slate-500 px-2 self-center transition-colors">
               Only one route available for this trip
@@ -994,61 +1239,57 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
           )}
         </div>
 
-        <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 flex-shrink-0 transition-colors" />
-
         {current && (
-          <>
-            <div className="w-9 h-9 rounded-full flex-shrink-0 flex flex-col items-center justify-center bg-white dark:bg-slate-800 shadow-sm transition-colors"
-              style={{ border: `2px solid ${scoreColor}` }}>
-              <span className="text-[11px] font-bold leading-none" style={{ color: scoreColor }}>
-                {current.safety_score?.toFixed ? current.safety_score.toFixed(1) : current.safety_score}
-              </span>
-              <span className="text-[7px] text-slate-400 dark:text-slate-500 leading-none mt-0.5 transition-colors">risk/10</span>
-            </div>
-
-            <div className="flex gap-4 flex-1 min-w-0">
+          <div className="flex flex-col gap-4 border-t border-slate-100 pt-4 dark:border-slate-800/80 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+            <div className="grid min-w-0 flex-1 grid-cols-3 gap-x-6 gap-y-2 sm:max-w-xl">
               {[
                 { label: "RISK",     val: current.risk_level?.toUpperCase() || "—", color: riskColor },
                 { label: "DISTANCE", val: `${(current.distance / 1000).toFixed(1)} km`, color: "#94a3b8" },
                 { label: "DURATION", val: `${Math.round(current.duration / 60)} min`,   color: "#94a3b8" },
               ].map(({ label, val, color }) => (
-                <div key={label}>
+                <div key={label} className="min-w-0">
                   <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium mb-0.5 transition-colors">{label}</p>
-                  <p className="text-[11px] font-bold" style={{ color }}>{val}</p>
+                  <p className="truncate text-sm font-bold" style={{ color }}>{val}</p>
                 </div>
               ))}
             </div>
 
-            <div className="min-w-[180px] flex-shrink-0">
-              <div className="w-12 h-12 rounded-full flex items-center justify-center bg-white dark:bg-slate-900 shadow-sm transition-colors" style={{ border: `1px solid ${scoreColor}` }}>
-                <span className="text-base font-bold" style={{ color: scoreColor }}>
-                  {current.safety_score?.toFixed ? current.safety_score.toFixed(1) : current.safety_score}
-                </span>
-              </div>
-              <div className="mt-3">
-                <div className="h-3.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden transition-colors">
+            <div className="flex flex-wrap items-end gap-4 sm:flex-nowrap sm:justify-end sm:shrink-0">
+              <div className="flex min-w-[160px] flex-1 flex-col gap-2 sm:flex-initial sm:min-w-[180px]">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white shadow-sm transition-colors dark:bg-slate-900" style={{ border: `2px solid ${scoreColor}` }}>
+                    <span className="text-base font-bold leading-none" style={{ color: scoreColor }}>
+                      {current.safety_score?.toFixed ? current.safety_score.toFixed(1) : current.safety_score}
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1 pt-0.5">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Safety score</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">vs. maximum risk band</p>
+                  </div>
+                </div>
+                <div className="h-3.5 overflow-hidden rounded-full bg-slate-200 transition-colors dark:bg-slate-700">
                   <div className="h-full rounded-full transition-all duration-300"
                     style={{
                       width: `${Math.min(Math.max(((current.safety_score - 1) / 9) * 100, 0), 100)}%`,
                       background: scoreColor,
                     }} />
                 </div>
-                <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
                   <span>Risk score</span>
                   <span>{current.safety_score?.toFixed ? `${Math.round(((current.safety_score - 1) / 9) * 100)}%` : "—"}</span>
                 </div>
               </div>
-            </div>
 
-            <button onClick={() => onRouteSelect?.(current.id)} 
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors flex-shrink-0 ${
-                selectedRouteId === current.id 
-                  ? "bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-800" 
-                  : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"
-              }`}>
-              {selectedRouteId === current.id ? "✓ Selected" : "Select"}
-            </button>
-          </>
+              <button onClick={() => onRouteSelect?.(current.id)} 
+                className={`h-10 shrink-0 self-stretch rounded-lg border px-4 text-[11px] font-semibold transition-colors sm:self-center ${
+                  selectedRouteId === current.id 
+                    ? "border-teal-200 bg-teal-100 text-teal-700 dark:border-teal-800 dark:bg-teal-900/40 dark:text-teal-400" 
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+                }`}>
+                {selectedRouteId === current.id ? "✓ Selected" : "Select"}
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
@@ -1221,18 +1462,25 @@ function GlassMapCard({ liveRisk, onRiskUpdate, onClickedRiskUpdate, mapRef, onH
   };
 
   return (
-    <div className="flex-1 flex flex-col relative w-full h-full bg-white dark:bg-slate-900 z-10 transition-colors">
-      <div className="px-5 py-4 flex flex-col gap-3 border-b border-slate-200 dark:border-slate-800 transition-colors">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-teal-600 dark:text-teal-400 transition-colors">◈</span>
-            <div>
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 transition-colors">Live Map</p>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 transition-colors">Crime risk · Hospitals · Routes</p>
+    <div className="flex-1 flex flex-col relative w-full h-full min-h-0 bg-white dark:bg-slate-900 z-10 transition-colors">
+      <div className="px-6 sm:px-8 py-5 sm:py-6 flex flex-col gap-4 border-b border-slate-200 dark:border-slate-800 transition-colors">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3 min-w-0">
+            <span className="text-lg text-teal-600 dark:text-teal-400 transition-colors mt-0.5 shrink-0">◈</span>
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400 transition-colors">
+                Geospatial canvas
+              </p>
+              <p className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-slate-100 transition-colors tracking-tight">
+                Live operating map
+              </p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 transition-colors mt-1">
+                Crime risk · Hospitals · Routes
+              </p>
             </div>
           </div>
           {routeSummary && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs bg-teal-50 dark:bg-teal-900/30 border border-teal-100 dark:border-teal-800 text-teal-700 dark:text-teal-400 transition-colors">
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium bg-teal-50 dark:bg-teal-900/30 border border-teal-100 dark:border-teal-800 text-teal-700 dark:text-teal-400 transition-colors shrink-0">
               <span>🕐 {routeSummary.time}</span>
               <span className="text-teal-200 dark:text-teal-600">·</span>
               <span>📍 {routeSummary.dist}</span>
@@ -1240,7 +1488,7 @@ function GlassMapCard({ liveRisk, onRiskUpdate, onClickedRiskUpdate, mapRef, onH
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2.5 mb-3">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3 mb-1">
           <div className="flex gap-2 items-center">
             <input value={routeFrom} onChange={(e) => { setRouteFrom(e.target.value); setRouteFromCoords(null); }}
               placeholder={pickingFor === "from" ? "Click on map…" : "From — origin"}
@@ -1287,9 +1535,16 @@ function GlassMapCard({ liveRisk, onRiskUpdate, onClickedRiskUpdate, mapRef, onH
         )}
       </div>
 
-      <div style={{ flex: 1, minHeight: directionsOpen ? "320px" : "400px", transition: "min-height 0.35s cubic-bezier(0.4,0,0.2,1)", flexShrink: 0, display: "flex", flexDirection: "column" }}>
-        <div className="flex flex-col gap-4 h-full">
-          <div className="flex-1 rounded-[32px] overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 shadow-inner">
+      <div
+        className="flex min-h-0 flex-1 flex-col"
+        style={{
+          flex: "1 1 0%",
+          minHeight: directionsOpen ? "min(40vh, 420px)" : "min(44vh, 480px)",
+          transition: "min-height 0.35s cubic-bezier(0.4,0,0.2,1)",
+        }}
+      >
+        <div className="flex min-h-0 flex-1 flex-col px-4 pb-4 sm:px-6 sm:pb-6">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200/90 bg-slate-950/40 shadow-[inset_0_1px_0_rgb(255_255_255/0.04),0_0_0_1px_rgb(0_0_0/0.2)] dark:border-slate-800 dark:bg-slate-950">
             <CrimeMap
               ref={crimeMapRef}
               embedded
