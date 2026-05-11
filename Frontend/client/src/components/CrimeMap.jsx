@@ -55,6 +55,21 @@ const stepIcon = makeGlowIcon("#38bdf8", 10);
 
 import { getRiskColorsByLevel, getRiskColor } from "../utils/riskColors";
 
+const POPUP_BOX = {
+  fontFamily: "'Inter','Segoe UI',sans-serif",
+  padding: "8px 10px",
+  background: "rgb(var(--bg-elevated))",
+  color: "rgb(var(--text-primary))",
+  border: "1px solid rgb(var(--border-primary))",
+  borderRadius: "10px",
+  fontSize: "12px",
+  lineHeight: 1.6,
+};
+
+const POPUP_MIN_BOX = { ...POPUP_BOX, minWidth: "140px" };
+const popupMuted = { color: "rgb(var(--text-secondary))", fontSize: "11px" };
+const popupSoft = { color: "rgb(var(--text-tertiary))", fontSize: "11px" };
+
 function RoutingMachine({ waypoints, isActive, onRouteDirections, onStepCoords }) {
   const map = useMap();
   const layerRef = useRef(null);
@@ -211,8 +226,9 @@ function MultiRouteMachine({ routes, activeRouteId, onRouteSelect }) {
           font-family:'Inter','Segoe UI',sans-serif;
           padding:10px 12px;
           min-width:180px;
-          background:rgba(5,8,20,0.97);
-          color:rgba(255,255,255,0.85);
+          background:rgb(var(--bg-elevated));
+          color:rgb(var(--text-primary));
+          border:1px solid rgb(var(--border-primary));
           border-radius:10px;
           font-size:12px;
           line-height:1.6;
@@ -222,26 +238,26 @@ function MultiRouteMachine({ routes, activeRouteId, onRouteSelect }) {
           };margin-bottom:6px;">${route.type.toUpperCase()} ROUTE</div>
           <div style="display:flex;flex-direction:column;gap:3px;">
             <div style="display:flex;justify-content:space-between;">
-              <span style="color:rgba(255,255,255,0.4);">Safety</span>
+              <span style="color:rgb(var(--text-tertiary));">Safety</span>
               <span style="font-weight:600;color:${
                 getRiskColor(route.safety_score)
               };">${route.safety_score.toFixed(1)}/10</span>
             </div>
             <div style="display:flex;justify-content:space-between;">
-              <span style="color:rgba(255,255,255,0.4);">Risk</span>
+              <span style="color:rgb(var(--text-tertiary));">Risk</span>
               <span style="font-weight:600;color:${
                 getRiskColorsByLevel(route.risk_level).text
               };">${route.risk_level.toUpperCase()}</span>
             </div>
             <div style="display:flex;justify-content:space-between;">
-              <span style="color:rgba(255,255,255,0.4);">Distance</span>
+              <span style="color:rgb(var(--text-tertiary));">Distance</span>
               <span>${(route.distance / 1000).toFixed(1)} km</span>
             </div>
             <div style="display:flex;justify-content:space-between;">
-              <span style="color:rgba(255,255,255,0.4);">Duration</span>
+              <span style="color:rgb(var(--text-tertiary));">Duration</span>
               <span>${Math.round(route.duration / 60)} min</span>
             </div>
-            ${route.summary ? `<div style="margin-top:6px;font-style:italic;color:rgba(255,255,255,0.35);font-size:11px;">${route.summary}</div>` : ''}
+            ${route.summary ? `<div style="margin-top:6px;font-style:italic;color:rgb(var(--text-tertiary));font-size:11px;">${route.summary}</div>` : ''}
           </div>
         </div>
       `, { className: "voyageour-popup" });
@@ -312,11 +328,11 @@ function RecenterButton({ lat, lng }) {
         title="Recenter"
         style={{
           width: "36px", height: "36px", borderRadius: "50%", cursor: "pointer",
-          background: hovered ? "rgba(56,189,248,0.2)" : "rgba(5,8,20,0.8)",
+          background: hovered ? "rgb(var(--accent-primary) / 0.12)" : "rgb(var(--bg-elevated) / 0.9)",
           backdropFilter: "blur(12px)",
-          border: hovered ? "1px solid rgba(56,189,248,0.5)" : "1px solid rgba(255,255,255,0.1)",
-          boxShadow: hovered ? "0 0 14px rgba(56,189,248,0.35)" : "0 4px 12px rgba(0,0,0,0.5)",
-          color: hovered ? "#7dd3fc" : "rgba(255,255,255,0.55)",
+          border: hovered ? "1px solid rgb(var(--accent-primary) / 0.35)" : "1px solid rgb(var(--border-primary))",
+          boxShadow: hovered ? "0 10px 24px -18px rgb(var(--accent-primary))" : "var(--shadow-md)",
+          color: hovered ? "rgb(var(--accent-primary))" : "rgb(var(--text-secondary))",
           fontSize: "15px", display: "flex", alignItems: "center", justifyContent: "center",
           transition: "all 0.2s ease", transform: hovered ? "scale(1.08)" : "scale(1)",
         }}
@@ -585,8 +601,8 @@ const CrimeMap = forwardRef(function CrimeMap(
     } catch (e) { console.error("Map click crime lookup failed:", e); }
   };
 
-  if (error)     return <p style={{ color: "#fca5a5", padding: "16px", fontSize: "13px" }}>Location error: {error}</p>;
-  if (!location) return <p style={{ color: "rgba(255,255,255,0.3)", padding: "16px", fontSize: "13px" }}>Fetching location...</p>;
+  if (error)     return <p style={{ color: "rgb(var(--danger))", padding: "16px", fontSize: "13px" }}>Location error: {error}</p>;
+  if (!location) return <p style={{ color: "rgb(var(--text-secondary))", padding: "16px", fontSize: "13px" }}>Fetching location...</p>;
 
   const displayDistrict = crimeRisk?.detected_district || crimeRisk?.district || "Unknown";
   const displayState    = crimeRisk?.detected_state    || crimeRisk?.state    || "";
@@ -617,9 +633,9 @@ const CrimeMap = forwardRef(function CrimeMap(
         {pickedFrom && (
           <Marker position={[pickedFrom.lat, pickedFrom.lng]} icon={routeStartIcon}>
             <Popup className="voyageour-popup">
-              <div style={{ fontFamily:"'Inter','Segoe UI',sans-serif", padding:"8px 10px", background:"rgba(5,8,20,0.97)", color:"rgba(255,255,255,0.85)", borderRadius:"10px", fontSize:"12px", lineHeight:1.6 }}>
+              <div style={POPUP_BOX}>
                 <div style={{ fontWeight:700, fontSize:"11px", letterSpacing:"0.1em", color:"#22c55e", marginBottom:"3px" }}>START</div>
-                <div style={{ color:"rgba(255,255,255,0.5)", fontSize:"11px" }}>{pickedFrom.lat.toFixed(5)}, {pickedFrom.lng.toFixed(5)}</div>
+                <div style={popupMuted}>{pickedFrom.lat.toFixed(5)}, {pickedFrom.lng.toFixed(5)}</div>
               </div>
             </Popup>
           </Marker>
@@ -627,9 +643,9 @@ const CrimeMap = forwardRef(function CrimeMap(
         {pickedTo && (
           <Marker position={[pickedTo.lat, pickedTo.lng]} icon={routeEndIcon}>
             <Popup className="voyageour-popup">
-              <div style={{ fontFamily:"'Inter','Segoe UI',sans-serif", padding:"8px 10px", background:"rgba(5,8,20,0.97)", color:"rgba(255,255,255,0.85)", borderRadius:"10px", fontSize:"12px", lineHeight:1.6 }}>
+              <div style={POPUP_BOX}>
                 <div style={{ fontWeight:700, fontSize:"11px", letterSpacing:"0.1em", color:"#f97316", marginBottom:"3px" }}>DESTINATION</div>
-                <div style={{ color:"rgba(255,255,255,0.5)", fontSize:"11px" }}>{pickedTo.lat.toFixed(5)}, {pickedTo.lng.toFixed(5)}</div>
+                <div style={popupMuted}>{pickedTo.lat.toFixed(5)}, {pickedTo.lng.toFixed(5)}</div>
               </div>
             </Popup>
           </Marker>
@@ -637,14 +653,10 @@ const CrimeMap = forwardRef(function CrimeMap(
 
         <Marker position={[location.lat, location.lng]} icon={userLocIcon}>
           <Popup className="voyageour-popup">
-            <div style={{
-              fontFamily:"'Inter','Segoe UI',sans-serif", padding:"8px 10px",
-              background:"rgba(5,8,20,0.97)", color:"rgba(255,255,255,0.85)",
-              borderRadius:"10px", fontSize:"12px", lineHeight:1.6, minWidth:"140px",
-            }}>
+            <div style={POPUP_MIN_BOX}>
               <div style={{ fontWeight:700, fontSize:"11px", letterSpacing:"0.1em", color:"#38bdf8", marginBottom:"4px" }}>YOU ARE HERE</div>
               {crimeRisk && !crimeRisk.error && (
-                <div style={{ color:"rgba(255,255,255,0.5)", fontSize:"11px" }}>
+                <div style={popupMuted}>
                   {displayDistrict}{displayState ? `, ${displayState}` : ""}<br />
                   <span style={{ color: getRiskColorsByLevel(crimeRisk.risk_level).text }}>
                     {crimeRisk.risk_level} RISK
@@ -669,20 +681,16 @@ const CrimeMap = forwardRef(function CrimeMap(
         {selectedLocation && (
           <Marker position={[selectedLocation.lat, selectedLocation.lng]} icon={clickedIcon}>
             <Popup className="voyageour-popup">
-              <div style={{
-                fontFamily:"'Inter','Segoe UI',sans-serif", padding:"8px 10px",
-                background:"rgba(5,8,20,0.97)", color:"rgba(255,255,255,0.85)",
-                borderRadius:"10px", fontSize:"12px", lineHeight:1.6, minWidth:"140px",
-              }}>
+              <div style={POPUP_MIN_BOX}>
                 <div style={{ fontWeight:700, fontSize:"11px", letterSpacing:"0.1em", color:"#fbbf24", marginBottom:"4px" }}>SELECTED SPOT</div>
                 {selectedCrimeRisk && !selectedCrimeRisk.error
-                  ? <div style={{ color:"rgba(255,255,255,0.5)", fontSize:"11px" }}>
+                  ? <div style={popupMuted}>
                       {selDistrict}{selState ? `, ${selState}` : ""}<br />
                       <span style={{ color: getRiskColorsByLevel(selectedCrimeRisk.risk_level).text }}>
                         {selectedCrimeRisk.risk_level} RISK
                       </span> · Score: {selectedCrimeRisk.risk_score}
                     </div>
-                  : <div style={{ color:"rgba(255,255,255,0.35)", fontSize:"11px" }}>Fetching crime data...</div>}
+                  : <div style={popupSoft}>Fetching crime data...</div>}
               </div>
             </Popup>
           </Marker>
@@ -693,14 +701,10 @@ const CrimeMap = forwardRef(function CrimeMap(
           .map((h, i) => (
             <Marker key={`hosp-${i}`} position={[h.latitude, h.longitude]} icon={hospitalIcon}>
               <Popup className="voyageour-popup">
-                <div style={{
-                  fontFamily:"'Inter','Segoe UI',sans-serif", padding:"8px 10px",
-                  background:"rgba(5,8,20,0.97)", color:"rgba(255,255,255,0.85)",
-                  borderRadius:"10px", fontSize:"12px", lineHeight:1.6, minWidth:"140px",
-                }}>
+                <div style={POPUP_MIN_BOX}>
                   <div style={{ fontWeight:700, fontSize:"11px", letterSpacing:"0.1em", color:"#10b981", marginBottom:"4px" }}>HOSPITAL</div>
-                  <div style={{ color:"rgba(255,255,255,0.7)", fontWeight:600 }}>{h.city}</div>
-                  <div style={{ color:"rgba(255,255,255,0.4)", fontSize:"11px" }}>{h.district}, {h.state}</div>
+                  <div style={{ color:"rgb(var(--text-primary))", fontWeight:600 }}>{h.city}</div>
+                  <div style={popupSoft}>{h.district}, {h.state}</div>
                   <div style={{ color:"#38bdf8", fontSize:"11px", marginTop:"3px" }}>{h.distance_km} km away</div>
                 </div>
               </Popup>
@@ -729,17 +733,17 @@ const CrimeMap = forwardRef(function CrimeMap(
                 />
                 <Marker position={[routeWaypoints[0].lat, routeWaypoints[0].lng]} icon={routeStartIcon}>
                   <Popup className="voyageour-popup">
-                    <div style={{ fontFamily:"'Inter','Segoe UI',sans-serif", padding:"8px 10px", background:"rgba(5,8,20,0.97)", color:"rgba(255,255,255,0.85)", borderRadius:"10px", fontSize:"12px", lineHeight:1.6 }}>
+                    <div style={POPUP_BOX}>
                       <div style={{ fontWeight:700, fontSize:"11px", letterSpacing:"0.1em", color:"#22c55e", marginBottom:"3px" }}>START</div>
-                      <div style={{ color:"rgba(255,255,255,0.6)" }}>{routeWaypoints[0].name}</div>
+                      <div style={{ color:"rgb(var(--text-secondary))" }}>{routeWaypoints[0].name}</div>
                     </div>
                   </Popup>
                 </Marker>
                 <Marker position={[routeWaypoints[routeWaypoints.length - 1].lat, routeWaypoints[routeWaypoints.length - 1].lng]} icon={routeEndIcon}>
                   <Popup className="voyageour-popup">
-                    <div style={{ fontFamily:"'Inter','Segoe UI',sans-serif", padding:"8px 10px", background:"rgba(5,8,20,0.97)", color:"rgba(255,255,255,0.85)", borderRadius:"10px", fontSize:"12px", lineHeight:1.6 }}>
+                    <div style={POPUP_BOX}>
                       <div style={{ fontWeight:700, fontSize:"11px", letterSpacing:"0.1em", color:"#f97316", marginBottom:"3px" }}>DESTINATION</div>
-                      <div style={{ color:"rgba(255,255,255,0.6)" }}>{routeWaypoints[routeWaypoints.length - 1].name}</div>
+                      <div style={{ color:"rgb(var(--text-secondary))" }}>{routeWaypoints[routeWaypoints.length - 1].name}</div>
                     </div>
                   </Popup>
                 </Marker>
@@ -749,12 +753,12 @@ const CrimeMap = forwardRef(function CrimeMap(
                     top: "10px",
                     left: "50%",
                     transform: "translateX(-50%)",
-                    background: "rgba(5,8,20,0.9)",
+                    background: "rgb(var(--bg-elevated) / 0.94)",
                     backdropFilter: "blur(12px)",
-                    color: "rgba(125,211,252,0.9)",
+                    color: "rgb(var(--accent-primary))",
                     padding: "8px 16px",
                     borderRadius: "8px",
-                    border: "1px solid rgba(56,189,248,0.2)",
+                    border: "1px solid rgb(var(--accent-primary) / 0.2)",
                     zIndex: 1000,
                     fontSize: "12px",
                     fontFamily: "'Inter','Segoe UI',sans-serif",
@@ -775,17 +779,17 @@ const CrimeMap = forwardRef(function CrimeMap(
                 />
                 <Marker position={[routeWaypoints[0].lat, routeWaypoints[0].lng]} icon={routeStartIcon}>
                   <Popup className="voyageour-popup">
-                    <div style={{ fontFamily:"'Inter','Segoe UI',sans-serif", padding:"8px 10px", background:"rgba(5,8,20,0.97)", color:"rgba(255,255,255,0.85)", borderRadius:"10px", fontSize:"12px", lineHeight:1.6 }}>
+                    <div style={POPUP_BOX}>
                       <div style={{ fontWeight:700, fontSize:"11px", letterSpacing:"0.1em", color:"#22c55e", marginBottom:"3px" }}>START</div>
-                      <div style={{ color:"rgba(255,255,255,0.6)" }}>{routeWaypoints[0].name}</div>
+                      <div style={{ color:"rgb(var(--text-secondary))" }}>{routeWaypoints[0].name}</div>
                     </div>
                   </Popup>
                 </Marker>
                 <Marker position={[routeWaypoints[routeWaypoints.length - 1].lat, routeWaypoints[routeWaypoints.length - 1].lng]} icon={routeEndIcon}>
                   <Popup className="voyageour-popup">
-                    <div style={{ fontFamily:"'Inter','Segoe UI',sans-serif", padding:"8px 10px", background:"rgba(5,8,20,0.97)", color:"rgba(255,255,255,0.85)", borderRadius:"10px", fontSize:"12px", lineHeight:1.6 }}>
+                    <div style={POPUP_BOX}>
                       <div style={{ fontWeight:700, fontSize:"11px", letterSpacing:"0.1em", color:"#f97316", marginBottom:"3px" }}>DESTINATION</div>
-                      <div style={{ color:"rgba(255,255,255,0.6)" }}>{routeWaypoints[routeWaypoints.length - 1].name}</div>
+                      <div style={{ color:"rgb(var(--text-secondary))" }}>{routeWaypoints[routeWaypoints.length - 1].name}</div>
                     </div>
                   </Popup>
                 </Marker>

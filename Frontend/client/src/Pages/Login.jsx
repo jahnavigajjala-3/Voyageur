@@ -75,36 +75,35 @@ export default function Login() {
         style={{ width: "100%", maxWidth: "400px" }}
       >
         <div style={{
-          background: "rgba(255,255,255,0.04)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: "20px",
-          boxShadow: "0 0 0 1px rgba(255,255,255,0.04), 0 32px 64px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.06)",
-          padding: "40px 36px",
+          background: "#ffffff",
+          border: "1px solid #e2e8f0",
+          borderRadius: "16px",
+          boxShadow: "0 2px 8px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.03)",
+          padding: "48px 40px",
         }}>
 
           {/* Logo */}
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "32px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "32px" }}>
             <div style={{
-              width: "38px", height: "38px", borderRadius: "12px",
-              background: "linear-gradient(135deg, rgba(56,189,248,0.8), rgba(59,130,246,0.8))",
-              boxShadow: "0 0 18px rgba(56,189,248,0.35), inset 0 1px 0 rgba(255,255,255,0.2)",
+              width: "40px", height: "40px", borderRadius: "10px",
+              background: "linear-gradient(135deg, #06B6D4, #0F172A)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "13px", fontWeight: "700", color: "#fff", letterSpacing: "0.04em",
-            }}>AI</div>
+            }}>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" style={{ width: "20px", height: "20px" }}>
+                <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+              </svg>
+            </div>
             <span style={{
-              fontSize: "18px", fontWeight: "700", letterSpacing: "-0.01em",
-              background: "linear-gradient(90deg, #e2e8f0 0%, #7dd3fc 50%, #38bdf8 100%)",
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              fontSize: "20px", fontWeight: "700", letterSpacing: "-0.02em",
+              color: "#0F172A",
             }}>Voyageur</span>
           </div>
 
-          <h1 style={{ fontSize: "20px", fontWeight: "700", color: "rgba(255,255,255,0.9)", marginBottom: "4px" }}>
+          <h1 style={{ fontSize: "24px", fontWeight: "700", color: "#0F172A", marginBottom: "6px", letterSpacing: "-0.02em" }}>
             Welcome back
           </h1>
-          <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.3)", marginBottom: "28px" }}>
-            Sign in to your account
+          <p style={{ fontSize: "14px", color: "#64748B", marginBottom: "32px", lineHeight: "1.5" }}>
+            Sign in to your account to continue
           </p>
 
           {/* Google Button */}
@@ -133,7 +132,7 @@ export default function Login() {
             />
 
             {error && (
-              <p style={{ fontSize: "12px", color: "#fca5a5", marginTop: "-2px" }}>{error}</p>
+              <p style={{ fontSize: "12px", color: "#ef4444", marginTop: "-2px" }}>{error}</p>
             )}
 
             <SubmitButton loading={loading} exiting={exiting} label="Sign In" loadingLabel="Signing in..." />
@@ -144,29 +143,31 @@ export default function Login() {
             type="button"
             onClick={handleGuestLogin}
             style={{
-              width: "100%", height: "40px", borderRadius: "12px", marginTop: "12px",
+              width: "100%", height: "44px", borderRadius: "10px", marginTop: "12px",
               background: "transparent",
-              border: "1px solid rgba(255,255,255,0.08)",
-              color: "rgba(255,255,255,0.35)",
-              fontSize: "13px", fontWeight: "500",
+              border: "1px solid #E2E8F0",
+              color: "#64748B",
+              fontSize: "14px", fontWeight: "500",
               cursor: "pointer",
-              transition: "all 0.2s ease",
+              transition: "all 0.15s ease",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "rgba(255,255,255,0.18)";
-              e.currentTarget.style.color = "rgba(255,255,255,0.6)";
+              e.currentTarget.style.background = "#F8FAFC";
+              e.currentTarget.style.borderColor = "#CBD5E1";
+              e.currentTarget.style.color = "#0F172A";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-              e.currentTarget.style.color = "rgba(255,255,255,0.35)";
+              e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.borderColor = "#E2E8F0";
+              e.currentTarget.style.color = "#64748B";
             }}
           >
             Continue as Guest
           </button>
 
-          <p style={{ fontSize: "12px", color: "rgba(255,255,255,0.2)", textAlign: "center", marginTop: "20px" }}>
+          <p style={{ fontSize: "14px", color: "#64748B", textAlign: "center", marginTop: "24px" }}>
             Don&apos;t have an account?{" "}
-            <Link to="/signup" style={{ color: "rgba(125,211,252,0.85)", fontWeight: "600", textDecoration: "none" }}>
+            <Link to="/signup" style={{ color: "#06B6D4", fontWeight: "600", textDecoration: "none" }}>
               Sign up
             </Link>
           </p>
@@ -185,29 +186,30 @@ function GoogleButton({ loading, onClick }) {
       onClick={onClick}
       disabled={loading}
       style={{
-        width: "100%", height: "44px", borderRadius: "12px",
-        background: loading ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.06)",
-        border: "1px solid rgba(255,255,255,0.12)",
-        color: loading ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.85)",
-        fontSize: "13px", fontWeight: "500",
+        width: "100%", height: "44px", borderRadius: "10px",
+        background: loading ? "#F8FAFC" : "#FFFFFF",
+        border: "1px solid #E2E8F0",
+        color: loading ? "#94A3B8" : "#0F172A",
+        fontSize: "14px", fontWeight: "500",
         cursor: loading ? "not-allowed" : "pointer",
         display: "flex", alignItems: "center", justifyContent: "center", gap: "10px",
-        transition: "all 0.2s ease",
+        transition: "all 0.15s ease",
         boxSizing: "border-box",
+        boxShadow: "0 1px 2px rgba(15, 23, 42, 0.03)",
       }}
       onMouseEnter={(e) => {
         if (!loading) {
-          e.currentTarget.style.background = "rgba(255,255,255,0.09)";
-          e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
+          e.currentTarget.style.background = "#F8FAFC";
+          e.currentTarget.style.borderColor = "#CBD5E1";
         }
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.background = "rgba(255,255,255,0.06)";
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
+        e.currentTarget.style.background = "#FFFFFF";
+        e.currentTarget.style.borderColor = "#E2E8F0";
       }}
     >
       {loading ? (
-        <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)" }}>Connecting...</span>
+        <span style={{ fontSize: "13px", color: "#94A3B8" }}>Connecting...</span>
       ) : (
         <>
           <GoogleIcon />
@@ -231,10 +233,10 @@ function GoogleIcon() {
 
 function Divider() {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "12px", margin: "20px 0" }}>
-      <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.08)" }} />
-      <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.2)", letterSpacing: "0.05em" }}>OR</span>
-      <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.08)" }} />
+    <div style={{ display: "flex", alignItems: "center", gap: "16px", margin: "24px 0" }}>
+      <div style={{ flex: 1, height: "1px", background: "#E2E8F0" }} />
+      <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: "500", letterSpacing: "0.02em" }}>OR</span>
+      <div style={{ flex: 1, height: "1px", background: "#E2E8F0" }} />
     </div>
   );
 }
@@ -245,20 +247,18 @@ function SubmitButton({ loading, exiting, label, loadingLabel }) {
     <motion.button
       type="submit"
       disabled={active}
-      whileHover={active ? {} : { scale: 1.02, boxShadow: "0 0 28px rgba(56,189,248,0.5), 0 6px 18px rgba(0,0,0,0.35)" }}
-      whileTap={active ? {} : { scale: 0.97 }}
+      whileHover={active ? {} : { scale: 1.01 }}
+      whileTap={active ? {} : { scale: 0.99 }}
       transition={{ duration: 0.15 }}
       style={{
-        width: "100%", height: "44px", borderRadius: "12px", marginTop: "6px",
-        background: active
-          ? "rgba(56,189,248,0.2)"
-          : "linear-gradient(135deg, rgba(56,189,248,0.85), rgba(59,130,246,0.8))",
-        border: "1px solid rgba(56,189,248,0.35)",
-        color: active ? "rgba(125,211,252,0.5)" : "#fff",
+        width: "100%", height: "44px", borderRadius: "10px", marginTop: "8px",
+        background: active ? "#94A3B8" : "#06B6D4",
+        border: "none",
+        color: "#FFFFFF",
         fontSize: "14px", fontWeight: "600",
         cursor: active ? "not-allowed" : "pointer",
-        boxShadow: active ? "none" : "0 0 18px rgba(56,189,248,0.28), 0 4px 14px rgba(0,0,0,0.3)",
-        letterSpacing: "0.02em",
+        boxShadow: active ? "none" : "0 1px 2px rgba(15, 23, 42, 0.06)",
+        letterSpacing: "-0.01em",
       }}
     >
       {loading ? loadingLabel : label}
@@ -275,12 +275,12 @@ function AuthInput({ type, name, placeholder, value, onChange, autoComplete }) {
       onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
       style={{
         width: "100%", height: "44px", padding: "0 14px",
-        borderRadius: "12px",
-        background: "rgba(255,255,255,0.05)",
-        border: focused ? "1px solid rgba(56,189,248,0.5)" : "1px solid rgba(255,255,255,0.08)",
-        boxShadow: focused ? "0 0 0 3px rgba(56,189,248,0.1), 0 0 12px rgba(56,189,248,0.08)" : "none",
-        color: "rgba(255,255,255,0.85)", fontSize: "13px", outline: "none",
-        transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+        borderRadius: "10px",
+        background: "#FFFFFF",
+        border: focused ? "1px solid #06B6D4" : "1px solid #E2E8F0",
+        boxShadow: focused ? "0 0 0 3px rgba(6, 182, 212, 0.08)" : "0 1px 2px rgba(15, 23, 42, 0.03)",
+        color: "#0F172A", fontSize: "14px", outline: "none",
+        transition: "border-color 0.15s ease, box-shadow 0.15s ease",
         boxSizing: "border-box",
       }}
     />
@@ -302,13 +302,13 @@ function PasswordInput({ name, placeholder, value, onChange, autoComplete, show,
         onBlur={() => setFocused(false)}
         style={{
           width: "100%", height: "44px",
-          padding: "0 44px 0 14px",   /* right padding reserves space for the eye icon */
-          borderRadius: "12px",
-          background: "rgba(255,255,255,0.05)",
-          border: focused ? "1px solid rgba(56,189,248,0.5)" : "1px solid rgba(255,255,255,0.08)",
-          boxShadow: focused ? "0 0 0 3px rgba(56,189,248,0.1), 0 0 12px rgba(56,189,248,0.08)" : "none",
-          color: "rgba(255,255,255,0.85)", fontSize: "13px", outline: "none",
-          transition: "border-color 0.2s ease, box-shadow 0.2s ease",
+          padding: "0 44px 0 14px",
+          borderRadius: "10px",
+          background: "#FFFFFF",
+          border: focused ? "1px solid #06B6D4" : "1px solid #E2E8F0",
+          boxShadow: focused ? "0 0 0 3px rgba(6, 182, 212, 0.08)" : "0 1px 2px rgba(15, 23, 42, 0.03)",
+          color: "#0F172A", fontSize: "14px", outline: "none",
+          transition: "border-color 0.15s ease, box-shadow 0.15s ease",
           boxSizing: "border-box",
         }}
       />
@@ -319,13 +319,13 @@ function PasswordInput({ name, placeholder, value, onChange, autoComplete, show,
         style={{
           position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)",
           background: "none", border: "none", padding: "4px",
-          cursor: "pointer", color: "rgba(255,255,255,0.3)",
+          cursor: "pointer", color: "#94A3B8",
           display: "flex", alignItems: "center", justifyContent: "center",
           transition: "color 0.15s ease",
           lineHeight: 0,
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = "rgba(125,211,252,0.8)"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.3)"; }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = "#64748B"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = "#94A3B8"; }}
       >
         {show ? <EyeOffIcon /> : <EyeIcon />}
       </button>

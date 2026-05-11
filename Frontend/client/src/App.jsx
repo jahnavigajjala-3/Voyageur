@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Component } from "react";
 import { AuthProvider } from "./context/AuthContext";
 import { RouteProvider } from "./context/RouteContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import Home from "./Pages/Home";
 import Login from "./Pages/Login";
 import Signup from "./Pages/Signup";
@@ -39,8 +40,8 @@ class ErrorBoundary extends Component {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            background: "#05050f",
-            color: "rgba(255,255,255,0.7)",
+            background: "#fafaf9",
+            color: "#64748b",
             fontFamily: "'Inter','Segoe UI',sans-serif",
             gap: "16px",
             padding: "24px",
@@ -48,10 +49,10 @@ class ErrorBoundary extends Component {
           }}
         >
           <p style={{ fontSize: "32px" }}>⚠️</p>
-          <p style={{ fontSize: "18px", fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
+          <p style={{ fontSize: "18px", fontWeight: 600, color: "#0f172a" }}>
             Something went wrong
           </p>
-          <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.4)", maxWidth: "360px" }}>
+          <p style={{ fontSize: "13px", color: "#64748b", maxWidth: "360px" }}>
             An unexpected error occurred. Please refresh the page.
           </p>
           <button
@@ -60,8 +61,8 @@ class ErrorBoundary extends Component {
               marginTop: "8px",
               padding: "10px 24px",
               borderRadius: "10px",
-              background: "linear-gradient(135deg, rgba(139,92,246,0.7), rgba(59,130,246,0.7))",
-              border: "1px solid rgba(139,92,246,0.3)",
+              background: "#0d9488",
+              border: "1px solid #0f766e",
               color: "#fff",
               fontSize: "13px",
               fontWeight: 600,
@@ -82,43 +83,45 @@ class ErrorBoundary extends Component {
 // ---------------------------------------------------------------------------
 function App() {
   return (
-    <ErrorBoundary>
+    <ThemeProvider>
       <AuthProvider>
         <RouteProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/chat"
-                element={
-                  <ProtectedRoute>
-                    <ChatBox />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/trip-guide"
-                element={
-                  <ProtectedRoute>
-                    <TripGuide />
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
-          </BrowserRouter>
+          <ErrorBoundary>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/chat"
+                  element={
+                    <ProtectedRoute>
+                      <ChatBox />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/trip-guide"
+                  element={
+                    <ProtectedRoute>
+                      <TripGuide />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+            </BrowserRouter>
+          </ErrorBoundary>
         </RouteProvider>
       </AuthProvider>
-    </ErrorBoundary>
+    </ThemeProvider>
   );
 }
 
