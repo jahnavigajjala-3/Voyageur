@@ -5,7 +5,7 @@ Accepts an optional trip_id so the AI can pull structured trip + route data
 from the database and build a richer, context-aware response.
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import List, Optional
 from sqlalchemy.orm import Session
