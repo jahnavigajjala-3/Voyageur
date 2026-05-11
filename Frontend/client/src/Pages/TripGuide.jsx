@@ -175,28 +175,40 @@ function titleCaseSlug(slug) {
 
 function trainBookingUrl(destination, fromLabel) {
   const destClean = (destination || "").split(",")[0].trim();
-  const toSlug = slugifyBookingPlace(destClean);
   const fromRaw =
-    fromLabel && !/^current location$/i.test(String(fromLabel).trim()) ? String(fromLabel).split(",")[0].trim() : "";
-  const fromSlug = slugifyBookingPlace(fromRaw);
-  if (fromSlug && toSlug && fromSlug !== toSlug) {
-    const fromSeg = titleCaseSlug(fromSlug);
-    const toSeg = titleCaseSlug(toSlug);
+    fromLabel && !/^current location$/i.test(String(fromLabel).trim())
+      ? String(fromLabel).split(",")[0].trim()
+      : "";
+
+  const toSeg = titleCaseSlug(slugifyBookingPlace(destClean));
+  const fromSeg = titleCaseSlug(slugifyBookingPlace(fromRaw));
+
+  if (fromSeg && toSeg && fromSeg !== toSeg) {
+    // ConfirmTkt: /trains/{From}-to-{To}-train-tickets
     return `https://www.confirmtkt.com/trains/${fromSeg}-to-${toSeg}-train-tickets`;
   }
-  return `https://www.google.co.in/search?q=${encodeURIComponent(`IRCTC train booking to ${destClean}`)}`;
+  // Fallback: IRCTC direct search
+  return `https://www.irctc.co.in/nget/train-search`;
 }
 
 function busBookingUrl(destination, fromLabel) {
   const destClean = (destination || "").split(",")[0].trim();
-  const toSlug = slugifyBookingPlace(destClean);
   const fromRaw =
-    fromLabel && !/^current location$/i.test(String(fromLabel).trim()) ? String(fromLabel).split(",")[0].trim() : "";
-  const fromSlug = slugifyBookingPlace(fromRaw);
-  if (fromSlug && toSlug && fromSlug !== toSlug) {
-    return `https://www.redbus.in/bus-tickets/${fromSlug}-to-${toSlug}`;
+    fromLabel && !/^current location$/i.test(String(fromLabel).trim())
+      ? String(fromLabel).split(",")[0].trim()
+      : "";
+
+  // Redbus path uses Title-Case city names, e.g. /bus-tickets/Bengaluru-to-Goa
+  const toSeg = titleCaseSlug(slugifyBookingPlace(destClean));
+  const fromSeg = titleCaseSlug(slugifyBookingPlace(fromRaw));
+
+  if (fromSeg && toSeg && fromSeg !== toSeg) {
+    // Primary: Redbus route page (works in browser, SPA)
+    // Fallback appended as a Google search so user can switch if needed
+    return `https://www.redbus.in/bus-tickets/${fromSeg}-to-${toSeg}`;
   }
-  return `https://www.redbus.in/buses/${toSlug}-bus-tickets`;
+  // No origin — open Google Travel bus search (universally works)
+  return `https://www.google.com/search?q=${encodeURIComponent(`bus tickets from anywhere to ${destClean} site:redbus.in OR site:abhibus.com`)}`;
 }
 
 function makeBookingLinks(destination, guidance, fromLabel = "") {
@@ -208,6 +220,12 @@ function makeBookingLinks(destination, guidance, fromLabel = "") {
   const busPrice = travelSuggestions.find((t) => t.mode === "Bus")?.estimated_price || "Compare prices";
   const hotelPrice = stay?.price_per_night || "Compare stays";
 
+  const destClean = (destination || "").split(",")[0].trim();
+  const fromClean =
+    fromLabel && !/^current location$/i.test(String(fromLabel).trim())
+      ? String(fromLabel).split(",")[0].trim()
+      : "";
+
   return [
     {
       label: "Flights",
@@ -215,6 +233,8 @@ function makeBookingLinks(destination, guidance, fromLabel = "") {
       tone: "#38bdf8",
       detail: flightPrice,
       url: makeSearchUrl("https://www.google.com/travel/flights?q=", `flights to ${destination}`),
+      fallbackUrl: null,
+      fallbackLabel: null,
     },
     {
       label: "Trains",
@@ -222,6 +242,8 @@ function makeBookingLinks(destination, guidance, fromLabel = "") {
       tone: "#a78bfa",
       detail: trainPrice,
       url: trainBookingUrl(destination, fromLabel),
+      fallbackUrl: `https://www.irctc.co.in/nget/train-search`,
+      fallbackLabel: "IRCTC",
     },
     {
       label: "Buses",
@@ -229,6 +251,11 @@ function makeBookingLinks(destination, guidance, fromLabel = "") {
       tone: "#34d399",
       detail: busPrice,
       url: busBookingUrl(destination, fromLabel),
+      // Always-works fallback via Google Maps directions transit mode
+      fallbackUrl: fromClean
+        ? `https://www.google.com/maps/dir/${encodeURIComponent(fromClean)}/${encodeURIComponent(destClean)}/@?travelmode=transit`
+        : `https://www.google.com/search?q=${encodeURIComponent(`bus from ${fromClean || "anywhere"} to ${destClean}`)}`,
+      fallbackLabel: "Google Maps",
     },
     {
       label: "Hotels",
@@ -236,6 +263,8 @@ function makeBookingLinks(destination, guidance, fromLabel = "") {
       tone: "#fbbf24",
       detail: hotelPrice,
       url: makeSearchUrl("https://www.booking.com/searchresults.html?ss=", destination),
+      fallbackUrl: null,
+      fallbackLabel: null,
     },
   ];
 }
@@ -832,30 +861,49 @@ export default function TripGuide() {
 
             {hasDestination && (
               <Panel title="Booking Redirects">
-                {links.map(({ label, icon: Icon, tone, detail, url }) => (
-                  <a
-                    key={label}
-                    href={url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow dark:border-white/10 dark:bg-slate-900/55 dark:hover:border-white/20"
-                  >
-                    <span
-                      className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg"
-                      style={{ background: `${tone}15`, color: tone, border: `1px solid ${tone}30` }}
+                {links.map(({ label, icon: Icon, tone, detail, url, fallbackUrl, fallbackLabel }) => (
+                  <div key={label} className="flex flex-col gap-1.5">
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow dark:border-white/10 dark:bg-slate-900/55 dark:hover:border-white/20"
                     >
-                      {createElement(Icon, { size: 17 })}
-                    </span>
-                    <span className="flex-1">
-                      <span className="block text-sm font-bold text-slate-800 transition-colors group-hover:text-slate-900 dark:text-slate-100 dark:group-hover:text-white">
-                        {label}
+                      <span
+                        className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-lg"
+                        style={{ background: `${tone}15`, color: tone, border: `1px solid ${tone}30` }}
+                      >
+                        {createElement(Icon, { size: 17 })}
                       </span>
-                      <span className="mt-0.5 block text-xs font-medium text-slate-500 dark:text-slate-300">{detail}</span>
-                    </span>
-                    <span className="rounded border border-teal-100 bg-teal-50 px-2 py-1 text-[10px] font-bold text-teal-600 opacity-0 transition-opacity group-hover:opacity-100 dark:border-cyan-400/20 dark:bg-cyan-400/10 dark:text-cyan-300">
-                      Open ↗
-                    </span>
-                  </a>
+                      <span className="flex-1">
+                        <span className="block text-sm font-bold text-slate-800 transition-colors group-hover:text-slate-900 dark:text-slate-100 dark:group-hover:text-white">
+                          {label}
+                        </span>
+                        <span className="mt-0.5 block text-xs font-medium text-slate-500 dark:text-slate-300">{detail}</span>
+                      </span>
+                      <span className="rounded border border-teal-100 bg-teal-50 px-2 py-1 text-[10px] font-bold text-teal-600 opacity-0 transition-opacity group-hover:opacity-100 dark:border-cyan-400/20 dark:bg-cyan-400/10 dark:text-cyan-300">
+                        Open ↗
+                      </span>
+                    </a>
+                    {fallbackUrl && fallbackLabel && (
+                      <a
+                        href={fallbackUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center justify-center gap-1.5 rounded-lg border border-dashed py-1.5 text-[11px] font-medium transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                        style={{
+                          borderColor: "rgb(var(--border-primary))",
+                          color: "rgb(var(--text-tertiary))",
+                        }}
+                      >
+                        <span>If link fails →</span>
+                        <span className="font-semibold" style={{ color: "rgb(var(--text-secondary))" }}>
+                          {fallbackLabel}
+                        </span>
+                        <span>↗</span>
+                      </a>
+                    )}
+                  </div>
                 ))}
               </Panel>
             )}
