@@ -1,146 +1,141 @@
 /**
  * Geocoding Service for Voyageur Travel App
- * 
- * Provides reverse geocoding to convert coordinates to location names
- * using Nominatim OpenStreetMap API with caching.
+ *
+ * Uses BigDataCloud reverse-geocoding API:
+ *  - Free, no API key required
+ *  - No strict rate limits for client-side use
+ *  - Always returns English names
+ *  - https://www.bigdatacloud.com/geocoding-apis/free-reverse-geocode-to-city-api
+ *
+ * Place name resolution strategy (most → least specific):
+ *   1. Highest-order administrative entry (neighbourhood / locality)
+ *   2. data.city
+ *   3. data.locality
+ *   4. data.principalSubdivision (state)
  */
 
-const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org/reverse';
+const BDC_BASE =
+  "https://api.bigdatacloud.net/data/reverse-geocode-client";
 
-// Cache for geocoding results
+// In-memory cache — survives the session, reset on hard reload
 const geocodingCache = new Map();
-const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+
+// Noise words that appear in admin names but aren't useful place labels
+const NOISE_PATTERNS = [
+  /\bdistrict\b/i,
+  /\btaluk\b/i,
+  /\bcorporation\b/i,
+  /\bmetropolitan\b/i,
+  /\bregion\b/i,
+  /\bauthority\b/i,
+  /\bdevelopment\b/i,
+  /\bcouncil\b/i,
+  /\bassembly\b/i,
+  /\bconstituency\b/i,
+  /\burban\b/i,
+  /\brailway\b/i,
+  /\bzonal\b/i,
+  /\bbasin\b/i,
+  /\bsubcontinent\b/i,
+];
+
+function isNoisyName(name) {
+  return NOISE_PATTERNS.some((re) => re.test(name));
+}
 
 /**
- * Reverse geocode coordinates to get location name
- * @param {number} lat - Latitude
- * @param {number} lng - Longitude
- * @returns {Promise<{city: string, state: string, country: string, displayName: string}>}
+ * Pick the most specific, human-friendly name from the administrative array.
+ * Prefers the highest-order entry that isn't a noisy admin label.
+ */
+function pickBestAdminName(administrative = []) {
+  // Sort descending by order (highest = most specific)
+  const sorted = [...administrative].sort((a, b) => (b.order ?? 0) - (a.order ?? 0));
+
+  for (const entry of sorted) {
+    const name = (entry.name || "").trim();
+    if (!name || /^\d+$/.test(name)) continue; // skip postcodes
+    if (isNoisyName(name)) continue;           // skip admin jargon
+    return name;
+  }
+  return null;
+}
+
+/**
+ * Reverse geocode coordinates → structured location object.
  */
 export async function reverseGeocode(lat, lng) {
-  // Check cache first
-  const cacheKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+  const cacheKey = `${lat.toFixed(3)},${lng.toFixed(3)}`;
   const cached = geocodingCache.get(cacheKey);
-  
+
   if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
     return cached.data;
   }
 
   try {
-    const response = await fetch(
-      `${NOMINATIM_BASE}?` + new URLSearchParams({
-        lat: lat.toString(),
-        lon: lng.toString(),
-        format: 'json',
-        addressdetails: '1',
-        zoom: '10', // City-level detail
-        'accept-language': 'en' // Force English names
-      }),
-      {
-        headers: {
-          'User-Agent': 'VoyageurTravelApp/1.0',
-          'Accept': 'application/json',
-          'Accept-Language': 'en'
-        }
-      }
-    );
+    const url = `${BDC_BASE}?latitude=${lat}&longitude=${lng}&localityLanguage=en`;
+    const response = await fetch(url);
 
-    if (!response.ok) {
-      throw new Error(`Geocoding failed: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
     const data = await response.json();
-    
-    // Extract location information from address
-    const address = data.address || {};
+
+    const administrative = data?.localityInfo?.administrative ?? [];
+    const specificName = pickBestAdminName(administrative);
+
     const result = {
-      city: address.city || address.town || address.village || address.county || '',
-      state: address.state || address.region || '',
-      country: address.country || '',
-      displayName: data.display_name || '',
-      raw: data
+      specific: specificName || "",          // e.g. "Kundalahalli", "Koramangala"
+      city: data.city || data.locality || "", // e.g. "Bengaluru"
+      state: data.principalSubdivision || "",
+      country: data.countryName || "",
+      postcode: data.postcode || "",
     };
 
-    // Cache the result
-    geocodingCache.set(cacheKey, {
-      data: result,
-      timestamp: Date.now()
-    });
-
+    geocodingCache.set(cacheKey, { data: result, timestamp: Date.now() });
     return result;
-  } catch (error) {
-    console.error('Reverse geocoding error:', error);
-    
-    // Return fallback with coordinates
-    const fallback = {
-      city: '',
-      state: '',
-      country: '',
-      displayName: `Location at ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
-      isFallback: true
-    };
-    
-    // Cache fallback too to prevent repeated failed requests
-    geocodingCache.set(cacheKey, {
-      data: fallback,
-      timestamp: Date.now()
-    });
-    
-    return fallback;
+  } catch (err) {
+    console.warn("Reverse geocoding failed:", err.message);
+    return null; // never cache failures — allow retry
   }
 }
 
 /**
- * Get a display name for coordinates
- * @param {number} lat - Latitude
- * @param {number} lng - Longitude
- * @returns {Promise<string>} Display name
+ * Get a short human-readable place name for coordinates.
+ *
+ * Returns the most specific name available:
+ *   "Koramangala, Bengaluru"  →  if neighbourhood differs from city
+ *   "Bengaluru"               →  if neighbourhood == city or unavailable
+ *   null                      →  if geocoding failed entirely
  */
 export async function getLocationDisplayName(lat, lng) {
-  try {
-    const location = await reverseGeocode(lat, lng);
+  const loc = await reverseGeocode(lat, lng);
+  if (!loc) return null;
 
-    if (location.city) {
-      return location.city;
-    }
-    if (location.state) {
-      return location.state;
-    }
-    // Nominatim often omits `city` for rural areas — use first segments of display_name for Unsplash-friendly queries
-    if (location.displayName) {
-      const parts = location.displayName.split(",").map((p) => p.trim()).filter(Boolean);
-      if (parts.length >= 2) {
-        return `${parts[0]}, ${parts[1]}`;
-      }
-      if (parts[0]) {
-        return parts[0];
-      }
-    }
-    return `Location (${lat.toFixed(2)}, ${lng.toFixed(2)})`;
-  } catch (error) {
-    console.error("Failed to get location name:", error);
-    return `Location (${lat.toFixed(2)}, ${lng.toFixed(2)})`;
+  const { specific, city } = loc;
+
+  // If we have a specific neighbourhood AND it's different from the city name
+  if (specific && city && specific.toLowerCase() !== city.toLowerCase()) {
+    return `${specific}, ${city}`;
   }
+
+  if (specific) return specific;
+  if (city) return city;
+  if (loc.state) return loc.state;
+  return null;
 }
 
-/**
- * Clear the geocoding cache
- */
+/** Clear the in-memory cache. */
 export function clearGeocodingCache() {
   geocodingCache.clear();
 }
 
-/**
- * Get cache statistics
- * @returns {Object} Cache statistics
- */
 export function getGeocodingCacheStats() {
   return {
     size: geocodingCache.size,
     entries: Array.from(geocodingCache.entries()).map(([key, value]) => ({
       key,
       timestamp: value.timestamp,
-      age: Date.now() - value.timestamp
-    }))
+      age: Date.now() - value.timestamp,
+    })),
   };
 }

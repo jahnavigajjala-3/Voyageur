@@ -110,14 +110,9 @@ export default function Dashboard() {
         const weatherData = await getWeather(location.lat, location.lng);
         setWeather(weatherData);
         
-        // Fetch location name (city)
-        try {
-          const cityName = await getLocationDisplayName(location.lat, location.lng);
-          setLocationName(cityName);
-        } catch (geocodeError) {
-          console.warn("Geocoding failed, using coordinates:", geocodeError);
-          setLocationName(`Location (${location.lat.toFixed(2)}, ${location.lng.toFixed(2)})`);
-        }
+        // Fetch location name (city) — null means geocoding failed, keep empty
+        const cityName = await getLocationDisplayName(location.lat, location.lng);
+        setLocationName(cityName || "");
       } catch (err) {
         console.error("Weather fetch failed:", err);
       } finally {
@@ -154,23 +149,14 @@ export default function Dashboard() {
         const destKey = `${historyItem.destination.lat},${historyItem.destination.lng}`;
         
         if (!routeLocationNames[originKey]) {
-          try {
-            const name = await getLocationDisplayName(historyItem.origin.lat, historyItem.origin.lng);
-            newNames[originKey] = name;
-          } catch (err) {
-            console.warn("Failed to fetch origin name:", err);
-            newNames[originKey] = `${historyItem.origin.lat.toFixed(4)}, ${historyItem.origin.lng.toFixed(4)}`;
-          }
+          const name = await getLocationDisplayName(historyItem.origin.lat, historyItem.origin.lng);
+          // Only store if we got a real name (not null)
+          if (name) newNames[originKey] = name;
         }
         
         if (!routeLocationNames[destKey]) {
-          try {
-            const name = await getLocationDisplayName(historyItem.destination.lat, historyItem.destination.lng);
-            newNames[destKey] = name;
-          } catch (err) {
-            console.warn("Failed to fetch destination name:", err);
-            newNames[destKey] = `${historyItem.destination.lat.toFixed(4)}, ${historyItem.destination.lng.toFixed(4)}`;
-          }
+          const name = await getLocationDisplayName(historyItem.destination.lat, historyItem.destination.lng);
+          if (name) newNames[destKey] = name;
         }
       }
       
@@ -183,14 +169,6 @@ export default function Dashboard() {
       fetchLocationNames();
     }
   }, [routeHistory]);
-  
-  // Clear geocoding cache on mount to ensure fresh English names
-  useEffect(() => {
-    import('../services/geocodingService').then(module => {
-      module.clearGeocodingCache();
-      console.log('Geocoding cache cleared - location names will now be fetched in English');
-    });
-  }, []);
   // ─────────────────────────────────────────────────────────────────────────
 
   const surfaceCard = {
@@ -1561,32 +1539,17 @@ function GlassMapCard({ liveRisk, onRiskUpdate, onClickedRiskUpdate, mapRef, onH
 
   const handleRoutePick = async (coords) => {
     // Fetch location name for picked coordinates
-    try {
-      const locationName = await getLocationDisplayName(coords.lat, coords.lng);
-      const coordsWithName = { ...coords, name: locationName };
-      
-      if (pickingFor === "from") { 
-        setRouteFrom(locationName); 
-        setRouteFromCoords(coordsWithName); 
-      }
-      if (pickingFor === "to") { 
-        setRouteTo(locationName); 
-        setRouteToCoords(coordsWithName); 
-      }
-    } catch (err) {
-      console.warn("Failed to fetch location name:", err);
-      // Fallback to coordinates
-      const fallbackName = `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`;
-      const coordsWithName = { ...coords, name: fallbackName };
-      
-      if (pickingFor === "from") { 
-        setRouteFrom(fallbackName); 
-        setRouteFromCoords(coordsWithName); 
-      }
-      if (pickingFor === "to") { 
-        setRouteTo(fallbackName); 
-        setRouteToCoords(coordsWithName); 
-      }
+    const locationName = await getLocationDisplayName(coords.lat, coords.lng);
+    const displayName = locationName || `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`;
+    const coordsWithName = { ...coords, name: displayName };
+
+    if (pickingFor === "from") {
+      setRouteFrom(displayName);
+      setRouteFromCoords(coordsWithName);
+    }
+    if (pickingFor === "to") {
+      setRouteTo(displayName);
+      setRouteToCoords(coordsWithName);
     }
     setPickingFor(null);
   };
