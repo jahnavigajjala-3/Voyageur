@@ -5,10 +5,12 @@ import { useAuth } from "../hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 import { useRouteContext } from "../context/RouteContext";
+import { useTheme } from "../context/ThemeContext";
 
 export default function Login() {
   const { login, googleAuth, continueAsGuest } = useAuth();
   const { resetSession } = useRouteContext();
+  const { isDarkMode } = useTheme();
   const navigate = useNavigate();
   const [form, setForm]           = useState({ email: "", password: "" });
   const [loading, setLoading]     = useState(false);
@@ -16,6 +18,8 @@ export default function Login() {
   const [error, setError]         = useState("");
   const [exiting, setExiting]     = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const dk = isDarkMode;
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -35,7 +39,7 @@ export default function Login() {
   };
 
   const handleGuestLogin = () => {
-    resetSession(); // wipe any previous user's route history before guest session
+    resetSession();
     continueAsGuest();
     setExiting(true);
     setTimeout(() => navigate("/dashboard"), 550);
@@ -66,19 +70,17 @@ export default function Login() {
     <AuthLayout exiting={exiting}>
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{
-          opacity: exiting ? 0 : 1,
-          scale:   exiting ? 0.94 : 1,
-          y:       exiting ? 10 : 0,
-        }}
+        animate={{ opacity: exiting ? 0 : 1, scale: exiting ? 0.94 : 1, y: exiting ? 10 : 0 }}
         transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
         style={{ width: "100%", maxWidth: "400px" }}
       >
         <div style={{
-          background: "#ffffff",
-          border: "1px solid #e2e8f0",
+          background: dk ? "#0d1b2e" : "#ffffff",
+          border: `1px solid ${dk ? "rgba(255,255,255,0.08)" : "#e2e8f0"}`,
           borderRadius: "16px",
-          boxShadow: "0 2px 8px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.03)",
+          boxShadow: dk
+            ? "0 0 0 1px rgba(255,255,255,0.04), 0 24px 48px -24px rgba(0,0,0,0.6)"
+            : "0 2px 8px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.03)",
           padding: "48px 40px",
         }}>
 
@@ -93,79 +95,56 @@ export default function Login() {
                 <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
               </svg>
             </div>
-            <span style={{
-              fontSize: "20px", fontWeight: "700", letterSpacing: "-0.02em",
-              color: "#0F172A",
-            }}>Voyageur</span>
+            <span style={{ fontSize: "20px", fontWeight: "700", letterSpacing: "-0.02em", color: dk ? "#f1f5f9" : "#0F172A" }}>
+              Voyageur
+            </span>
           </div>
 
-          <h1 style={{ fontSize: "24px", fontWeight: "700", color: "#0F172A", marginBottom: "6px", letterSpacing: "-0.02em" }}>
+          <h1 style={{ fontSize: "24px", fontWeight: "700", color: dk ? "#f1f5f9" : "#0F172A", marginBottom: "6px", letterSpacing: "-0.02em" }}>
             Welcome back
           </h1>
-          <p style={{ fontSize: "14px", color: "#64748B", marginBottom: "32px", lineHeight: "1.5" }}>
+          <p style={{ fontSize: "14px", color: dk ? "#94a3b8" : "#64748B", marginBottom: "32px", lineHeight: "1.5" }}>
             Sign in to your account to continue
           </p>
 
-          {/* Google Button */}
-          <GoogleButton loading={googleLoading} onClick={() => handleGoogleLogin()} />
-
-          {/* Divider */}
-          <Divider />
+          <GoogleButton loading={googleLoading} onClick={() => handleGoogleLogin()} dk={dk} />
+          <Divider dk={dk} />
 
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-            <AuthInput
-              type="email"
-              name="email"
-              placeholder="Email address"
-              value={form.email}
-              onChange={handleChange}
-              autoComplete="email"
-            />
-            <PasswordInput
-              name="password"
-              placeholder="Password"
-              value={form.password}
-              onChange={handleChange}
-              autoComplete="current-password"
-              show={showPassword}
-              onToggle={() => setShowPassword((v) => !v)}
-            />
+            <AuthInput type="email" name="email" placeholder="Email address" value={form.email} onChange={handleChange} autoComplete="email" dk={dk} />
+            <PasswordInput name="password" placeholder="Password" value={form.password} onChange={handleChange} autoComplete="current-password" show={showPassword} onToggle={() => setShowPassword(v => !v)} dk={dk} />
 
-            {error && (
-              <p style={{ fontSize: "12px", color: "#ef4444", marginTop: "-2px" }}>{error}</p>
-            )}
+            {error && <p style={{ fontSize: "12px", color: "#ef4444", marginTop: "-2px" }}>{error}</p>}
 
             <SubmitButton loading={loading} exiting={exiting} label="Sign In" loadingLabel="Signing in..." />
           </form>
 
-          {/* Guest mode */}
           <button
             type="button"
             onClick={handleGuestLogin}
             style={{
               width: "100%", height: "44px", borderRadius: "10px", marginTop: "12px",
               background: "transparent",
-              border: "1px solid #E2E8F0",
-              color: "#64748B",
+              border: `1px solid ${dk ? "rgba(255,255,255,0.1)" : "#E2E8F0"}`,
+              color: dk ? "#94a3b8" : "#64748B",
               fontSize: "14px", fontWeight: "500",
-              cursor: "pointer",
-              transition: "all 0.15s ease",
+              cursor: "pointer", transition: "all 0.15s ease",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#F8FAFC";
-              e.currentTarget.style.borderColor = "#CBD5E1";
-              e.currentTarget.style.color = "#0F172A";
+              e.currentTarget.style.background = dk ? "rgba(255,255,255,0.05)" : "#F8FAFC";
+              e.currentTarget.style.borderColor = dk ? "rgba(255,255,255,0.18)" : "#CBD5E1";
+              e.currentTarget.style.color = dk ? "#e2e8f0" : "#0F172A";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.borderColor = "#E2E8F0";
-              e.currentTarget.style.color = "#64748B";
+              e.currentTarget.style.borderColor = dk ? "rgba(255,255,255,0.1)" : "#E2E8F0";
+              e.currentTarget.style.color = dk ? "#94a3b8" : "#64748B";
             }}
           >
             Continue as Guest
           </button>
 
-          <p style={{ fontSize: "14px", color: "#64748B", textAlign: "center", marginTop: "24px" }}>
+          <p style={{ fontSize: "14px", color: dk ? "#94a3b8" : "#64748B", textAlign: "center", marginTop: "24px" }}>
             Don&apos;t have an account?{" "}
             <Link to="/signup" style={{ color: "#06B6D4", fontWeight: "600", textDecoration: "none" }}>
               Sign up
@@ -179,43 +158,33 @@ export default function Login() {
 
 // ─── Shared sub-components ────────────────────────────────────────────────
 
-function GoogleButton({ loading, onClick }) {
+function GoogleButton({ loading, onClick, dk }) {
   return (
     <button
-      type="button"
-      onClick={onClick}
-      disabled={loading}
+      type="button" onClick={onClick} disabled={loading}
       style={{
         width: "100%", height: "44px", borderRadius: "10px",
-        background: loading ? "#F8FAFC" : "#FFFFFF",
-        border: "1px solid #E2E8F0",
-        color: loading ? "#94A3B8" : "#0F172A",
+        background: loading ? (dk ? "#1e293b" : "#F8FAFC") : (dk ? "#1e293b" : "#FFFFFF"),
+        border: `1px solid ${dk ? "rgba(255,255,255,0.1)" : "#E2E8F0"}`,
+        color: loading ? "#94A3B8" : (dk ? "#e2e8f0" : "#0F172A"),
         fontSize: "14px", fontWeight: "500",
         cursor: loading ? "not-allowed" : "pointer",
         display: "flex", alignItems: "center", justifyContent: "center", gap: "10px",
-        transition: "all 0.15s ease",
-        boxSizing: "border-box",
-        boxShadow: "0 1px 2px rgba(15, 23, 42, 0.03)",
+        transition: "all 0.15s ease", boxSizing: "border-box",
+        boxShadow: dk ? "none" : "0 1px 2px rgba(15,23,42,0.03)",
       }}
       onMouseEnter={(e) => {
         if (!loading) {
-          e.currentTarget.style.background = "#F8FAFC";
-          e.currentTarget.style.borderColor = "#CBD5E1";
+          e.currentTarget.style.background = dk ? "#263548" : "#F8FAFC";
+          e.currentTarget.style.borderColor = dk ? "rgba(255,255,255,0.18)" : "#CBD5E1";
         }
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.background = "#FFFFFF";
-        e.currentTarget.style.borderColor = "#E2E8F0";
+        e.currentTarget.style.background = dk ? "#1e293b" : "#FFFFFF";
+        e.currentTarget.style.borderColor = dk ? "rgba(255,255,255,0.1)" : "#E2E8F0";
       }}
     >
-      {loading ? (
-        <span style={{ fontSize: "13px", color: "#94A3B8" }}>Connecting...</span>
-      ) : (
-        <>
-          <GoogleIcon />
-          Continue with Google
-        </>
-      )}
+      {loading ? <span style={{ fontSize: "13px", color: "#94A3B8" }}>Connecting...</span> : <><GoogleIcon />Continue with Google</>}
     </button>
   );
 }
@@ -231,12 +200,12 @@ function GoogleIcon() {
   );
 }
 
-function Divider() {
+function Divider({ dk }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "16px", margin: "24px 0" }}>
-      <div style={{ flex: 1, height: "1px", background: "#E2E8F0" }} />
-      <span style={{ fontSize: "12px", color: "#94A3B8", fontWeight: "500", letterSpacing: "0.02em" }}>OR</span>
-      <div style={{ flex: 1, height: "1px", background: "#E2E8F0" }} />
+      <div style={{ flex: 1, height: "1px", background: dk ? "rgba(255,255,255,0.08)" : "#E2E8F0" }} />
+      <span style={{ fontSize: "12px", color: dk ? "#475569" : "#94A3B8", fontWeight: "500", letterSpacing: "0.02em" }}>OR</span>
+      <div style={{ flex: 1, height: "1px", background: dk ? "rgba(255,255,255,0.08)" : "#E2E8F0" }} />
     </div>
   );
 }
@@ -245,19 +214,17 @@ function SubmitButton({ loading, exiting, label, loadingLabel }) {
   const active = loading || exiting;
   return (
     <motion.button
-      type="submit"
-      disabled={active}
+      type="submit" disabled={active}
       whileHover={active ? {} : { scale: 1.01 }}
       whileTap={active ? {} : { scale: 0.99 }}
       transition={{ duration: 0.15 }}
       style={{
         width: "100%", height: "44px", borderRadius: "10px", marginTop: "8px",
         background: active ? "#94A3B8" : "#06B6D4",
-        border: "none",
-        color: "#FFFFFF",
+        border: "none", color: "#FFFFFF",
         fontSize: "14px", fontWeight: "600",
         cursor: active ? "not-allowed" : "pointer",
-        boxShadow: active ? "none" : "0 1px 2px rgba(15, 23, 42, 0.06)",
+        boxShadow: active ? "none" : "0 1px 2px rgba(15,23,42,0.06)",
         letterSpacing: "-0.01em",
       }}
     >
@@ -266,7 +233,7 @@ function SubmitButton({ loading, exiting, label, loadingLabel }) {
   );
 }
 
-function AuthInput({ type, name, placeholder, value, onChange, autoComplete }) {
+function AuthInput({ type, name, placeholder, value, onChange, autoComplete, dk }) {
   const [focused, setFocused] = useState(false);
   return (
     <input
@@ -276,10 +243,11 @@ function AuthInput({ type, name, placeholder, value, onChange, autoComplete }) {
       style={{
         width: "100%", height: "44px", padding: "0 14px",
         borderRadius: "10px",
-        background: "#FFFFFF",
-        border: focused ? "1px solid #06B6D4" : "1px solid #E2E8F0",
-        boxShadow: focused ? "0 0 0 3px rgba(6, 182, 212, 0.08)" : "0 1px 2px rgba(15, 23, 42, 0.03)",
-        color: "#0F172A", fontSize: "14px", outline: "none",
+        background: dk ? "#1e293b" : "#FFFFFF",
+        border: focused ? "1px solid #06B6D4" : `1px solid ${dk ? "rgba(255,255,255,0.1)" : "#E2E8F0"}`,
+        boxShadow: focused ? "0 0 0 3px rgba(6,182,212,0.12)" : "none",
+        color: dk ? "#f1f5f9" : "#0F172A",
+        fontSize: "14px", outline: "none",
         transition: "border-color 0.15s ease, box-shadow 0.15s ease",
         boxSizing: "border-box",
       }}
@@ -287,45 +255,39 @@ function AuthInput({ type, name, placeholder, value, onChange, autoComplete }) {
   );
 }
 
-function PasswordInput({ name, placeholder, value, onChange, autoComplete, show, onToggle }) {
+function PasswordInput({ name, placeholder, value, onChange, autoComplete, show, onToggle, dk }) {
   const [focused, setFocused] = useState(false);
   return (
     <div style={{ position: "relative", width: "100%" }}>
       <input
         type={show ? "text" : "password"}
-        name={name}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        autoComplete={autoComplete}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
+        name={name} placeholder={placeholder} value={value}
+        onChange={onChange} autoComplete={autoComplete}
+        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
         style={{
-          width: "100%", height: "44px",
-          padding: "0 44px 0 14px",
+          width: "100%", height: "44px", padding: "0 44px 0 14px",
           borderRadius: "10px",
-          background: "#FFFFFF",
-          border: focused ? "1px solid #06B6D4" : "1px solid #E2E8F0",
-          boxShadow: focused ? "0 0 0 3px rgba(6, 182, 212, 0.08)" : "0 1px 2px rgba(15, 23, 42, 0.03)",
-          color: "#0F172A", fontSize: "14px", outline: "none",
+          background: dk ? "#1e293b" : "#FFFFFF",
+          border: focused ? "1px solid #06B6D4" : `1px solid ${dk ? "rgba(255,255,255,0.1)" : "#E2E8F0"}`,
+          boxShadow: focused ? "0 0 0 3px rgba(6,182,212,0.12)" : "none",
+          color: dk ? "#f1f5f9" : "#0F172A",
+          fontSize: "14px", outline: "none",
           transition: "border-color 0.15s ease, box-shadow 0.15s ease",
           boxSizing: "border-box",
         }}
       />
       <button
-        type="button"
-        onClick={onToggle}
+        type="button" onClick={onToggle}
         aria-label={show ? "Hide password" : "Show password"}
         style={{
           position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)",
           background: "none", border: "none", padding: "4px",
-          cursor: "pointer", color: "#94A3B8",
+          cursor: "pointer", color: dk ? "#475569" : "#94A3B8",
           display: "flex", alignItems: "center", justifyContent: "center",
-          transition: "color 0.15s ease",
-          lineHeight: 0,
+          transition: "color 0.15s ease", lineHeight: 0,
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = "#64748B"; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = "#94A3B8"; }}
+        onMouseEnter={(e) => { e.currentTarget.style.color = dk ? "#94a3b8" : "#64748B"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.color = dk ? "#475569" : "#94A3B8"; }}
       >
         {show ? <EyeOffIcon /> : <EyeIcon />}
       </button>
