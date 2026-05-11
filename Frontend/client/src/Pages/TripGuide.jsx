@@ -1,4 +1,4 @@
-import { createElement, useEffect, useMemo, useState, useRef } from "react";
+import { createElement, useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Bus, CalendarDays, ChevronLeft, ChevronRight, Hotel, Image, MapPin, Mountain, Plane, Search, Train } from "lucide-react";
 import { getTripGuidance } from "../api/api";
@@ -14,7 +14,10 @@ const TRANSITS = [
   { value: "bus", label: "Nearest bus stand" },
 ];
 
-/** Nine curated picks shown until the user commits a destination (no default Goa). */
+/**
+ * Six curated picks (lighter than nine parallel Unsplash calls).
+ * Preview images load lazily when each card nears the viewport — one API request at a time per card.
+ */
 const DESTINATION_SUGGESTIONS = [
   {
     name: "Jaipur",
@@ -45,25 +48,11 @@ const DESTINATION_SUGGESTIONS = [
     imageQuery: "Bangalore India city park",
   },
   {
-    name: "Udaipur",
-    region: "Rajasthan",
-    tagline: "City of lakes & palaces",
-    highlights: ["Lake Pichola boat rides", "Heritage hotels", "Aravalli views"],
-    imageQuery: "Udaipur India lake palace",
-  },
-  {
     name: "Goa",
     region: "West India",
     tagline: "Beaches & Portuguese lanes",
     highlights: ["Coastal drives", "Seafood & shacks", "Churches & chapels"],
     imageQuery: "Goa India beach palm",
-  },
-  {
-    name: "Delhi",
-    region: "NCR",
-    tagline: "Old lanes & new India",
-    highlights: ["Mughal monuments", "Street food hubs", "Museums & galleries"],
-    imageQuery: "Delhi India India Gate monument",
   },
   {
     name: "Varanasi",
@@ -72,14 +61,95 @@ const DESTINATION_SUGGESTIONS = [
     highlights: ["Sunrise boat rides", "Evening aarti", "Silk & narrow lanes"],
     imageQuery: "Varanasi India Ganges ghats",
   },
-  {
-    name: "Pondicherry",
-    region: "Puducherry",
-    tagline: "French Quarter & seaside calm",
-    highlights: ["White Town cafés", "Promenade walks", "Auroville day trips"],
-    imageQuery: "Pondicherry India French colonial street",
-  },
 ];
+
+const FALLBACK_GRADIENT =
+  "linear-gradient(135deg, rgba(14,30,80,0.85) 0%, rgba(7,20,55,0.95) 100%)";
+
+/** Loads Unsplash preview only after the card scrolls into view (reduces burst traffic vs. loading all at once). */
+function DestinationSuggestionCard({ suggestion, imageData, isImageLoading, onSelect, onRequestImage }) {
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    if (imageData !== undefined) return;
+    const el = wrapRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      onRequestImage(suggestion);
+      return undefined;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          onRequestImage(suggestion);
+          io.disconnect();
+        }
+      },
+      { root: null, rootMargin: "100px 0px", threshold: 0.06 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [suggestion, imageData, onRequestImage]);
+
+  const busy = isImageLoading && imageData === undefined;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(suggestion.name)}
+      className="group flex flex-col overflow-hidden rounded-2xl border text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+      style={{
+        background: "rgb(var(--bg-secondary))",
+        borderColor: "rgb(var(--border-primary))",
+      }}
+    >
+      <div ref={wrapRef} className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-900">
+        {busy ? (
+          <div className="flex h-full w-full items-center justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-teal-500 border-t-transparent" />
+          </div>
+        ) : imageData?.url ? (
+          <img
+            src={imageData.url}
+            alt={imageData.alt || suggestion.name}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+        ) : (
+          <div
+            className="flex h-full w-full flex-col items-center justify-center gap-2 p-4"
+            style={{
+              background: imageData?.gradient || "linear-gradient(135deg, rgba(56,189,248,0.2) 0%, rgba(99,102,241,0.25) 100%)",
+            }}
+          >
+            <Image size={28} className="text-white/70" />
+            <span className="text-center text-sm font-semibold text-white/90">{suggestion.name}</span>
+          </div>
+        )}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+        <div className="absolute bottom-3 left-3 right-3 text-white">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-white/80">{suggestion.region}</p>
+          <p className="font-serif text-lg font-bold leading-tight">{suggestion.name}</p>
+          <p className="mt-1 text-xs text-white/90">{suggestion.tagline}</p>
+        </div>
+      </div>
+      <div className="flex flex-1 flex-col gap-2 p-4">
+        <ul className="space-y-1.5 text-xs leading-relaxed" style={{ color: "rgb(var(--text-secondary))" }}>
+          {suggestion.highlights.map((h) => (
+            <li key={h} className="flex gap-2">
+              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-teal-500" />
+              <span>{h}</span>
+            </li>
+          ))}
+        </ul>
+        <span className="mt-auto inline-flex items-center gap-1 text-xs font-bold" style={{ color: "rgb(var(--accent-cyan))" }}>
+          Plan this trip →
+        </span>
+      </div>
+    </button>
+  );
+}
 
 const makeSearchUrl = (base, query) => `${base}${encodeURIComponent(query)}`;
 
@@ -141,10 +211,11 @@ export default function TripGuide() {
   const [images, setImages] = useState({});
   const [loadingImages, setLoadingImages] = useState(false);
   const [suggestionImages, setSuggestionImages] = useState({});
-  const [loadingSuggestionImages, setLoadingSuggestionImages] = useState(false);
+  const [suggestionImageLoading, setSuggestionImageLoading] = useState({});
   const [currentSlide, setCurrentSlide] = useState(0);
   const [actualFromLocation, setActualFromLocation] = useState("Current Location");
   const carouselRef = useRef(null);
+  const suggestionInflightRef = useRef(new Set());
 
   const hasDestination = Boolean(form.destination?.trim());
 
@@ -207,42 +278,41 @@ export default function TripGuide() {
     loadImages();
   }, [imageKeywords, hasDestination]);
 
-  useEffect(() => {
-    if (hasDestination) return;
+  const requestSuggestionImage = useCallback((suggestion) => {
+    const name = suggestion.name;
+    if (suggestionInflightRef.current.has(name)) return;
+    suggestionInflightRef.current.add(name);
+    setSuggestionImageLoading((prev) => ({ ...prev, [name]: true }));
 
-    let cancelled = false;
-    const load = async () => {
-      setLoadingSuggestionImages(true);
-      const next = {};
-      for (const s of DESTINATION_SUGGESTIONS) {
-        if (cancelled) return;
-        try {
-          const imageData = await fetchLocationImage(s.imageQuery, {
-            width: 640,
-            height: 420,
-            orientation: "landscape",
-          });
-          next[s.name] = imageData;
-        } catch (err) {
-          console.error(`Suggestion image failed for ${s.name}:`, err);
-          next[s.name] = {
+    (async () => {
+      try {
+        const imageData = await fetchLocationImage(suggestion.imageQuery, {
+          width: 560,
+          height: 360,
+          orientation: "landscape",
+        });
+        setSuggestionImages((prev) => ({ ...prev, [name]: imageData }));
+      } catch (err) {
+        console.error(`Suggestion image failed for ${name}:`, err);
+        setSuggestionImages((prev) => ({
+          ...prev,
+          [name]: {
             url: "",
-            alt: s.name,
+            alt: name,
             source: "fallback",
-            gradient: "linear-gradient(135deg, rgba(14,30,80,0.85) 0%, rgba(7,20,55,0.95) 100%)",
-          };
-        }
+            gradient: FALLBACK_GRADIENT,
+          },
+        }));
+      } finally {
+        suggestionInflightRef.current.delete(name);
+        setSuggestionImageLoading((prev) => {
+          const next = { ...prev };
+          delete next[name];
+          return next;
+        });
       }
-      if (!cancelled) {
-        setSuggestionImages(next);
-        setLoadingSuggestionImages(false);
-      }
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [hasDestination]);
+    })();
+  }, []);
 
   const fetchGuidance = async (payload = form) => {
     if (!payload.destination?.trim()) {
@@ -313,6 +383,9 @@ export default function TripGuide() {
     setGuidance(null);
     setError("");
     setCurrentSlide(0);
+    setSuggestionImages({});
+    setSuggestionImageLoading({});
+    suggestionInflightRef.current.clear();
   };
 
   const itineraryDays = guidance?.itinerary || [];
@@ -416,78 +489,21 @@ export default function TripGuide() {
                   Suggested destinations
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-relaxed" style={{ color: "rgb(var(--text-secondary))" }}>
-                  Nine hand-picked ideas—each with a live preview image and a short snapshot of the vibe. Tap one to open
-                  full trip guidance for that place.
+                  Six hand-picked ideas. Preview photos load as you scroll (easy on Unsplash rate limits)—tap a card for
+                  full trip guidance.
                 </p>
               </div>
               <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 md:p-5">
-                {DESTINATION_SUGGESTIONS.map((s) => {
-                  const img = suggestionImages[s.name];
-                  const busy = loadingSuggestionImages && !img;
-                  return (
-                    <button
-                      key={s.name}
-                      type="button"
-                      onClick={() => selectDestination(s.name)}
-                      className="group flex flex-col overflow-hidden rounded-2xl border text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
-                      style={{
-                        background: "rgb(var(--bg-secondary))",
-                        borderColor: "rgb(var(--border-primary))",
-                      }}
-                    >
-                      <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden bg-slate-100 dark:bg-slate-900">
-                        {busy ? (
-                          <div className="flex h-full w-full items-center justify-center">
-                            <div className="h-8 w-8 animate-spin rounded-full border-2 border-teal-500 border-t-transparent" />
-                          </div>
-                        ) : img?.url ? (
-                          <img
-                            src={img.url}
-                            alt={img.alt || s.name}
-                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                        ) : (
-                          <div
-                            className="flex h-full w-full flex-col items-center justify-center gap-2 p-4"
-                            style={{
-                              background:
-                                img?.gradient ||
-                                "linear-gradient(135deg, rgba(56,189,248,0.2) 0%, rgba(99,102,241,0.25) 100%)",
-                            }}
-                          >
-                            <Image size={28} className="text-white/70" />
-                            <span className="text-center text-sm font-semibold text-white/90">{s.name}</span>
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
-                        <div className="absolute bottom-3 left-3 right-3 text-white">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-white/80">{s.region}</p>
-                          <p className="font-serif text-lg font-bold leading-tight">{s.name}</p>
-                          <p className="mt-1 text-xs text-white/90">{s.tagline}</p>
-                        </div>
-                      </div>
-                      <div className="flex flex-1 flex-col gap-2 p-4">
-                        <ul className="space-y-1.5 text-xs leading-relaxed" style={{ color: "rgb(var(--text-secondary))" }}>
-                          {s.highlights.map((h) => (
-                            <li key={h} className="flex gap-2">
-                              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-teal-500" />
-                              <span>{h}</span>
-                            </li>
-                          ))}
-                        </ul>
-                        <span
-                          className="mt-auto inline-flex items-center gap-1 text-xs font-bold"
-                          style={{ color: "rgb(var(--accent-cyan))" }}
-                        >
-                          Plan this trip →
-                        </span>
-                      </div>
-                    </button>
-                  );
-                })}
+                {DESTINATION_SUGGESTIONS.map((s) => (
+                  <DestinationSuggestionCard
+                    key={s.name}
+                    suggestion={s}
+                    imageData={suggestionImages[s.name]}
+                    isImageLoading={Boolean(suggestionImageLoading[s.name])}
+                    onSelect={selectDestination}
+                    onRequestImage={requestSuggestionImage}
+                  />
+                ))}
               </div>
             </div>
           ) : (
