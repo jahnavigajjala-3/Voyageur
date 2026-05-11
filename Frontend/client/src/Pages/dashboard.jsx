@@ -383,6 +383,26 @@ export default function Dashboard() {
               )}
             </button>
 
+            {isGuest && (
+              <button
+                onClick={() => navigate("/login")}
+                className="inline-flex items-center gap-2 rounded-xl border px-5 py-3 text-sm font-semibold transition-colors"
+                style={{
+                  borderColor: "rgb(var(--border-primary))",
+                  background: "rgb(var(--bg-elevated) / 0.85)",
+                  color: "rgb(var(--text-primary))",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgb(var(--bg-tertiary))";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgb(var(--bg-elevated) / 0.85)";
+                }}
+              >
+                Sign in
+              </button>
+            )}
+
             <button
               onClick={handleLogout}
               className="inline-flex items-center gap-2 rounded-xl border px-5 py-3 text-sm font-semibold transition-colors"
@@ -393,7 +413,7 @@ export default function Dashboard() {
               }}
             >
               <LogOut className="h-4 w-4 text-rose-500" />
-              Logout
+              {isGuest ? "Exit guest" : "Logout"}
             </button>
           </div>
         </header>
