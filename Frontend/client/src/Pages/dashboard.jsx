@@ -1225,7 +1225,7 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
                     </span>
                   </div>
                   <div className="min-w-0 flex-1 pt-0.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Safety score</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Risk score</p>
                     <p className="text-xs text-slate-400 dark:text-slate-500">vs. maximum risk band</p>
                   </div>
                 </div>
@@ -1352,6 +1352,91 @@ function RouteSafetyBar({ routes, selectedRouteId, onRouteSelect, isLoading, use
   );
 }
 
+// ─── PlaceAutocomplete ────────────────────────────────────────────────────
+function PlaceAutocomplete({ value, onChange, onSelect, placeholder, inputClassName }) {
+  const [suggestions, setSuggestions] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const debounceRef = useRef(null);
+  const containerRef = useRef(null);
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleChange = (e) => {
+    const v = e.target.value;
+    onChange(v);
+    if (!v.trim()) { setSuggestions([]); setOpen(false); return; }
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `https://photon.komoot.io/api/?q=${encodeURIComponent(v)}&limit=6&lang=en`
+        );
+        const data = await res.json();
+        const items = (data.features || []).map((f) => {
+          const p = f.properties;
+          const parts = [p.name, p.city || p.town || p.village, p.state, p.country].filter(Boolean);
+          return { label: parts.join(", "), name: p.name, coords: { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] } };
+        });
+        setSuggestions(items);
+        setOpen(items.length > 0);
+      } catch {
+        setSuggestions([]);
+        setOpen(false);
+      } finally {
+        setLoading(false);
+      }
+    }, 320);
+  };
+
+  const handleSelect = (item) => {
+    onChange(item.label);
+    onSelect({ name: item.label, lat: item.coords.lat, lng: item.coords.lng });
+    setSuggestions([]);
+    setOpen(false);
+  };
+
+  return (
+    <div ref={containerRef} className="relative flex-1 min-w-0">
+      <input
+        value={value}
+        onChange={handleChange}
+        onFocus={() => suggestions.length > 0 && setOpen(true)}
+        placeholder={placeholder}
+        className={inputClassName}
+        autoComplete="off"
+      />
+      {loading && (
+        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 animate-pulse">…</span>
+      )}
+      {open && suggestions.length > 0 && (
+        <ul className="absolute z-50 top-full left-0 right-0 mt-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl overflow-hidden max-h-56 overflow-y-auto">
+          {suggestions.map((item, i) => (
+            <li
+              key={i}
+              onMouseDown={(e) => { e.preventDefault(); handleSelect(item); }}
+              className="px-3 py-2.5 text-xs cursor-pointer hover:bg-teal-50 dark:hover:bg-teal-900/30 text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 last:border-0 flex items-start gap-2"
+            >
+              <span className="text-teal-500 mt-0.5 shrink-0">◎</span>
+              <span className="leading-snug">{item.label}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 // ─── GlassMapCard (unchanged) ─────────────────────────────────────────────
 function GlassMapCard({ liveRisk, onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsChange, hospitalsFor, nearbyHospitalCount, locationName, safeRoutes = [], selectedRouteId, onRouteSelect, isLoadingRoutes = false, userLocation }) {
   const [routeFrom, setRouteFrom]             = useState("");
@@ -1452,9 +1537,12 @@ function GlassMapCard({ liveRisk, onRiskUpdate, onClickedRiskUpdate, mapRef, onH
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
           <div className="flex gap-2 items-center">
-            <input value={routeFrom} onChange={(e) => { setRouteFrom(e.target.value); setRouteFromCoords(null); }}
+            <PlaceAutocomplete
+              value={routeFrom}
+              onChange={(v) => { setRouteFrom(v); setRouteFromCoords(null); }}
+              onSelect={(s) => { setRouteFrom(s.name); setRouteFromCoords(s); }}
               placeholder={pickingFor === "from" ? "Click on map…" : "From — origin"}
-              className={`flex-1 px-3 py-2 rounded-xl text-xs border focus:outline-none transition-colors ${pickingFor === "from" ? "bg-teal-50 dark:bg-teal-900/40 border-teal-300 dark:border-teal-600 text-teal-900 dark:text-teal-100" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:border-teal-400 dark:focus:border-teal-500"}`}
+              inputClassName={`w-full px-3 py-2 rounded-xl text-xs border focus:outline-none transition-colors ${pickingFor === "from" ? "bg-teal-50 dark:bg-teal-900/40 border-teal-300 dark:border-teal-600 text-teal-900 dark:text-teal-100" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:border-teal-400 dark:focus:border-teal-500"}`}
             />
             <button type="button" title="Use current location"
               onClick={() => { setRouteFrom("Current Location"); setPickingFor(null); }}
@@ -1469,9 +1557,12 @@ function GlassMapCard({ liveRisk, onRiskUpdate, onClickedRiskUpdate, mapRef, onH
           </div>
 
           <div className="flex gap-2 items-center">
-            <input value={routeTo} onChange={(e) => { setRouteTo(e.target.value); setRouteToCoords(null); }}
+            <PlaceAutocomplete
+              value={routeTo}
+              onChange={(v) => { setRouteTo(v); setRouteToCoords(null); }}
+              onSelect={(s) => { setRouteTo(s.name); setRouteToCoords(s); }}
               placeholder={pickingFor === "to" ? "Click on map…" : "To — destination"}
-              className={`flex-1 px-3 py-2.5 rounded-xl text-xs border focus:outline-none transition-colors ${pickingFor === "to" ? "bg-teal-50 dark:bg-teal-900/40 border-teal-300 dark:border-teal-600 text-teal-900 dark:text-teal-100" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:border-teal-400 dark:focus:border-teal-500"}`}
+              inputClassName={`w-full px-3 py-2.5 rounded-xl text-xs border focus:outline-none transition-colors ${pickingFor === "to" ? "bg-teal-50 dark:bg-teal-900/40 border-teal-300 dark:border-teal-600 text-teal-900 dark:text-teal-100" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:border-teal-400 dark:focus:border-teal-500"}`}
             />
             <button type="button" title="Pick on map"
               onClick={() => setPickingFor((p) => p === "to" ? null : "to")}
