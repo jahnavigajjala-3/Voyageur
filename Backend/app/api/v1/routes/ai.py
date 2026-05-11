@@ -14,7 +14,7 @@ from app.core.logging import get_logger
 from app.db.session import get_db
 from app.models.trip import Trip
 from app.services.ai_service import get_ai_response
-from app.api.v1.dependencies import get_current_user
+from app.api.v1.dependencies import get_optional_user
 
 router = APIRouter()
 logger = get_logger(__name__)
@@ -50,7 +50,7 @@ class ChatRequest(BaseModel):
 @router.post("/chat")
 async def chat(
     request: ChatRequest,
-    current_user=Depends(get_current_user),
+    current_user=Depends(get_optional_user),
     db: Session = Depends(get_db),
 ):
     """
@@ -65,6 +65,12 @@ async def chat(
 
         # ── Load trip from DB if requested ────────────────────────────────
         if request.trip_id is not None:
+            if not current_user:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Authentication required to load saved trip",
+                )
+
             db_trip = (
                 db.query(Trip)
                 .filter(
@@ -83,8 +89,8 @@ async def chat(
                 )
             else:
                 logger.warning(
-                    "Trip %d not found for user %d",
-                    request.trip_id, current_user.id,
+                    "Trip %d not found for user %s",
+                    request.trip_id, current_user.email if current_user else "guest",
                 )
 
         # ── Resolve planned_route: frontend payload takes priority ─────────
