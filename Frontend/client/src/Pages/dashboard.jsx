@@ -8,13 +8,13 @@ import { useNavigate } from "react-router-dom";
 import { sendChatMessage, getWeather } from "../api/api";
 import useLocation from "../hooks/useLocation";
 import { getRiskColorsByLevel, getRiskColor } from "../utils/riskColors";
-import { MapPin, Navigation } from "lucide-react";
+import { MapPin, Navigation, Home, Compass, MessageSquare } from "lucide-react";
 import { getLocationDisplayName } from "../services/geocodingService";
 
 const NAV_ITEMS = [
-  { icon: "⊞", label: "Home",    path: "/dashboard" },
-  { icon: "⌖", label: "Trip Guide", path: "/trip-guide" },
-  { icon: "✦", label: "AI Chat", path: "/chat" },
+  { icon: Home, label: "Home", path: "/dashboard" },
+  { icon: Compass, label: "Trip Guide", path: "/trip-guide" },
+  { icon: MessageSquare, label: "AI Chat", path: "/chat" },
 ];
 
 // ─── Design tokens ────────────────────────────────────────────────────────
@@ -159,15 +159,20 @@ export default function Dashboard() {
         <div className="px-2 mb-1">
           <p className="text-[10px] font-bold tracking-wider uppercase mb-3 transition-colors" style={{ color: 'rgb(var(--text-tertiary))' }}>Workspace</p>
           <nav className="flex flex-col gap-1">
-            {NAV_ITEMS.map((item) => (
-              <button key={item.label}
-                onClick={() => { setActiveNav(item.label); if (item.path !== "#") navigate(item.path); }}
-                className={`nav-btn flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium w-full text-left ${activeNav === item.label ? "active-nav" : ""}`}
-              >
-                <span className="text-lg w-5 text-center">{item.icon}</span>
-                {item.label}
-              </button>
-            ))}
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button key={item.label}
+                  onClick={() => { setActiveNav(item.label); if (item.path !== "#") navigate(item.path); }}
+                  className={`nav-btn flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium w-full text-left ${activeNav === item.label ? "active-nav" : ""}`}
+                >
+                  <span className="text-lg w-5 text-center">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  {item.label}
+                </button>
+              );
+            })}
           </nav>
         </div>
 
