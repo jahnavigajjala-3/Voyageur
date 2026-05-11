@@ -6,11 +6,24 @@
  */
 
 const UNSPLASH_ACCESS_KEY = import.meta.env.VITE_UNSPLASH_ACCESS_KEY;
-const UNSPLASH_API_BASE = 'https://api.unsplash.com';
+const UNSPLASH_API_BASE = "https://api.unsplash.com";
 
 // Cache for image URLs to prevent unnecessary API calls
 const imageCache = new Map();
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
+
+/**
+ * Build a hotlink-safe image URL from Unsplash photo object (handles urls.raw with or without query string).
+ */
+function buildPhotoDisplayUrl(image, width, height) {
+  const urls = image?.urls || {};
+  const raw = urls.raw;
+  if (typeof raw === "string" && raw.length > 0) {
+    const sep = raw.includes("?") ? "&" : "?";
+    return `${raw}${sep}w=${width}&h=${height}&fit=crop&crop=entropy&auto=format&q=85`;
+  }
+  return urls.regular || urls.full || urls.small || "";
+}
 
 /**
  * Generate search queries for location-based images
@@ -108,13 +121,17 @@ export async function fetchLocationImage(locationName, options = {}) {
       
       if (data.results && data.results.length > 0) {
         const image = data.results[0];
+        const url = buildPhotoDisplayUrl(image, width, height);
+        if (!url) {
+          continue;
+        }
         const result = {
-          url: `${image.urls.raw}&w=${width}&h=${height}&fit=crop&crop=entropy`,
-          alt: image.alt_description || `Image of ${locationName || 'travel destination'}`,
-          author: image.user.name || 'Unknown photographer',
-          authorUrl: image.user.links?.html || '#',
-          location: locationName || 'Travel destination',
-          source: 'unsplash'
+          url,
+          alt: image.alt_description || `Image of ${locationName || "travel destination"}`,
+          author: image.user?.name || "Unknown photographer",
+          authorUrl: image.user?.links?.html || "#",
+          location: locationName || "Travel destination",
+          source: "unsplash",
         };
 
         // Cache the result
