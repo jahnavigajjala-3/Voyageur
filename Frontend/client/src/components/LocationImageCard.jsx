@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { MapPin, Image as ImageIcon, Globe, Loader2 } from 'lucide-react';
 import { fetchLocationImage } from '../services/unsplashService';
 
@@ -21,7 +21,6 @@ const LocationImageCard = ({
   const [error, setError] = useState(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  const mountedRef = useRef(true);
 
   // Determine card title based on location type
   const getCardTitle = () => {
@@ -43,48 +42,48 @@ const LocationImageCard = ({
     }
   };
 
-  // Fetch image when location changes
+  // Fetch image when we have a resolved place label (avoids racing the dashboard geocoder with empty queries)
   useEffect(() => {
-    mountedRef.current = true;
-    let isCancelled = false;
+    let cancelled = false;
+    const trimmed = (locationName || "").trim();
 
-    const fetchImage = async () => {
-      if (!mountedRef.current || isCancelled) return;
-
+    if (!trimmed) {
       setIsLoading(true);
       setError(null);
+      setImageData(null);
       setImageLoaded(false);
+      return undefined;
+    }
 
+    setIsLoading(true);
+    setError(null);
+    setImageLoaded(false);
+
+    const fetchImage = async () => {
       try {
-        const data = await fetchLocationImage(locationName, {
-          width: 600,
-          height: 400,
-          orientation: 'landscape'
+        const data = await fetchLocationImage(trimmed, {
+          width: 800,
+          height: 520,
+          orientation: "landscape",
         });
-
-        if (!mountedRef.current || isCancelled) return;
-
+        if (cancelled) return;
         setImageData(data);
         setError(null);
       } catch (err) {
-        if (!mountedRef.current || isCancelled) return;
-        console.error('Failed to fetch location image:', err);
-        setError(err.message || 'Failed to load image');
+        if (cancelled) return;
+        console.error("Failed to fetch location image:", err);
+        setError(err.message || "Failed to load image");
       } finally {
-        if (!mountedRef.current || isCancelled) return;
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
-    // Add a small delay to prevent rapid refetching
-    const timer = setTimeout(fetchImage, 300);
-    
+    const timer = setTimeout(fetchImage, 280);
     return () => {
-      isCancelled = true;
-      mountedRef.current = false;
+      cancelled = true;
       clearTimeout(timer);
     };
-  }, [locationName, locationType, retryCount]);
+  }, [locationName, retryCount]);
 
   // Handle image load
   const handleImageLoad = () => {
@@ -221,7 +220,12 @@ const LocationImageCard = ({
             <div 
               className="absolute inset-0 transition-opacity duration-500"
               style={{
-                backgroundImage: `url(${imageData.url}&blur=50&w=100)`,
+                backgroundImage: (() => {
+                  const u = imageData.url;
+                  if (!u) return "none";
+                  const sep = u.includes("?") ? "&" : "?";
+                  return `url("${u}${sep}w=120&q=30&auto=format")`;
+                })(),
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 opacity: imageLoaded ? 0 : 0.5,
