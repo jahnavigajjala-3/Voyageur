@@ -615,7 +615,7 @@ export default function TripGuide() {
               <div className="grid flex-1 gap-4 border-t border-slate-100 bg-slate-50 p-5 dark:border-white/10 dark:bg-slate-950/20">
                 <Panel title="Itinerary">
                   {totalSlides > 0 ? (
-                    <div className="relative">
+                    <div className="relative px-1 sm:px-2">
                       <div className="overflow-hidden rounded-xl" ref={carouselRef}>
                         <div
                           className="flex transition-transform duration-500 ease-out"
@@ -646,7 +646,7 @@ export default function TripGuide() {
                           <button
                             type="button"
                             onClick={prevSlide}
-                            className="absolute left-0 top-1/2 z-10 flex h-10 w-10 -translate-x-2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-slate-200 bg-white shadow-lg transition-all hover:scale-110 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+                            className="absolute left-2 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-slate-200 bg-white shadow-lg transition-all hover:scale-110 hover:bg-slate-50 sm:left-3 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
                             aria-label="Previous day"
                           >
                             <ChevronLeft size={20} className="text-slate-700 dark:text-slate-200" />
@@ -655,7 +655,7 @@ export default function TripGuide() {
                           <button
                             type="button"
                             onClick={nextSlide}
-                            className="absolute right-0 top-1/2 z-10 flex h-10 w-10 translate-x-2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-slate-200 bg-white shadow-lg transition-all hover:scale-110 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
+                            className="absolute right-2 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-2 border-slate-200 bg-white shadow-lg transition-all hover:scale-110 hover:bg-slate-50 sm:right-3 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700"
                             aria-label="Next day"
                           >
                             <ChevronRight size={20} className="text-slate-700 dark:text-slate-200" />
