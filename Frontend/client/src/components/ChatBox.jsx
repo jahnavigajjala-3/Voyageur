@@ -84,6 +84,11 @@ export default function ChatBox() {
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_4px_#10b981]" />
                 <span className="text-xs font-medium" style={{ color: "rgb(var(--text-secondary))" }}>Online · Travel companion</span>
               </div>
+              <p className="mt-2 max-w-md text-[11px] leading-snug" style={{ color: "rgb(var(--text-tertiary))" }}>
+                {location?.lat != null && location?.lng != null
+                  ? "Replies include nearby hospitals, pharmacies, hotels, and restaurants near your location (OpenStreetMap data)."
+                  : "Allow location access to include nearby hospitals, pharmacies, hotels, and restaurants in answers."}
+              </p>
             </div>
           </div>
           {!isEmpty && (
