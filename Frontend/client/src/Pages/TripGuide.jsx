@@ -15,11 +15,13 @@ const TRANSITS = [
   { value: "bus", label: "Nearest bus stand" },
 ];
 
+const SUGGESTION_COUNT = 6;
+
 /**
- * Six curated picks (lighter than nine parallel Unsplash calls).
- * Preview images load lazily when each card nears the viewport — one API request at a time per card.
+ * Larger curated pool; UI still shows 6 at a time.
+ * A fresh random set is chosen on each page load/refresh.
  */
-const DESTINATION_SUGGESTIONS = [
+const DESTINATION_POOL = [
   {
     name: "Jaipur",
     region: "Rajasthan",
@@ -62,7 +64,65 @@ const DESTINATION_SUGGESTIONS = [
     highlights: ["Sunrise boat rides", "Evening aarti", "Silk & narrow lanes"],
     imageQuery: "Varanasi India Ganges ghats",
   },
+  {
+    name: "Udaipur",
+    region: "Rajasthan",
+    tagline: "Lakes, palaces & old-world romance",
+    highlights: ["City Palace complex", "Pichola boat rides", "Sunset viewpoints"],
+    imageQuery: "Udaipur India lake palace",
+  },
+  {
+    name: "Mysuru",
+    region: "Karnataka",
+    tagline: "Royal heritage and calm boulevards",
+    highlights: ["Mysore Palace", "Chamundi Hills", "Silk & sandalwood markets"],
+    imageQuery: "Mysore India palace",
+  },
+  {
+    name: "Pondicherry",
+    region: "Tamil Nadu",
+    tagline: "French quarters by the sea",
+    highlights: ["Promenade beach", "Cafes & pastel streets", "Auroville day trips"],
+    imageQuery: "Pondicherry India french quarter",
+  },
+  {
+    name: "Shillong",
+    region: "Meghalaya",
+    tagline: "Cloud-kissed hills & waterfalls",
+    highlights: ["Elephant Falls", "Music and cafe scene", "Scenic drives"],
+    imageQuery: "Shillong Meghalaya hills",
+  },
+  {
+    name: "Rishikesh",
+    region: "Uttarakhand",
+    tagline: "River rafting and Himalayan calm",
+    highlights: ["Ganga aarti", "Adventure sports", "Yoga retreats"],
+    imageQuery: "Rishikesh India Ganges",
+  },
+  {
+    name: "Amritsar",
+    region: "Punjab",
+    tagline: "Sacred heritage and rich food trails",
+    highlights: ["Golden Temple", "Wagah ceremony", "Punjabi cuisine"],
+    imageQuery: "Amritsar Golden Temple India",
+  },
+  {
+    name: "Ooty",
+    region: "Tamil Nadu",
+    tagline: "Tea gardens and toy-train charm",
+    highlights: ["Nilgiri Mountain Railway", "Botanical gardens", "Tea estate views"],
+    imageQuery: "Ooty tea gardens India",
+  },
 ];
+
+function pickRandomSuggestions(pool, count) {
+  const shuffled = [...pool];
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled.slice(0, Math.min(count, shuffled.length));
+}
 
 const FALLBACK_GRADIENT =
   "linear-gradient(135deg, rgba(14,30,80,0.85) 0%, rgba(7,20,55,0.95) 100%)";
@@ -324,6 +384,10 @@ export default function TripGuide() {
   const [suggestionImageLoading, setSuggestionImageLoading] = useState({});
   const [actualFromLocation, setActualFromLocation] = useState("Current Location");
   const suggestionInflightRef = useRef(new Set());
+  const destinationSuggestions = useMemo(
+    () => pickRandomSuggestions(DESTINATION_POOL, SUGGESTION_COUNT),
+    []
+  );
 
   const hasDestination = Boolean(form.destination?.trim());
 
@@ -580,12 +644,12 @@ export default function TripGuide() {
                   Suggested destinations
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-relaxed" style={{ color: "rgb(var(--text-secondary))" }}>
-                  Six hand-picked ideas. Preview photos load as you scroll (easy on Unsplash rate limits)—tap a card for
+                  Fresh picks on each refresh. Preview photos load as you scroll (easy on Unsplash rate limits)—tap a card for
                   full trip guidance.
                 </p>
               </div>
               <div className="grid gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3 md:p-5">
-                {DESTINATION_SUGGESTIONS.map((s) => (
+                {destinationSuggestions.map((s) => (
                   <DestinationSuggestionCard
                     key={s.name}
                     suggestion={s}
@@ -929,7 +993,7 @@ export default function TripGuide() {
                 {hasDestination ? "Switch quickly" : "Or jump to"}
               </p>
               <div className="mt-3.5 flex flex-wrap gap-2">
-                {DESTINATION_SUGGESTIONS.map((s) => (
+                {destinationSuggestions.map((s) => (
                   <button
                     key={s.name}
                     type="button"
