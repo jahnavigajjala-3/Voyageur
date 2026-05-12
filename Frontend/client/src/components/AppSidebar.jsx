@@ -1,16 +1,17 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home, Compass, MessageSquare, LogOut } from "lucide-react";
 import { AuthContext } from "../context/AuthContext";
 import { useRouteContext } from "../context/RouteContext";
 
 const NAV_ITEMS = [
-  { icon: Home,          label: "Home",       path: "/dashboard" },
-  { icon: Compass,       label: "Trip Guide", path: "/trip-guide" },
-  { icon: MessageSquare, label: "AI Chat",    path: "/chat" },
+  { icon: Home,          label: "Home",         path: "/dashboard" },
+  { icon: Compass,       label: "Trip Guide",   path: "/trip-guide" },
+  { icon: MessageSquare, label: "AI Assistant", path: "/chat" },
 ];
 
 export default function AppSidebar() {
+  const [isExpanded, setIsExpanded] = useState(false);
   const { isGuest, logout } = useContext(AuthContext);
   const { resetSession } = useRouteContext();
   const navigate = useNavigate();
@@ -24,8 +25,10 @@ export default function AppSidebar() {
 
   return (
     <aside
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
       style={{
-        width: "64px",
+        width: isExpanded ? "180px" : "64px",
         minHeight: "100vh",
         height: "100vh",
         position: "sticky",
@@ -34,12 +37,13 @@ export default function AppSidebar() {
         flexShrink: 0,
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
+        alignItems: isExpanded ? "flex-start" : "center",
         padding: "20px 0",
         gap: "8px",
         background: "rgb(var(--bg-secondary) / 0.92)",
         borderRight: "1px solid rgb(var(--border-primary))",
         backdropFilter: "blur(20px)",
+        transition: "width 0.25s ease, align-items 0.25s ease",
       }}
     >
       {/* Logo mark */}
@@ -78,7 +82,7 @@ export default function AppSidebar() {
       </div>
 
       {/* Nav items */}
-      <nav style={{ display: "flex", flexDirection: "column", gap: "4px", width: "100%", alignItems: "center" }}>
+      <nav style={{ display: "flex", flexDirection: "column", gap: "4px", width: "100%", alignItems: isExpanded ? "flex-start" : "center", padding: isExpanded ? "0 12px" : "0" }}>
         {NAV_ITEMS.map(({ icon: Icon, label, path }) => {
           const isActive = pathname === path || (path === "/dashboard" && pathname === "/");
           return (
@@ -87,12 +91,13 @@ export default function AppSidebar() {
               onClick={() => navigate(path)}
               title={label}
               style={{
-                width: "40px",
+                width: isExpanded ? "100%" : "40px",
                 height: "40px",
                 borderRadius: "10px",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
+                justifyContent: isExpanded ? "flex-start" : "center",
+                gap: isExpanded ? "10px" : "0",
                 border: "none",
                 cursor: "pointer",
                 transition: "all 0.15s ease",
@@ -103,6 +108,9 @@ export default function AppSidebar() {
                   ? "rgb(var(--accent-cyan))"
                   : "rgb(var(--text-tertiary))",
                 outline: isActive ? "1px solid rgb(var(--accent-cyan) / 0.25)" : "none",
+                padding: isExpanded ? "0 14px" : "0",
+                overflow: "hidden",
+                whiteSpace: "nowrap",
               }}
               onMouseEnter={(e) => {
                 if (!isActive) {
@@ -118,6 +126,9 @@ export default function AppSidebar() {
               }}
             >
               <Icon size={18} strokeWidth={isActive ? 2.2 : 1.75} />
+              {isExpanded && (
+                <span style={{ fontSize: "0.95rem", fontWeight: 500, color: "inherit" }}>{label}</span>
+              )}
             </button>
           );
         })}

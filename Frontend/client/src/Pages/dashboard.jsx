@@ -15,7 +15,7 @@ import FloatingVoyageurChat from "../components/FloatingVoyageurChat";
 const NAV_ITEMS = [
   { icon: Home, label: "Home", path: "/dashboard" },
   { icon: Compass, label: "Trip Guide", path: "/trip-guide" },
-  { icon: MessageSquare, label: "AI Chat", path: "/chat" },
+  { icon: MessageSquare, label: "AI Assistant", path: "/chat" },
 ];
 
 // ─── Design tokens ────────────────────────────────────────────────────────
@@ -75,6 +75,7 @@ export default function Dashboard() {
   const { location } = useLocation(); // ← needed for weather
 
   const [activeNav, setActiveNav]       = useState("Home");
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [liveRisk, setLiveRisk]         = useState(null);
   const [clickedRisk, setClickedRisk]   = useState(null);
   const [chatOpen, setChatOpen]         = useState(false);
@@ -195,8 +196,10 @@ export default function Dashboard() {
     >
       {/* ── Command rail (navigation) ── */}
       <aside
+        onMouseEnter={() => setIsSidebarExpanded(true)}
+        onMouseLeave={() => setIsSidebarExpanded(false)}
         style={{
-          width: "64px",
+          width: isSidebarExpanded ? "180px" : "64px",
           minHeight: "100vh",
           position: "sticky",
           top: 0,
@@ -204,12 +207,13 @@ export default function Dashboard() {
           flexShrink: 0,
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
+          alignItems: isSidebarExpanded ? "flex-start" : "center",
           padding: "20px 0",
           gap: "4px",
           background: "rgb(var(--bg-secondary) / 0.92)",
           borderRight: "1px solid rgb(var(--border-primary))",
           backdropFilter: "blur(20px)",
+          transition: "width 0.25s ease, align-items 0.25s ease",
         }}
       >
         {/* Logo mark */}
@@ -242,7 +246,7 @@ export default function Dashboard() {
         </div>
 
         {/* Nav items */}
-        <nav style={{ display: "flex", flexDirection: "column", gap: "4px", width: "100%", alignItems: "center" }}>
+        <nav style={{ display: "flex", flexDirection: "column", gap: "4px", width: "100%", alignItems: isSidebarExpanded ? "flex-start" : "center", padding: isSidebarExpanded ? "0 12px" : "0" }}>
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = activeNav === item.label;
@@ -252,12 +256,16 @@ export default function Dashboard() {
                 onClick={() => { setActiveNav(item.label); if (item.path !== "#") navigate(item.path); }}
                 title={item.label}
                 style={{
-                  width: "40px", height: "40px", borderRadius: "10px",
-                  display: "flex", alignItems: "center", justifyContent: "center",
+                  width: isSidebarExpanded ? "100%" : "40px", height: "40px", borderRadius: "10px",
+                  display: "flex", alignItems: "center", justifyContent: isSidebarExpanded ? "flex-start" : "center",
+                  gap: isSidebarExpanded ? "10px" : "0",
                   border: "none", cursor: "pointer", transition: "all 0.15s ease",
                   background: isActive ? "rgb(var(--accent-cyan) / 0.12)" : "transparent",
                   color: isActive ? "rgb(var(--accent-cyan))" : "rgb(var(--text-tertiary))",
                   outline: isActive ? "1px solid rgb(var(--accent-cyan) / 0.25)" : "none",
+                  padding: isSidebarExpanded ? "0 14px" : "0",
+                  overflow: "hidden",
+                  whiteSpace: "nowrap",
                 }}
                 onMouseEnter={(e) => {
                   if (!isActive) {
@@ -273,6 +281,9 @@ export default function Dashboard() {
                 }}
               >
                 <Icon className="h-[18px] w-[18px]" strokeWidth={isActive ? 2.2 : 1.75} />
+                {isSidebarExpanded && (
+                  <span style={{ fontSize: "0.95rem", fontWeight: 500, color: "inherit" }}>{item.label}</span>
+                )}
               </button>
             );
           })}
