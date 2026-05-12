@@ -172,11 +172,14 @@ export default function Home() {
           </Link>
 
           <div className="hidden items-center gap-10 lg:flex">
-            <a href="#product" className="text-base font-medium text-slate-500 transition hover:text-slate-950 dark:text-slate-400 dark:hover:text-white">
+            <a href="#" onClick={(e) => { e.preventDefault(); document.getElementById("product")?.scrollIntoView({ behavior: "smooth" }); }} className="text-base font-medium text-slate-500 transition hover:text-slate-950 dark:text-slate-400 dark:hover:text-white">
               Product
             </a>
             <a href="#features" onClick={scrollToFeatures} className="text-base font-medium text-slate-500 transition hover:text-slate-950 dark:text-slate-400 dark:hover:text-white">
               Features
+            </a>
+            <a href="#" onClick={(e) => { e.preventDefault(); document.getElementById("try")?.scrollIntoView({ behavior: "smooth" }); }} className="text-base font-medium text-slate-500 transition hover:text-slate-950 dark:text-slate-400 dark:hover:text-white">
+              Try it out
             </a>
           </div>
 
@@ -276,7 +279,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="how" className="border-y border-slate-200/80 px-6 py-24 text-center dark:border-white/10 lg:px-8">
+        <section id="try" className="border-y border-slate-200/80 px-6 py-24 text-center dark:border-white/10 lg:px-8">
           <div className="mx-auto max-w-3xl">
             <h2 className="font-serif text-5xl text-slate-950 dark:text-white">Ready when you are.</h2>
             <p className="mt-7 text-xl text-slate-600 dark:text-slate-300">
