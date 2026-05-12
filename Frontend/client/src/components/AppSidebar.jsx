@@ -60,8 +60,20 @@ export default function AppSidebar() {
           boxShadow: "0 8px 20px -10px rgb(var(--accent-cyan) / 0.5)",
         }}
       >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" style={{ width: "16px", height: "16px", transform: "scaleX(-1)" }}>
-          <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" style={{ width: "18px", height: "18px" }}>
+          <path
+            d="M12 3.5a6 6 0 0 0-6 6c0 4.6 6 11 6 11s6-6.4 6-11a6 6 0 0 0-6-6Z"
+            stroke="white"
+            strokeWidth="1.8"
+            strokeLinejoin="round"
+          />
+          <circle cx="12" cy="9.5" r="2.2" fill="white" />
+          <path
+            d="M4.5 20c2-1.4 4.5-2 7.5-2s5.5.6 7.5 2"
+            stroke="white"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
         </svg>
       </div>
 
