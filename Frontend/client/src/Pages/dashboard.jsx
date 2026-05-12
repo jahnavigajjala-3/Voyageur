@@ -221,28 +221,52 @@ export default function Dashboard() {
           onClick={() => navigate("/")}
           title="Voyageur"
           style={{
-            width: "36px", height: "36px", borderRadius: "10px",
-            background: "linear-gradient(145deg, rgb(var(--accent-cyan)), rgb(var(--accent-primary)))",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", marginBottom: "16px", flexShrink: 0,
-            boxShadow: "0 8px 20px -10px rgb(var(--accent-cyan) / 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: isSidebarExpanded ? "flex-start" : "center",
+            width: isSidebarExpanded ? "100%" : "auto",
+            padding: isSidebarExpanded ? "0 12px" : "0",
+            cursor: "pointer",
+            marginBottom: "16px",
+            gap: "12px",
+            flexShrink: 0,
           }}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" style={{ width: "16px", height: "16px" }}>
-            <path
-              d="M12 3.5a6 6 0 0 0-6 6c0 4.6 6 11 6 11s6-6.4 6-11a6 6 0 0 0-6-6Z"
-              stroke="white"
-              strokeWidth="1.8"
-              strokeLinejoin="round"
-            />
-            <circle cx="12" cy="9.5" r="2.2" fill="white" />
-            <path
-              d="M4.5 20c2-1.4 4.5-2 7.5-2s5.5.6 7.5 2"
-              stroke="white"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-          </svg>
+          <div
+            style={{
+              width: "36px", height: "36px", borderRadius: "10px",
+              background: "linear-gradient(145deg, rgb(var(--accent-cyan)), rgb(var(--accent-primary)))",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 8px 20px -10px rgb(var(--accent-cyan) / 0.5)",
+            }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" style={{ width: "16px", height: "16px" }}>
+              <path
+                d="M12 3.5a6 6 0 0 0-6 6c0 4.6 6 11 6 11s6-6.4 6-11a6 6 0 0 0-6-6Z"
+                stroke="white"
+                strokeWidth="1.8"
+                strokeLinejoin="round"
+              />
+              <circle cx="12" cy="9.5" r="2.2" fill="white" />
+              <path
+                d="M4.5 20c2-1.4 4.5-2 7.5-2s5.5.6 7.5 2"
+                stroke="white"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+          {isSidebarExpanded && (
+            <span style={{
+              fontFamily: "'Playfair Display', Georgia, 'Times New Roman', serif",
+              fontSize: "1rem",
+              fontWeight: 700,
+              color: "rgb(var(--text-primary))",
+              whiteSpace: "nowrap",
+            }}>
+              Voyageur
+            </span>
+          )}
         </div>
 
         {/* Nav items */}
@@ -305,11 +329,14 @@ export default function Dashboard() {
           onClick={handleLogout}
           title={isGuest ? "Exit guest" : "Logout"}
           style={{
-            width: "40px", height: "40px", borderRadius: "10px",
-            display: "flex", alignItems: "center", justifyContent: "center",
+            width: isSidebarExpanded ? "100%" : "40px", height: "40px", borderRadius: "10px",
+            display: "flex", alignItems: "center", justifyContent: isSidebarExpanded ? "flex-start" : "center",
+            gap: isSidebarExpanded ? "10px" : "0",
             border: "none", cursor: "pointer",
             background: "transparent", color: "rgb(var(--text-tertiary))",
             transition: "all 0.15s ease",
+            padding: isSidebarExpanded ? "0 14px" : "0",
+            overflow: "hidden", whiteSpace: "nowrap",
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = "rgb(var(--danger) / 0.08)";
@@ -321,6 +348,11 @@ export default function Dashboard() {
           }}
         >
           <LogOut className="h-4 w-4" strokeWidth={1.75} />
+          {isSidebarExpanded && (
+            <span style={{ fontSize: "0.95rem", fontWeight: 500, color: "inherit" }}>
+              Logout
+            </span>
+          )}
         </button>
       </aside>
 
