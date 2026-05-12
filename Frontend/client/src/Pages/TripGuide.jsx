@@ -6,6 +6,7 @@ import { fetchLocationImage } from "../services/unsplashService";
 import useLocation from "../hooks/useLocation";
 import { getLocationDisplayName } from "../services/geocodingService";
 import AppSidebar from "../components/AppSidebar";
+import FloatingVoyageurChat from "../components/FloatingVoyageurChat";
 
 const FEEDS = ["Mountains", "Beaches", "Urban", "Nature", "Culture", "Adventure"];
 const BUDGETS = ["economy", "midrange", "luxury"];
@@ -383,6 +384,7 @@ export default function TripGuide() {
   const [suggestionImages, setSuggestionImages] = useState({});
   const [suggestionImageLoading, setSuggestionImageLoading] = useState({});
   const [actualFromLocation, setActualFromLocation] = useState("Current Location");
+  const [chatOpen, setChatOpen] = useState(false);
   const suggestionInflightRef = useRef(new Set());
   const destinationSuggestions = useMemo(
     () => pickRandomSuggestions(DESTINATION_POOL, SUGGESTION_COUNT),
@@ -562,6 +564,67 @@ export default function TripGuide() {
   const itineraryDays = guidance?.itinerary || [];
 
   const primaryKeyword = imageKeywords[0];
+
+  const floatingTripContext = useMemo(() => {
+    const lines = [];
+    lines.push("Mode: Trip Guide (floating assistant — use this to suggest, reorder, and improve the trip below).");
+    lines.push(
+      hasDestination
+        ? `Trip destination: ${form.destination}`
+        : "Trip planner — browsing suggestions (no single destination locked yet)."
+    );
+    lines.push(`From / origin (form): ${form.from_location}`);
+    lines.push(`Resolved origin label (when GPS): ${actualFromLocation}`);
+    lines.push(
+      `Trip style: ${form.feed_preference} · Budget: ${form.budget_scale} · Duration: ${form.duration} day(s) · Transit hub: ${form.transit_preference}`
+    );
+    if (!hasDestination) {
+      const poolHint = DESTINATION_POOL.map((p) => `${p.name} (${p.region})`).slice(0, 10).join("; ");
+      lines.push(`Example destinations in app pool (for ideas): ${poolHint}`);
+    }
+    if (guidance?.departure_hub) {
+      lines.push(`Suggested departure hub: ${guidance.departure_hub}`);
+    }
+    if (guidance?.destination_visuals?.length) {
+      lines.push(`Visual / theme keywords: ${guidance.destination_visuals.join("; ")}`);
+    }
+    if (guidance?.travel_suggestions?.length) {
+      const bits = guidance.travel_suggestions
+        .map((t) => `${t.mode}: ~${t.estimated_price || "n/a"} — ${t.reason || ""}`.trim())
+        .join(" | ");
+      lines.push(`Transport ideas (from guidance): ${bits}`);
+    }
+    if (guidance?.stay_suggestions?.length) {
+      const stays = guidance.stay_suggestions
+        .map((s) => `${s.hotel_name} (${s.type}, ~${s.price_per_night}/night)`)
+        .join("; ");
+      lines.push(`Stay suggestions: ${stays}`);
+    }
+    if (itineraryDays.length > 0) {
+      lines.push("Full itinerary from app (use for day-by-day suggestions):");
+      itineraryDays.slice(0, 10).forEach((day) => {
+        const acts = (day.activities || []).slice(0, 8).join("; ");
+        lines.push(`  Day ${day.day} — ${day.theme}: ${acts}`);
+      });
+    }
+    return lines.join("\n");
+  }, [form, guidance, hasDestination, itineraryDays, actualFromLocation]);
+
+  const tripGuideQuickPrompts = useMemo(
+    () => [
+      hasDestination
+        ? `Give me 3 must-do tweaks for my ${form.duration}-day ${form.destination} trip`
+        : "Suggest 3 destinations from my style and budget — why each?",
+      hasDestination
+        ? `Reorder my days in ${form.destination} for less backtracking`
+        : "Compare Mountains vs Beaches for my settings — pick one",
+      hasDestination
+        ? `Packing and best time of day for day 1 in ${form.destination}`
+        : "How should I split time: culture vs relaxation?",
+      "Safety and scams to watch for on this kind of trip",
+    ],
+    [hasDestination, form.destination, form.duration]
+  );
 
   return (
     <div
@@ -1009,6 +1072,15 @@ export default function TripGuide() {
         </section>
       </main>
       </div>
+
+      <FloatingVoyageurChat
+        open={chatOpen}
+        onToggle={() => setChatOpen((v) => !v)}
+        tripContextExtra={floatingTripContext}
+        plannedRoute={null}
+        quickPrompts={tripGuideQuickPrompts}
+        variant="trip-guide"
+      />
     </div>
   );
 }
