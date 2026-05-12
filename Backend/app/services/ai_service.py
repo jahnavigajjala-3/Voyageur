@@ -3,21 +3,24 @@ AI Service — Amigo travel companion powered by Gemini.
 
 Context pipeline (request → Gemini):
   1. Location context  — current lat/lng + live crime risk at that point
-  2. Destination context — geocode any city mentioned in the message + fetch its crime risk
-  3. Trip context      — destination, dates, notes from the DB trip record
-  4. Route context     — planned_route summary (distance, duration, waypoints)
-  5. Safety context    — route safety score + risk level from scoring service
-  6. Prompt assembly   — all blocks merged into a clean system instruction
+  2. Nearby POIs       — hospitals, pharmacies, hotels, restaurants (OpenStreetMap / Overpass)
+  3. Destination context — city mentioned in the message + crime risk (Indian city dictionary)
+  4. Trip context      — destination, dates, notes from the DB trip record
+  5. Route context     — planned_route summary (distance, duration, waypoints)
+  6. Safety context    — route safety score + risk level from scoring service
+  7. Prompt assembly   — all blocks merged into a clean system instruction
 """
 
 from google import genai
 from google.genai import types
+import math
 import os
 import re
 import json
 import asyncio
-from typing import Optional
+from typing import Dict, List, Optional
 from dotenv import load_dotenv
+import httpx
 
 from app.core.logging import get_logger
 from app.services.travel_service import get_crime_risk_by_coords
@@ -44,6 +47,15 @@ Rules:
 - If a planned route is present, focus on route safety feedback — mention high-risk segments along the route if relevant
 - Suggest safer alternatives when the route passes through high-risk districts
 - If no location context is available, say so briefly and continue helping
+- When the user asks for nearby hospitals, hotels, restaurants, or pharmacies/medical stores,
+  use ONLY the NEARBY PLACES (OSM) list in CONTEXT if present — do not invent names or addresses.
+  Note that listings may be incomplete; suggest verification in maps apps when appropriate
+- When CONTEXT includes a block titled "Trip planner session" (or similar trip details from the app),
+  behave as an expert trip guide for India: use that block to tailor advice on transport, stays,
+  pacing, neighborhoods, food, and day-by-day flow. Prefer concrete, actionable suggestions
+  (numbered or short bullets). If the user is vague ("suggest something", "help me plan"),
+  offer 2–4 specific ideas that match their budget, duration, and trip style from context.
+  Do not contradict explicit itinerary or booking hints already in context unless the user asks for alternatives.
 """
 
 WORKING_MODEL = None
@@ -204,6 +216,154 @@ async def build_destination_context(message: str) -> str:
     except Exception as e:
         logger.error("build_destination_context failed: %s", e, exc_info=True)
         return ""
+
+
+OVERPASS_ENDPOINT = "https://overpass-api.de/api/interpreter"
+
+
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    r = 6371.0
+    p = math.pi / 180
+    a = 0.5 - math.cos((lat2 - lat1) * p) / 2 + math.cos(lat1 * p) * math.cos(lat2 * p) * (1 - math.cos((lon2 - lon1) * p)) / 2
+    return round(2 * r * math.asin(math.sqrt(a)), 2)
+
+
+def _classify_osm_poi(tags: Dict) -> Optional[str]:
+    if not tags:
+        return None
+    amenity = tags.get("amenity")
+    shop = tags.get("shop")
+    tourism = tags.get("tourism")
+
+    if (
+        amenity in ("hospital", "clinic", "doctors")
+        or tags.get("healthcare") == "hospital"
+        or tags.get("amenity") == "health_centre"
+    ):
+        return "hospital"
+    if amenity == "pharmacy" or shop == "chemist":
+        return "pharmacy"
+    if tourism == "hotel" or amenity in ("hotel", "motel", "guest_house"):
+        return "hotel"
+    if amenity in ("restaurant", "fast_food", "cafe", "food_court"):
+        return "restaurant"
+    return None
+
+
+def _format_poi_lines(items: List[Dict], per_category: int) -> List[str]:
+    lines: List[str] = []
+    for it in items[:per_category]:
+        name = it.get("name") or "Unnamed"
+        d = it.get("dist_km")
+        if d is not None:
+            lines.append(f"- {name} (~{d} km away)")
+        else:
+            lines.append(f"- {name}")
+    return lines
+
+
+async def build_nearby_pois_context(
+    lat: Optional[float],
+    lng: Optional[float],
+    radius_m: int = 3500,
+    per_category: int = 7,
+) -> str:
+    """
+    Query OpenStreetMap (Overpass) for hospitals/clinics, pharmacies/chemists,
+    hotels, and restaurants near the user's coordinates.
+
+    Returned text is factual listing data only; failures return empty string.
+    """
+    if lat is None or lng is None:
+        return ""
+
+    query = (
+        "[out:json][timeout:22];\n"
+        "(\n"
+        f'  node["amenity"="hospital"](around:{radius_m},{lat},{lng});\n'
+        f'  node["amenity"="clinic"](around:{radius_m},{lat},{lng});\n'
+        f'  node["amenity"="doctors"](around:{radius_m},{lat},{lng});\n'
+        f'  node["amenity"="pharmacy"](around:{radius_m},{lat},{lng});\n'
+        f'  node["shop"="chemist"](around:{radius_m},{lat},{lng});\n'
+        f'  node["tourism"="hotel"](around:{radius_m},{lat},{lng});\n'
+        f'  node["amenity"="hotel"](around:{radius_m},{lat},{lng});\n'
+        f'  node["amenity"="motel"](around:{radius_m},{lat},{lng});\n'
+        f'  node["amenity"="guest_house"](around:{radius_m},{lat},{lng});\n'
+        f'  node["amenity"="restaurant"](around:{radius_m},{lat},{lng});\n'
+        f'  node["amenity"="fast_food"](around:{radius_m},{lat},{lng});\n'
+        f'  node["amenity"="cafe"](around:{radius_m},{lat},{lng});\n'
+        ");\n"
+        "out 120;\n"
+    )
+
+    try:
+        async with httpx.AsyncClient(timeout=24.0) as client:
+            res = await client.post(
+                OVERPASS_ENDPOINT,
+                content=query,
+                headers={
+                    "Content-Type": "text/plain; charset=utf-8",
+                    "User-Agent": "VoyageurTravelApp/1.0 (nearby POI context)",
+                },
+            )
+            res.raise_for_status()
+            data = res.json()
+    except Exception as e:
+        logger.warning("Overpass nearby POI fetch failed: %s", e)
+        return ""
+
+    elements = data.get("elements") or []
+    buckets: Dict[str, List[Dict]] = {
+        "hospital": [],
+        "pharmacy": [],
+        "hotel": [],
+        "restaurant": [],
+    }
+    seen: set = set()
+
+    for el in elements:
+        if el.get("type") != "node":
+            continue
+        plat, plon = el.get("lat"), el.get("lon")
+        if plat is None or plon is None:
+            continue
+        tags = el.get("tags") or {}
+        cat = _classify_osm_poi(tags)
+        if not cat:
+            continue
+        name = (tags.get("name") or tags.get("name:en") or "").strip() or "Unnamed"
+        dedupe_key = (cat, round(plat, 4), round(plon, 4), name.lower())
+        if dedupe_key in seen:
+            continue
+        seen.add(dedupe_key)
+        dist_km = _haversine_km(lat, lng, float(plat), float(plon))
+        buckets[cat].append({"name": name, "dist_km": dist_km})
+
+    for key in buckets:
+        buckets[key].sort(key=lambda x: x["dist_km"])
+
+    sections: List[str] = []
+    h = _format_poi_lines(buckets["hospital"], per_category)
+    if h:
+        sections.append("[Nearby — Hospitals & clinics (OpenStreetMap, within ~%.1f km)]\n%s" % (radius_m / 1000, "\n".join(h)))
+    ph = _format_poi_lines(buckets["pharmacy"], per_category)
+    if ph:
+        sections.append("[Nearby — Pharmacies & medical shops (OpenStreetMap)]\n%s" % "\n".join(ph))
+    ht = _format_poi_lines(buckets["hotel"], per_category)
+    if ht:
+        sections.append("[Nearby — Hotels & guest lodging (OpenStreetMap)]\n%s" % "\n".join(ht))
+    rs = _format_poi_lines(buckets["restaurant"], per_category)
+    if rs:
+        sections.append("[Nearby — Restaurants, cafés & fast food (OpenStreetMap)]\n%s" % "\n".join(rs))
+
+    if not sections:
+        return ""
+
+    return (
+        "[NEARBY PLACES — factual listing only; dataset may omit venues or contain errors]\n"
+        + "\n\n".join(sections)
+        + "\n"
+    )
 
 
 def build_trip_context(trip) -> str:
@@ -429,18 +589,32 @@ async def get_ai_response(
             lat, lng = extract_coords_from_context(trip_context)
 
         # ── 2. Gather all context blocks concurrently ──────────────────────
-        location_ctx, safety_ctx, destination_ctx = await asyncio.gather(
+        location_ctx, nearby_ctx, safety_ctx, destination_ctx = await asyncio.gather(
             build_location_context(lat, lng),
+            build_nearby_pois_context(lat, lng),
             build_safety_context(planned_route),
             build_destination_context(new_message),
         )
 
-        trip_ctx  = build_trip_context(trip)
+        trip_ctx = build_trip_context(trip)
         route_ctx = build_route_context(planned_route)
+
+        # Frontend sends rich planner notes (Trip Guide, weather on Dashboard, etc.) via trip_context.
+        # Previously only used for coord fallback — merge into trip_ctx so the model can use them.
+        planner_notes = (trip_context or "").strip()
+        if planner_notes:
+            planner_block = (
+                "[Trip planner session — current screen / form state from the app; prioritize for travel advice]\n"
+                f"{planner_notes}\n"
+            )
+            trip_ctx = (trip_ctx + "\n" if trip_ctx else "") + planner_block
+
+        location_blocks = [b for b in (location_ctx.strip(), nearby_ctx.strip()) if b]
+        location_combined = "\n\n".join(location_blocks) if location_blocks else ""
 
         # ── 3. Assemble system prompt ──────────────────────────────────────
         system_instruction = assemble_system_prompt(
-            location_ctx, trip_ctx, route_ctx, safety_ctx, destination_ctx
+            location_combined, trip_ctx, route_ctx, safety_ctx, destination_ctx
         )
 
         # ── 4. Build conversation history for Gemini ───────────────────────
