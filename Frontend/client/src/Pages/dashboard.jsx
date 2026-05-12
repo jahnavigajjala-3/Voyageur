@@ -5,14 +5,12 @@ import { useTheme } from "../context/ThemeContext";
 import CrimeMap from "../components/CrimeMap";
 import LocationImageCard from "../components/LocationImageCard";
 import { useNavigate } from "react-router-dom";
-import { sendChatMessage, getNearbyHospitals, getWeather } from "../api/api";
+import { getNearbyHospitals, getWeather } from "../api/api";
 import useLocation from "../hooks/useLocation";
 import { getRiskColorsByLevel, getRiskColor } from "../utils/riskColors";
 import { MapPin, Navigation, Home, Compass, MessageSquare, LogOut, ShieldCheck, Map, ChevronDown, Trash2 } from "lucide-react";
 import { getLocationDisplayName, reverseGeocode } from "../services/geocodingService";
-import { useLottie } from "lottie-react";
-import ghostAnimation from "../assets/Ghostsmart.json";
-import { renderMarkdown } from "../utils/renderMarkdown";
+import FloatingVoyageurChat from "../components/FloatingVoyageurChat";
 
 const NAV_ITEMS = [
   { icon: Home, label: "Home", path: "/dashboard" },
@@ -892,196 +890,14 @@ export default function Dashboard() {
         </div>
       </main>
 
-      <FloatingChat
+      <FloatingVoyageurChat
         open={chatOpen}
         onToggle={() => setChatOpen((v) => !v)}
         weather={weather}
         safeRoutes={safeRoutes}
         selectedRouteId={selectedRouteId}
-        liveRisk={liveRisk}
       />
     </div>
-  );
-}
-
-// ─── FloatingChat (weather passed in for AI context) ──────────────────────
-function FloatingChatLottie() {
-  const { View } = useLottie({
-    animationData: ghostAnimation,
-    loop: true,
-    autoplay: true,
-    style: { width: 120, height: 120 },
-  });
-  return View;
-}
-
-function FloatingChat({ open, onToggle, weather, safeRoutes = [], selectedRouteId = null }) {
-  const { location } = useLocation();
-  const [messages, setMessages] = useState([]);
-  const [input, setInput]     = useState("");
-  const [loading, setLoading] = useState(false);
-  const bottomRef             = useRef(null);
-
-  const isEmpty = messages.length === 0;
-
-  useEffect(() => {
-    if (open && !isEmpty) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, open, isEmpty]);
-
-  const handleSend = async () => {
-    if (!input.trim() || loading) return;
-    const userMsg = { role: "user", content: input };
-    const history = [...messages, userMsg];
-    setMessages(history);
-    setInput("");
-    setLoading(true);
-    try {
-      // ── Build trip_context: weather only ─────────────────────────────
-      // Location risk is fetched fresh on the backend using current_lat/lng.
-      // We do NOT pass liveRisk here — it can be stale (fetched once on page
-      // load, may reflect IP-based geolocation before GPS locked).
-      const weatherCtx = weather
-        ? `Weather: ${getWeatherLabel(weather.weathercode)}, ${weather.temperature}°C, wind ${weather.windspeed} km/h.`
-        : "";
-
-      const tripContext = weatherCtx;
-
-      // ── Build route_context from the currently selected/safest route ──
-      const activeRoute =
-        safeRoutes.find((r) => r.id === selectedRouteId) ||
-        safeRoutes.find((r) => r.type === "safest") ||
-        safeRoutes[0] ||
-        null;
-
-      // Serialise just what the backend needs: summary fields + geometry coords
-      const routePayload = activeRoute
-        ? JSON.stringify({
-            summary:    activeRoute.summary  || "",
-            distance:   activeRoute.distance || 0,
-            duration:   activeRoute.duration || 0,
-            risk_level: activeRoute.risk_level || "",
-            safety_score: activeRoute.safety_score ?? null,
-            // geometry.coordinates is [[lng,lat], ...] — same format the backend expects
-            polyline: activeRoute.geometry?.coordinates || [],
-          })
-        : null;
-
-      const data = await sendChatMessage({
-        history: messages.slice(-5).filter((m) => m.content && m.role),
-        message: input,
-        trip_context: tripContext,
-        current_lat: location?.lat ?? null,
-        current_lng: location?.lng ?? null,
-        // Pass route inline via trip_context extension; backend reads planned_route
-        // We piggyback it through the existing planned_route field added to ChatRequest
-        planned_route: routePayload,
-      });
-      setMessages([...history, { role: "assistant", content: data.response }]);
-    } catch {
-      setMessages([...history, { role: "assistant", content: "Sorry, something went wrong. Try again." }]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleKey = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
-  };
-
-  return (
-    <>
-      {open && (
-        <div className="anim-fade-up fixed flex flex-col bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-700/50 rounded-2xl shadow-xl transition-colors duration-200"
-          style={{
-            bottom: "88px", right: "24px", width: "360px", height: "500px", zIndex: 9999,
-            overflow: "hidden",
-          }}>
-          {/* Top accent line */}
-          <div style={{ position: "absolute", top: 0, left: "15%", right: "15%", height: "2px", background: "linear-gradient(90deg, transparent, #0ea5e9, transparent)" }} />
-
-          <div className="flex items-center justify-between px-4 py-3 flex-shrink-0 border-b border-slate-100 dark:border-slate-800 transition-colors">
-            <div className="flex items-center gap-2.5">
-              <div className="flex items-center justify-center rounded-xl text-xs font-bold bg-teal-500 text-white w-8 h-8 shadow-sm">AI</div>
-              <div>
-                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 transition-colors">AI Assistant</p>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 transition-colors">Online</span>
-                </div>
-              </div>
-            </div>
-            <button onClick={onToggle}
-              className="flex items-center justify-center rounded-lg w-7 h-7 text-xs bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-              title="Close chat">✕</button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3 bg-slate-50/50 dark:bg-slate-900 transition-colors">
-            {isEmpty ? (
-              <div className="flex flex-col items-center justify-center h-full gap-2 text-center px-2">
-                <FloatingChatLottie />
-                <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">Voyageur AI</p>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed">
-                  Ask about routes, safety, hospitals, or nearby places.
-                </p>
-                <div className="flex flex-wrap justify-center gap-1.5 mt-1">
-                  {["Is Mumbai safe?", "Hospitals near me", "Safest route"].map((s) => (
-                    <button key={s} onClick={() => setInput(s)}
-                      className="px-2.5 py-1 rounded-full text-[10px] font-medium border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-teal-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors bg-white dark:bg-slate-800">
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              messages.map((msg, i) => (
-              <div key={i} className="anim-fade-in flex" style={{ justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
-                <div className={`text-xs leading-relaxed whitespace-pre-wrap px-3 py-2 shadow-sm font-medium ${
-                  msg.role === "user"
-                    ? "rounded-[16px_16px_4px_16px] bg-teal-600 text-white"
-                    : "rounded-[16px_16px_16px_4px] bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
-                }`} style={{ maxWidth: "82%" }}>
-                  {renderMarkdown(msg.content)}
-                </div>
-              </div>
-            )))}
-            {loading && (
-              <div className="flex justify-start">
-                <div className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
-                  {[0,1,2].map((d) => (
-                    <span key={d} className="w-1.5 h-1.5 rounded-full bg-teal-400"
-                      style={{ animation: `pulse-dot 1.2s ease-in-out ${d * 0.2}s infinite` }} />
-                  ))}
-                </div>
-              </div>
-            )}
-            <div ref={bottomRef} />
-          </div>
-
-          <div className="px-3 py-3 flex-shrink-0 flex gap-2 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors">
-            <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKey}
-              placeholder="Ask anything..." className="flex-1 px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-teal-400 dark:focus:border-teal-500 transition-colors"
-            />
-            <button onClick={handleSend} disabled={loading || !input.trim()}
-              className="flex items-center justify-center rounded-xl flex-shrink-0 w-9 h-9 text-sm font-bold transition-all duration-200 disabled:opacity-50"
-              style={{
-                background: input.trim() && !loading ? "#0d9488" : "#f1f5f9",
-                border: input.trim() && !loading ? "1px solid #0f766e" : "1px solid #e2e8f0",
-                color: input.trim() && !loading ? "#fff" : "#94a3b8",
-              }}>↑</button>
-          </div>
-        </div>
-      )}
-
-      <button onClick={onToggle} className="fixed flex items-center justify-center rounded-full shadow-lg transition-all duration-300 z-[9999]"
-        style={{
-          bottom: "24px", right: "24px", width: "52px", height: "52px", cursor: "pointer",
-          background: open ? "#f8fafc" : "#0d9488",
-          border: open ? "1px solid #e2e8f0" : "1px solid #0f766e",
-          color: open ? "#64748b" : "#fff", fontSize: open ? "16px" : "18px",
-          transform: open ? "scale(0.9) rotate(45deg)" : "scale(1) rotate(0deg)",
-        }}
-        title="AI Assistant">{open ? "✕" : "✦"}</button>
-    </>
   );
 }
 
