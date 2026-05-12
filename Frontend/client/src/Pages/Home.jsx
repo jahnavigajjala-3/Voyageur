@@ -51,11 +51,29 @@ const features = [
 function LogoMark({ small = false }) {
   return (
     <div
-      className={`flex items-center justify-center rounded-xl bg-linear-to-br from-cyan-400 to-teal-600 text-slate-950 shadow-[0_14px_34px_-26px_rgba(6,182,212,0.9)] ${
+      className={`flex items-center justify-center rounded-xl text-white ${
         small ? "h-9 w-9" : "h-12 w-12"
       }`}
+      style={{
+        background: "linear-gradient(145deg, rgb(var(--accent-cyan)), rgb(var(--accent-primary)))",
+        boxShadow: "0 12px 28px -14px rgb(var(--accent-cyan) / 0.55)",
+      }}
     >
-      <Compass className={small ? "h-4 w-4" : "h-5 w-5"} strokeWidth={2.2} />
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" className={small ? "h-4 w-4" : "h-5 w-5"}>
+        <path
+          d="M12 3.5a6 6 0 0 0-6 6c0 4.6 6 11 6 11s6-6.4 6-11a6 6 0 0 0-6-6Z"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+        <circle cx="12" cy="9.5" r="2.2" fill="currentColor" />
+        <path
+          d="M4.5 20c2-1.4 4.5-2 7.5-2s5.5.6 7.5 2"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+      </svg>
     </div>
   );
 }
