@@ -6,6 +6,7 @@ import { sendChatMessage } from "../api/api";
 import useLocation from "../hooks/useLocation";
 import AppSidebar from "./AppSidebar";
 import ghostAnimation from "../assets/Ghostsmart.json";
+import { renderMarkdown } from "../utils/renderMarkdown";
 
 function LottieAnim() {
   const { View } = useLottie({
@@ -205,7 +206,7 @@ export default function ChatBox() {
                           borderColor: msg.role === "user" ? "rgb(var(--accent-cyan))" : "rgb(var(--border-primary))",
                         }}
                       >
-                        {msg.content}
+                        {renderMarkdown(msg.content)}
                       </div>
                     </div>
                   ))}

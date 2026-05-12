@@ -12,6 +12,7 @@ import { MapPin, Navigation, Home, Compass, MessageSquare, LogOut, ShieldCheck, 
 import { getLocationDisplayName, reverseGeocode } from "../services/geocodingService";
 import { useLottie } from "lottie-react";
 import ghostAnimation from "../assets/Ghostsmart.json";
+import { renderMarkdown } from "../utils/renderMarkdown";
 
 const NAV_ITEMS = [
   { icon: Home, label: "Home", path: "/dashboard" },
@@ -1039,7 +1040,7 @@ function FloatingChat({ open, onToggle, weather, safeRoutes = [], selectedRouteI
                     ? "rounded-[16px_16px_4px_16px] bg-teal-600 text-white"
                     : "rounded-[16px_16px_16px_4px] bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
                 }`} style={{ maxWidth: "82%" }}>
-                  {msg.content}
+                  {renderMarkdown(msg.content)}
                 </div>
               </div>
             )))}
