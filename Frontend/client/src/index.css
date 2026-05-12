@@ -19,8 +19,8 @@
   --text-primary: 15 23 42;
   --text-secondary: 71 85 105;
   --text-tertiary: 100 116 139;
-  --border-primary: 226 232 240;
-  --border-secondary: 241 245 249;
+  --border-primary: 210 228 240;
+  --border-secondary: 226 238 248;
   --accent-primary: 8 145 178;
   --accent-secondary: 6 182 212;
   --accent-cyan: 6 182 212;
@@ -29,10 +29,10 @@
   --danger: 239 68 68;
   --surface-glass: 255 255 255;
   --surface-glass-opacity: 0.82;
-  --shadow-sm: 0 1px 2px rgb(15 23 42 / 0.04);
-  --shadow-md: 0 8px 22px -18px rgb(15 23 42 / 0.22);
-  --shadow-lg: 0 18px 44px -34px rgb(15 23 42 / 0.28);
-  --shadow-xl: 0 24px 70px -48px rgb(8 145 178 / 0.28);
+  --shadow-sm: 0 1px 2px rgb(8 145 178 / 0.06);
+  --shadow-md: 0 8px 22px -18px rgb(8 145 178 / 0.16);
+  --shadow-lg: 0 18px 44px -34px rgb(8 145 178 / 0.22);
+  --shadow-xl: 0 24px 70px -48px rgb(8 145 178 / 0.30);
 }
 
 [data-theme="dark"], .dark {
@@ -82,8 +82,8 @@ h2.font-serif {
 
 .voyageur-page-bg {
   background:
-    radial-gradient(circle at 14% 28%, rgba(6, 182, 212, 0.12), transparent 28rem),
-    radial-gradient(circle at 86% 24%, rgba(8, 145, 178, 0.08), transparent 26rem),
+    radial-gradient(circle at 14% 28%, rgba(6, 182, 212, 0.10), transparent 28rem),
+    radial-gradient(circle at 86% 24%, rgba(8, 145, 178, 0.07), transparent 26rem),
     linear-gradient(180deg, #fafaf7 0%, #ffffff 42%, #f8fafc 100%);
 }
 
@@ -96,7 +96,7 @@ h2.font-serif {
 }
 
 .voyageur-dot-grid {
-  background-image: radial-gradient(circle, rgba(15, 23, 42, 0.08) 1px, transparent 1px);
+  background-image: radial-gradient(circle, rgba(6, 182, 212, 0.14) 1px, transparent 1px);
   background-size: 33px 33px;
 }
 
@@ -107,8 +107,8 @@ h2.font-serif {
 
 .voyageur-card {
   background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(226, 232, 240, 0.95);
-  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(210, 228, 240, 0.9);
+  box-shadow: 0 1px 3px rgb(8 145 178 / 0.05), 0 4px 12px -8px rgb(8 145 178 / 0.08);
   backdrop-filter: blur(18px);
 }
 

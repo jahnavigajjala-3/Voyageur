@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { createElement, useContext } from "react";
 import {
   ArrowRight,
-  ClipboardList,
+  CalendarDays,
   Compass,
   Hospital,
   Lock,
@@ -19,7 +19,7 @@ const features = [
   {
     icon: Shield,
     title: "Crime risk scoring",
-    copy: "District-level risk built from open crime data, normalized 1-10 and updated daily.",
+    copy: "District-level risk built from open crime data, normalized 1-10.",
   },
   {
     icon: Compass,
@@ -34,12 +34,12 @@ const features = [
   {
     icon: Hospital,
     title: "Hospitals nearby",
-    copy: "Closest verified hospitals and trauma centers, ranked by distance, available offline.",
+    copy: "Verified hospitals near your location, surfaced on the map so you always know what's close.",
   },
   {
-    icon: ClipboardList,
-    title: "Trip checklists",
-    copy: "Auto-generated, destination-aware checklists for documents, vaccines, and gear.",
+    icon: CalendarDays,
+    title: "AI itinerary planner",
+    copy: "Day-by-day itineraries built around your destination, budget, and travel style — with hotel and transport booking redirects included.",
   },
   {
     icon: Lock,
@@ -207,7 +207,7 @@ export default function Home() {
       <main>
         <section className="relative isolate overflow-hidden">
           <div className="absolute inset-0 voyageur-dot-grid opacity-80" />
-          <div className="absolute inset-x-0 top-0 h-64 bg-linear-to-b from-cyan-100/50 to-transparent dark:from-cyan-400/5" />
+          <div className="absolute inset-x-0 top-0 h-64 bg-linear-to-b from-cyan-100/70 to-transparent dark:from-cyan-400/5" />
           <div className="relative mx-auto flex min-h-190 max-w-7xl flex-col items-center justify-center px-6 pb-20 pt-24 text-center lg:px-8">
             <div className="mb-8 inline-flex items-center gap-3 rounded-full border border-slate-200 bg-white/72 px-4 py-2 text-sm text-slate-600 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/45 dark:text-slate-300">
               <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_0_5px_rgba(16,185,129,0.12)]" />
@@ -307,11 +307,6 @@ export default function Home() {
             <p className="text-sm text-slate-500 dark:text-slate-400">
               (c) 2026 Voyageur. All rights reserved.
             </p>
-          </div>
-          <div className="flex gap-8 text-sm text-slate-500 dark:text-slate-400">
-            <a href="#privacy" className="transition hover:text-slate-950 dark:hover:text-white">Privacy</a>
-            <a href="#terms" className="transition hover:text-slate-950 dark:hover:text-white">Terms</a>
-            <a href="#contact" className="transition hover:text-slate-950 dark:hover:text-white">Contact</a>
           </div>
         </div>
       </footer>
