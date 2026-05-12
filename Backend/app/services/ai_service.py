@@ -3,10 +3,11 @@ AI Service — Amigo travel companion powered by Gemini.
 
 Context pipeline (request → Gemini):
   1. Location context  — current lat/lng + live crime risk at that point
-  2. Trip context      — destination, dates, notes from the DB trip record
-  3. Route context     — planned_route summary (distance, duration, waypoints)
-  4. Safety context    — route safety score + risk level from scoring service
-  5. Prompt assembly   — all four blocks merged into a clean system instruction
+  2. Destination context — geocode any city mentioned in the message + fetch its crime risk
+  3. Trip context      — destination, dates, notes from the DB trip record
+  4. Route context     — planned_route summary (distance, duration, waypoints)
+  5. Safety context    — route safety score + risk level from scoring service
+  6. Prompt assembly   — all blocks merged into a clean system instruction
 """
 
 from google import genai
@@ -28,7 +29,7 @@ logger = get_logger(__name__)
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 # ---------------------------------------------------------------------------
-# System prompt — instructs Gemini on its persona and rules
+# System prompt
 # ---------------------------------------------------------------------------
 SYSTEM_PROMPT = """
 You are Amigo, a real-time travel safety companion AI for India.
@@ -37,6 +38,7 @@ Rules:
 - The user's current location and crime risk data are provided in the CONTEXT section below — use them as background knowledge only
 - NEVER proactively announce the crime risk score or safety score of the user's current location unless they explicitly ask about it
 - Only mention location risk if the user asks "is it safe here?", "what's the risk?", or similar direct questions
+- If DESTINATION SAFETY data is provided in context, use it to answer questions about that city's safety
 - Always use the safety data provided in context — never guess or invent numbers
 - Be concise, friendly, and helpful
 - If a planned route is present, focus on route safety feedback — mention high-risk segments along the route if relevant
@@ -45,6 +47,50 @@ Rules:
 """
 
 WORKING_MODEL = None
+
+# ---------------------------------------------------------------------------
+# Indian city → approximate coordinates for geocoding fallback
+# ---------------------------------------------------------------------------
+INDIA_CITY_COORDS = {
+    "mumbai": (19.0760, 72.8777),
+    "delhi": (28.6139, 77.2090),
+    "bangalore": (12.9716, 77.5946),
+    "bengaluru": (12.9716, 77.5946),
+    "hyderabad": (17.3850, 78.4867),
+    "chennai": (13.0827, 80.2707),
+    "kolkata": (22.5726, 88.3639),
+    "pune": (18.5204, 73.8567),
+    "ahmedabad": (23.0225, 72.5714),
+    "jaipur": (26.9124, 75.7873),
+    "surat": (21.1702, 72.8311),
+    "lucknow": (26.8467, 80.9462),
+    "kanpur": (26.4499, 80.3319),
+    "nagpur": (21.1458, 79.0882),
+    "indore": (22.7196, 75.8577),
+    "bhopal": (23.2599, 77.4126),
+    "patna": (25.5941, 85.1376),
+    "vadodara": (22.3072, 73.1812),
+    "goa": (15.2993, 74.1240),
+    "kochi": (9.9312, 76.2673),
+    "coimbatore": (11.0168, 76.9558),
+    "visakhapatnam": (17.6868, 83.2185),
+    "agra": (27.1767, 78.0081),
+    "varanasi": (25.3176, 82.9739),
+    "amritsar": (31.6340, 74.8723),
+    "chandigarh": (30.7333, 76.7794),
+}
+
+
+def extract_mentioned_city(message: str) -> Optional[tuple]:
+    """
+    Check if the user's message mentions a known Indian city.
+    Returns (lat, lng, city_name) or None.
+    """
+    msg_lower = message.lower()
+    for city, coords in INDIA_CITY_COORDS.items():
+        if city in msg_lower:
+            return coords[0], coords[1], city.title()
+    return None
 
 
 # ===========================================================================
@@ -125,6 +171,38 @@ async def build_location_context(lat: Optional[float], lng: Optional[float]) -> 
         )
     except Exception as e:
         logger.error("build_location_context failed: %s", e, exc_info=True)
+        return ""
+
+
+async def build_destination_context(message: str) -> str:
+    """
+    If the user's message mentions a known Indian city, fetch its crime risk
+    and return a context block so the AI can answer safety questions about it.
+    """
+    result = extract_mentioned_city(message)
+    if not result:
+        return ""
+
+    lat, lng, city_name = result
+    try:
+        crime_data = await get_crime_risk_by_coords(lat, lng)
+        if "error" in crime_data:
+            return ""
+
+        district   = crime_data.get("detected_district") or crime_data.get("district", city_name)
+        state_name = crime_data.get("detected_state")    or crime_data.get("state", "")
+        risk_level = crime_data.get("risk_level", "UNKNOWN")
+        norm_score = crime_data.get("normalized_score", "N/A")
+
+        logger.info("Destination context → %s (%s, %s) | %s", city_name, district, state_name, risk_level)
+        return (
+            f"[Destination Safety — {city_name}]\n"
+            f"District: {district}, {state_name}\n"
+            f"Crime Risk Level: {risk_level}\n"
+            f"Safety Score: {norm_score}/10 (10 = safest)\n"
+        )
+    except Exception as e:
+        logger.error("build_destination_context failed: %s", e, exc_info=True)
         return ""
 
 
@@ -301,6 +379,7 @@ def assemble_system_prompt(
     trip_ctx: str,
     route_ctx: str,
     safety_ctx: str,
+    destination_ctx: str = "",
 ) -> str:
     """
     Combine all context blocks into a single, structured system instruction.
@@ -308,7 +387,7 @@ def assemble_system_prompt(
     """
     sections = [SYSTEM_PROMPT.strip()]
 
-    context_blocks = [location_ctx, trip_ctx, route_ctx, safety_ctx]
+    context_blocks = [location_ctx, destination_ctx, trip_ctx, route_ctx, safety_ctx]
     filled = [b.strip() for b in context_blocks if b and b.strip()]
 
     if filled:
@@ -350,9 +429,10 @@ async def get_ai_response(
             lat, lng = extract_coords_from_context(trip_context)
 
         # ── 2. Gather all context blocks concurrently ──────────────────────
-        location_ctx, safety_ctx = await asyncio.gather(
+        location_ctx, safety_ctx, destination_ctx = await asyncio.gather(
             build_location_context(lat, lng),
             build_safety_context(planned_route),
+            build_destination_context(new_message),
         )
 
         trip_ctx  = build_trip_context(trip)
@@ -360,7 +440,7 @@ async def get_ai_response(
 
         # ── 3. Assemble system prompt ──────────────────────────────────────
         system_instruction = assemble_system_prompt(
-            location_ctx, trip_ctx, route_ctx, safety_ctx
+            location_ctx, trip_ctx, route_ctx, safety_ctx, destination_ctx
         )
 
         # ── 4. Build conversation history for Gemini ───────────────────────
