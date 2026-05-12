@@ -10,6 +10,8 @@ import useLocation from "../hooks/useLocation";
 import { getRiskColorsByLevel, getRiskColor } from "../utils/riskColors";
 import { MapPin, Navigation, Home, Compass, MessageSquare, LogOut, ShieldCheck, Map, ChevronDown, Trash2 } from "lucide-react";
 import { getLocationDisplayName, reverseGeocode } from "../services/geocodingService";
+import { useLottie } from "lottie-react";
+import ghostAnimation from "../assets/Ghostsmart.json";
 
 const NAV_ITEMS = [
   { icon: Home, label: "Home", path: "/dashboard" },
@@ -902,18 +904,28 @@ export default function Dashboard() {
 }
 
 // ─── FloatingChat (weather passed in for AI context) ──────────────────────
+function FloatingChatLottie() {
+  const { View } = useLottie({
+    animationData: ghostAnimation,
+    loop: true,
+    autoplay: true,
+    style: { width: 120, height: 120 },
+  });
+  return View;
+}
+
 function FloatingChat({ open, onToggle, weather, safeRoutes = [], selectedRouteId = null }) {
   const { location } = useLocation();
-  const [messages, setMessages] = useState([
-    { role: "assistant", content: "Hi! I'm your AI travel companion. Ask me anything about safety, routes, or destinations." },
-  ]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput]     = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef             = useRef(null);
 
+  const isEmpty = messages.length === 0;
+
   useEffect(() => {
-    if (open) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, open]);
+    if (open && !isEmpty) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, open, isEmpty]);
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
@@ -1003,7 +1015,24 @@ function FloatingChat({ open, onToggle, weather, safeRoutes = [], selectedRouteI
           </div>
 
           <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3 bg-slate-50/50 dark:bg-slate-900 transition-colors">
-            {messages.map((msg, i) => (
+            {isEmpty ? (
+              <div className="flex flex-col items-center justify-center h-full gap-2 text-center px-2">
+                <FloatingChatLottie />
+                <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">Voyageur AI</p>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-relaxed">
+                  Ask about routes, safety, hospitals, or nearby places.
+                </p>
+                <div className="flex flex-wrap justify-center gap-1.5 mt-1">
+                  {["Is Mumbai safe?", "Hospitals near me", "Safest route"].map((s) => (
+                    <button key={s} onClick={() => setInput(s)}
+                      className="px-2.5 py-1 rounded-full text-[10px] font-medium border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-teal-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors bg-white dark:bg-slate-800">
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              messages.map((msg, i) => (
               <div key={i} className="anim-fade-in flex" style={{ justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
                 <div className={`text-xs leading-relaxed whitespace-pre-wrap px-3 py-2 shadow-sm font-medium ${
                   msg.role === "user"
@@ -1013,7 +1042,7 @@ function FloatingChat({ open, onToggle, weather, safeRoutes = [], selectedRouteI
                   {msg.content}
                 </div>
               </div>
-            ))}
+            )))}
             {loading && (
               <div className="flex justify-start">
                 <div className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm transition-colors">
