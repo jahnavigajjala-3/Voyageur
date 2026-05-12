@@ -149,12 +149,18 @@ function DashboardPreview() {
 
 export default function Home() {
   const { isDarkMode, toggleTheme } = useTheme();
-  const { continueAsGuest } = useContext(AuthContext);
+  const { continueAsGuest, isAuthenticated } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const openAsGuest = () => {
-    continueAsGuest();
-    navigate("/dashboard");
+  const openApp = () => {
+    if (isAuthenticated) {
+      // Already logged in — go straight to dashboard as themselves
+      navigate("/dashboard");
+    } else {
+      // Not logged in — enter as guest
+      continueAsGuest();
+      navigate("/dashboard");
+    }
   };
 
   const scrollToFeatures = (e) => {
@@ -191,17 +197,19 @@ export default function Home() {
             >
               {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
-            <Link
-              to="/login"
-              className="hidden text-base font-semibold text-slate-950 transition hover:text-cyan-700 dark:text-white dark:hover:text-cyan-300 sm:block"
-            >
-              Sign in
-            </Link>
+            {!isAuthenticated && (
+              <Link
+                to="/login"
+                className="hidden text-base font-semibold text-slate-950 transition hover:text-cyan-700 dark:text-white dark:hover:text-cyan-300 sm:block"
+              >
+                Sign in
+              </Link>
+            )}
             <button
-              onClick={openAsGuest}
+              onClick={openApp}
               className="voyageur-primary-btn inline-flex items-center gap-3 rounded-xl px-6 py-3 text-base font-semibold transition"
             >
-              Open app <ArrowRight className="h-5 w-5" />
+              {isAuthenticated ? "Dashboard" : "Open app"} <ArrowRight className="h-5 w-5" />
             </button>
           </div>
         </div>
@@ -229,17 +237,19 @@ export default function Home() {
 
             <div className="mt-12 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <button
-                onClick={openAsGuest}
+                onClick={openApp}
                 className="voyageur-primary-btn inline-flex min-w-72 items-center justify-center gap-3 rounded-xl px-8 py-4 text-base font-semibold transition"
               >
-                Try the dashboard <ArrowRight className="h-5 w-5" />
+                {isAuthenticated ? "Go to dashboard" : "Try the dashboard"} <ArrowRight className="h-5 w-5" />
               </button>
-              <Link
-                to="/signup"
-                className="voyageur-secondary-btn inline-flex min-w-72 items-center justify-center rounded-xl px-8 py-4 text-base font-semibold transition hover:bg-white dark:hover:bg-white/5"
-              >
-                Create free account
-              </Link>
+              {!isAuthenticated && (
+                <Link
+                  to="/signup"
+                  className="voyageur-secondary-btn inline-flex min-w-72 items-center justify-center rounded-xl px-8 py-4 text-base font-semibold transition hover:bg-white dark:hover:bg-white/5"
+                >
+                  Create free account
+                </Link>
+              )}
             </div>
 
             <p className="mt-6 text-sm text-slate-500 dark:text-slate-400">
@@ -287,10 +297,10 @@ export default function Home() {
             </p>
             <div className="mt-10 flex flex-col justify-center gap-4 sm:flex-row">
               <button
-                onClick={openAsGuest}
+                onClick={openApp}
                 className="voyageur-primary-btn inline-flex items-center justify-center rounded-xl px-10 py-4 text-base font-semibold transition"
               >
-                Open dashboard
+                {isAuthenticated ? "Go to dashboard" : "Open dashboard"}
               </button>
               <Link
                 to="/chat"
