@@ -8,6 +8,7 @@ import Login from "./Pages/Login";
 import Signup from "./Pages/Signup";
 import Dashboard from "./Pages/dashboard";
 import TripGuide from "./Pages/TripGuide";
+import RouteHistory from "./Pages/RouteHistory";
 import ChatBox from "./components/ChatBox";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -113,6 +114,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <TripGuide />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/history"
+                  element={
+                    <ProtectedRoute>
+                      <RouteHistory />
                     </ProtectedRoute>
                   }
                 />

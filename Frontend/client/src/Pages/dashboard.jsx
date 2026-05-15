@@ -4,7 +4,8 @@ import { useRouteContext } from "../context/RouteContext";
 import { useTheme } from "../context/ThemeContext";
 import CrimeMap from "../components/CrimeMap";
 import LocationImageCard from "../components/LocationImageCard";
-import { useNavigate } from "react-router-dom";
+import AppSidebar from "../components/AppSidebar";
+import { useNavigate, useLocation as useRouterLocation } from "react-router-dom";
 import { getNearbyHospitals, getWeather } from "../api/api";
 import useLocation from "../hooks/useLocation";
 import { getRiskColorsByLevel, getRiskColor } from "../utils/riskColors";
@@ -16,6 +17,7 @@ const NAV_ITEMS = [
   { icon: Home, label: "Home", path: "/dashboard" },
   { icon: Compass, label: "Trip Guide", path: "/trip-guide" },
   { icon: MessageSquare, label: "AI Assistant", path: "/chat" },
+  { icon: MapPin, label: "History", path: "/history" },
 ];
 
 // ─── Design tokens ────────────────────────────────────────────────────────
@@ -72,10 +74,9 @@ export default function Dashboard() {
     deleteRoute,
   } = useRouteContext();
   const navigate = useNavigate();
+  const routerLocation = useRouterLocation();
   const { location } = useLocation(); // ← needed for weather
 
-  const [activeNav, setActiveNav]       = useState("Home");
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [liveRisk, setLiveRisk]         = useState(null);
   const [clickedRisk, setClickedRisk]   = useState(null);
   const [chatOpen, setChatOpen]         = useState(false);
@@ -181,6 +182,19 @@ export default function Dashboard() {
       fetchLocationNames();
     }
   }, [routeHistory]);
+
+  useEffect(() => {
+    const replayRoute = routerLocation.state?.replayRoute;
+    if (!replayRoute) return;
+
+    const showRoute = async () => {
+      await mapRef.current?.triggerRoute(replayRoute.origin, replayRoute.destination, true);
+      navigate("/dashboard", { replace: true, state: null });
+    };
+
+    showRoute();
+  }, [routerLocation.state, navigate]);
+
   // ─────────────────────────────────────────────────────────────────────────
 
   const surfaceCard = {
@@ -194,167 +208,7 @@ export default function Dashboard() {
       className="voyageur-page-bg flex min-h-screen w-full"
       style={{ color: "rgb(var(--text-primary))" }}
     >
-      {/* ── Command rail (navigation) ── */}
-      <aside
-        onMouseEnter={() => setIsSidebarExpanded(true)}
-        onMouseLeave={() => setIsSidebarExpanded(false)}
-        style={{
-          width: isSidebarExpanded ? "180px" : "64px",
-          minHeight: "100vh",
-          position: "sticky",
-          top: 0,
-          zIndex: 20,
-          flexShrink: 0,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: isSidebarExpanded ? "flex-start" : "center",
-          padding: "20px 0",
-          gap: "4px",
-          background: "rgb(var(--bg-secondary) / 0.92)",
-          borderRight: "1px solid rgb(var(--border-primary))",
-          backdropFilter: "blur(20px)",
-          transition: "width 0.25s ease, align-items 0.25s ease",
-        }}
-      >
-        {/* Logo mark */}
-        <div
-          onClick={() => navigate("/")}
-          title="Voyageur"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: isSidebarExpanded ? "flex-start" : "center",
-            width: isSidebarExpanded ? "100%" : "auto",
-            padding: isSidebarExpanded ? "0 12px" : "0",
-            cursor: "pointer",
-            marginBottom: "16px",
-            gap: "12px",
-            flexShrink: 0,
-          }}
-        >
-          <div
-            style={{
-              width: "36px", height: "36px", borderRadius: "10px",
-              background: "linear-gradient(145deg, rgb(var(--accent-cyan)), rgb(var(--accent-primary)))",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 8px 20px -10px rgb(var(--accent-cyan) / 0.5)",
-            }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" style={{ width: "16px", height: "16px" }}>
-              <path
-                d="M12 3.5a6 6 0 0 0-6 6c0 4.6 6 11 6 11s6-6.4 6-11a6 6 0 0 0-6-6Z"
-                stroke="white"
-                strokeWidth="1.8"
-                strokeLinejoin="round"
-              />
-              <circle cx="12" cy="9.5" r="2.2" fill="white" />
-              <path
-                d="M4.5 20c2-1.4 4.5-2 7.5-2s5.5.6 7.5 2"
-                stroke="white"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-              />
-            </svg>
-          </div>
-          {isSidebarExpanded && (
-            <span style={{
-              fontFamily: "'Playfair Display', Georgia, 'Times New Roman', serif",
-              fontSize: "1rem",
-              fontWeight: 700,
-              color: "rgb(var(--text-primary))",
-              whiteSpace: "nowrap",
-            }}>
-              Voyageur
-            </span>
-          )}
-        </div>
-
-        {/* Nav items */}
-        <nav style={{ display: "flex", flexDirection: "column", gap: "4px", width: "100%", alignItems: isSidebarExpanded ? "flex-start" : "center", padding: isSidebarExpanded ? "0 12px" : "0" }}>
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeNav === item.label;
-            return (
-              <button
-                key={item.label}
-                onClick={() => { setActiveNav(item.label); if (item.path !== "#") navigate(item.path); }}
-                title={item.label}
-                style={{
-                  width: isSidebarExpanded ? "100%" : "40px", height: "40px", borderRadius: "10px",
-                  display: "flex", alignItems: "center", justifyContent: isSidebarExpanded ? "flex-start" : "center",
-                  gap: isSidebarExpanded ? "10px" : "0",
-                  border: "none", cursor: "pointer", transition: "all 0.15s ease",
-                  background: isActive ? "rgb(var(--accent-cyan) / 0.12)" : "transparent",
-                  color: isActive ? "rgb(var(--accent-cyan))" : "rgb(var(--text-tertiary))",
-                  outline: isActive ? "1px solid rgb(var(--accent-cyan) / 0.25)" : "none",
-                  padding: isSidebarExpanded ? "0 14px" : "0",
-                  overflow: "hidden",
-                  whiteSpace: "nowrap",
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.background = "rgb(var(--bg-tertiary))";
-                    e.currentTarget.style.color = "rgb(var(--text-secondary))";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.background = "transparent";
-                    e.currentTarget.style.color = "rgb(var(--text-tertiary))";
-                  }
-                }}
-              >
-                <Icon className="h-[18px] w-[18px]" strokeWidth={isActive ? 2.2 : 1.75} />
-                {isSidebarExpanded && (
-                  <span style={{ fontSize: "0.95rem", fontWeight: 500, color: "inherit" }}>{item.label}</span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Spacer */}
-        <div style={{ flex: 1 }} />
-
-        {/* Live dot */}
-        <div title="AI online" style={{
-          width: "8px", height: "8px", borderRadius: "50%",
-          background: "rgb(var(--accent-cyan))",
-          boxShadow: "0 0 0 3px rgb(var(--accent-cyan) / 0.15)",
-          marginBottom: "8px", flexShrink: 0,
-        }} />
-
-        {/* Logout */}
-        <button
-          onClick={handleLogout}
-          title={isGuest ? "Exit guest" : "Logout"}
-          style={{
-            width: isSidebarExpanded ? "100%" : "40px", height: "40px", borderRadius: "10px",
-            display: "flex", alignItems: "center", justifyContent: isSidebarExpanded ? "flex-start" : "center",
-            gap: isSidebarExpanded ? "10px" : "0",
-            border: "none", cursor: "pointer",
-            background: "transparent", color: "rgb(var(--text-tertiary))",
-            transition: "all 0.15s ease",
-            padding: isSidebarExpanded ? "0 14px" : "0",
-            overflow: "hidden", whiteSpace: "nowrap",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgb(var(--danger) / 0.08)";
-            e.currentTarget.style.color = "rgb(var(--danger))";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.color = "rgb(var(--text-tertiary))";
-          }}
-        >
-          <LogOut className="h-4 w-4" strokeWidth={1.75} />
-          {isSidebarExpanded && (
-            <span style={{ fontSize: "0.95rem", fontWeight: 500, color: "inherit" }}>
-              Logout
-            </span>
-          )}
-        </button>
-      </aside>
+      <AppSidebar />
 
       {/* ── Mission surface ── */}
       <main

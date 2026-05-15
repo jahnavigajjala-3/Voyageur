@@ -1,6 +1,6 @@
 import { useContext, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, Compass, MessageSquare, LogOut } from "lucide-react";
+import { Home, Compass, MessageSquare, MapPin, LogOut } from "lucide-react";
 import { AuthContext } from "../context/AuthContext";
 import { useRouteContext } from "../context/RouteContext";
 
@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { icon: Home,          label: "Home",         path: "/dashboard" },
   { icon: Compass,       label: "Trip Guide",   path: "/trip-guide" },
   { icon: MessageSquare, label: "AI Assistant", path: "/chat" },
+  { icon: MapPin,        label: "History",      path: "/history" },
 ];
 
 export default function AppSidebar() {
