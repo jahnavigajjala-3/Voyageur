@@ -759,6 +759,12 @@ export default function TripGuide() {
 
   const updateForm = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+    // Clear suggestion image cache when feed changes so new destinations load fresh images
+    if (key === "feed_preference") {
+      setSuggestionImages({});
+      setSuggestionImageLoading({});
+      suggestionInflightRef.current.clear();
+    }
   };
 
   const handleSubmit = (e) => {
