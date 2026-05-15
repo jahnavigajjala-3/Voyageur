@@ -61,6 +61,28 @@ class SafetyScoreCache {
 // Create context
 const RouteContext = createContext();
 
+const getRouteHistoryId = (entry, index = 0) => {
+  if (entry?.id != null) return String(entry.id);
+  const origin = entry?.origin || {};
+  const destination = entry?.destination || {};
+  return [
+    entry?.timestamp || "legacy",
+    index,
+    origin.lat,
+    origin.lng,
+    destination.lat,
+    destination.lng,
+  ].join("-");
+};
+
+const normalizeRouteHistory = (history) => {
+  if (!Array.isArray(history)) return [];
+  return history.map((entry, index) => ({
+    ...entry,
+    id: getRouteHistoryId(entry, index),
+  }));
+};
+
 export const useRouteContext = () => {
   const context = useContext(RouteContext);
   if (!context) {
@@ -99,7 +121,7 @@ export const RouteProvider = ({ children }) => {
   // Route history
   const [routeHistory, setRouteHistory] = useState(() => {
     const saved = localStorage.getItem('route_history');
-    return saved ? JSON.parse(saved) : [];
+    return saved ? normalizeRouteHistory(JSON.parse(saved)) : [];
   });
 
   // Save preferences to localStorage when they change
@@ -201,7 +223,7 @@ export const RouteProvider = ({ children }) => {
 
   // Delete a single route from history by id
   const deleteRoute = useCallback((routeId) => {
-    setRouteHistory(prev => prev.filter(r => r.id !== routeId));
+    setRouteHistory(prev => prev.filter((route, index) => getRouteHistoryId(route, index) !== String(routeId)));
   }, []);
 
   // Full session reset — called on logout or when switching to guest mode.

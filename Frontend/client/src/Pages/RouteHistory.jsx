@@ -9,6 +9,7 @@ export default function RouteHistory() {
   const navigate = useNavigate();
   const { routeHistory, deleteRoute } = useRouteContext();
   const [routeLocationNames, setRouteLocationNames] = useState({});
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   useEffect(() => {
     const fetchNames = async () => {
@@ -91,6 +92,45 @@ export default function RouteHistory() {
               </div>
             </div>
 
+            {confirmDeleteId && (
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+                onClick={() => setConfirmDeleteId(null)}
+              >
+                <div
+                  className="w-full max-w-sm rounded-3xl border bg-white p-6 shadow-2xl dark:bg-slate-950"
+                  style={{ borderColor: "rgb(var(--border-primary))" }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <p className="text-lg font-semibold" style={{ color: "rgb(var(--text-primary))" }}>
+                    Delete route?
+                  </p>
+                  <p className="mt-2 text-sm" style={{ color: "rgb(var(--text-secondary))" }}>
+                    Are you sure you want to remove this saved route? This cannot be undone.
+                  </p>
+                  <div className="mt-6 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteId(null)}
+                      className="flex-1 rounded-2xl border py-3 text-sm font-semibold transition-colors"
+                      style={{ borderColor: "rgb(var(--border-primary))", color: "rgb(var(--text-secondary))" }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        deleteRoute(confirmDeleteId);
+                        setConfirmDeleteId(null);
+                      }}
+                      className="flex-1 rounded-2xl bg-rose-500 py-3 text-sm font-semibold text-white hover:bg-rose-600 transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
             {routeHistory.length === 0 ? (
               <div className="rounded-3xl border border-dashed p-8 text-center" style={{ borderColor: "rgb(var(--border-primary))" }}>
                 <p className="text-base font-semibold" style={{ color: "rgb(var(--text-primary))" }}>No saved routes yet</p>
@@ -122,8 +162,9 @@ export default function RouteHistory() {
                       <button
                         type="button"
                         onClick={(e) => {
+                          e.preventDefault();
                           e.stopPropagation();
-                          deleteRoute(historyItem.id);
+                          setConfirmDeleteId(historyItem.id);
                         }}
                         className="inline-flex items-center gap-2 rounded-2xl border px-3 py-2 text-xs font-semibold transition-colors hover:bg-rose-500/10"
                         style={{

@@ -614,59 +614,6 @@ export default function Dashboard() {
                 className="flex flex-col gap-5 min-w-0 xl:sticky xl:top-6 xl:self-start xl:max-h-[calc(100vh-48px)] xl:overflow-y-auto"
                 style={{ scrollbarGutter: "stable" }}
               >
-                {confirmDeleteId && (
-                  <div
-                    style={{
-                      position: "fixed",
-                      inset: 0,
-                      zIndex: 9998,
-                      background: "rgba(0,0,0,0.5)",
-                      backdropFilter: "blur(4px)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyItems: "center",
-                    }}
-                    onClick={() => setConfirmDeleteId(null)}
-                  >
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      className="rounded-2xl p-6 w-72 shadow-xl m-auto transition-colors duration-200 border"
-                      style={{
-                        background: "rgb(var(--bg-elevated))",
-                        borderColor: "rgb(var(--border-primary))",
-                      }}
-                    >
-                      <p className="text-base font-bold mb-2 transition-colors" style={{ color: "rgb(var(--text-primary))" }}>
-                        Delete route?
-                      </p>
-                      <p className="text-sm mb-6 transition-colors" style={{ color: "rgb(var(--text-secondary))" }}>
-                        Are you sure you want to delete this route?
-                      </p>
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => setConfirmDeleteId(null)}
-                          className="flex-1 py-2.5 rounded-xl border text-sm font-semibold transition-colors"
-                          style={{
-                            borderColor: "rgb(var(--border-primary))",
-                            color: "rgb(var(--text-secondary))",
-                          }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={() => {
-                            deleteRoute(confirmDeleteId);
-                            setConfirmDeleteId(null);
-                          }}
-                          className="flex-1 py-2.5 rounded-xl bg-rose-500 text-white text-sm font-semibold hover:bg-rose-600 transition-colors shadow-sm"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 <div className="space-y-2">
                   <div
                     className="voyageour-panel rounded-2xl overflow-hidden border p-1 transition-colors duration-200"
@@ -765,7 +712,9 @@ export default function Dashboard() {
                               )}
                             </div>
                             <button
+                              type="button"
                               onClick={(e) => {
+                                e.preventDefault();
                                 e.stopPropagation();
                                 setConfirmDeleteId(historyItem.id);
                               }}
@@ -794,6 +743,53 @@ export default function Dashboard() {
         safeRoutes={safeRoutes}
         selectedRouteId={selectedRouteId}
       />
+
+      {confirmDeleteId !== null && (
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm"
+          onClick={() => setConfirmDeleteId(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border p-6 shadow-2xl"
+            style={{
+              background: "rgb(var(--bg-elevated))",
+              borderColor: "rgb(var(--border-primary))",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-lg font-semibold" style={{ color: "rgb(var(--text-primary))" }}>
+              Delete route?
+            </p>
+            <p className="mt-2 text-sm leading-6" style={{ color: "rgb(var(--text-secondary))" }}>
+              This removes the saved route from recent routes and route history.
+            </p>
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteId(null)}
+                className="flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-colors"
+                style={{
+                  borderColor: "rgb(var(--border-primary))",
+                  color: "rgb(var(--text-secondary))",
+                  background: "rgb(var(--bg-secondary))",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteRoute(confirmDeleteId);
+                  setConfirmDeleteId(null);
+                }}
+                className="flex-1 rounded-xl bg-rose-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-rose-600"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
