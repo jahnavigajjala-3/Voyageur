@@ -14,16 +14,82 @@ const BUDGETS = ["economy", "midrange", "luxury"];
 const SUGGESTION_COUNT = 6;
 
 /**
- * Larger curated pool; UI still shows 6 at a time.
- * A fresh random set is chosen on each page load/refresh.
+ * Larger curated pool with feed tags.
+ * Suggestions are filtered by the active feed preference.
  */
 const DESTINATION_POOL = [
+  // ── Beaches ──────────────────────────────────────────────────────────────
   {
-    name: "Jaipur",
-    region: "Rajasthan",
-    tagline: "Pink City forts & bazaars",
-    highlights: ["Amer Fort & City Palace", "Heritage walks", "Rajasthani cuisine"],
-    imageQuery: "Jaipur India Amber Fort",
+    name: "Goa",
+    region: "West India",
+    tagline: "Beaches & Portuguese lanes",
+    highlights: ["Coastal drives", "Seafood & shacks", "Churches & chapels"],
+    imageQuery: "Goa India beach palm",
+    feeds: ["Beaches", "Adventure", "Culture"],
+  },
+  {
+    name: "Andaman Islands",
+    region: "Andaman & Nicobar",
+    tagline: "Pristine coral reefs & turquoise waters",
+    highlights: ["Radhanagar Beach", "Scuba diving & snorkelling", "Cellular Jail"],
+    imageQuery: "Andaman Islands India beach turquoise",
+    feeds: ["Beaches", "Adventure", "Nature"],
+  },
+  {
+    name: "Varkala",
+    region: "Kerala",
+    tagline: "Cliff-top beach with mineral springs",
+    highlights: ["Papanasam Beach", "Cliff cafes & sunsets", "Ayurvedic retreats"],
+    imageQuery: "Varkala Kerala cliff beach",
+    feeds: ["Beaches", "Nature"],
+  },
+  {
+    name: "Kovalam",
+    region: "Kerala",
+    tagline: "Crescent beaches & lighthouse views",
+    highlights: ["Lighthouse Beach", "Surfing & water sports", "Seafood shacks"],
+    imageQuery: "Kovalam Kerala beach lighthouse",
+    feeds: ["Beaches", "Adventure"],
+  },
+  {
+    name: "Pondicherry",
+    region: "Tamil Nadu",
+    tagline: "French quarters by the sea",
+    highlights: ["Promenade beach", "Cafes & pastel streets", "Auroville day trips"],
+    imageQuery: "Pondicherry India french quarter beach",
+    feeds: ["Beaches", "Culture", "Urban"],
+  },
+  {
+    name: "Puri",
+    region: "Odisha",
+    tagline: "Sacred shores & golden sands",
+    highlights: ["Puri Beach", "Jagannath Temple", "Chilika Lake day trip"],
+    imageQuery: "Puri Odisha beach India",
+    feeds: ["Beaches", "Culture"],
+  },
+  {
+    name: "Tarkarli",
+    region: "Maharashtra",
+    tagline: "Untouched beaches & backwater bliss",
+    highlights: ["Scuba diving", "Sindhudurg Fort", "Malvan seafood"],
+    imageQuery: "Tarkarli Maharashtra beach India",
+    feeds: ["Beaches", "Adventure", "Nature"],
+  },
+  {
+    name: "Lakshadweep",
+    region: "Lakshadweep",
+    tagline: "Remote coral atolls & lagoons",
+    highlights: ["Agatti Island", "Glass-bottom boat rides", "Snorkelling"],
+    imageQuery: "Lakshadweep India coral lagoon",
+    feeds: ["Beaches", "Nature", "Adventure"],
+  },
+  {
+    name: "Diu",
+    region: "Daman & Diu",
+    tagline: "Portuguese forts & quiet beaches",
+    highlights: ["Nagoa Beach", "Diu Fort", "Sunset at Chakratirth"],
+    imageQuery: "Diu India beach fort",
+    feeds: ["Beaches", "Culture"],
   },
   {
     name: "Kochi",
@@ -31,76 +97,48 @@ const DESTINATION_POOL = [
     tagline: "Backwaters meet the Arabian Sea",
     highlights: ["Chinese fishing nets", "Spice markets", "Coastal sunsets"],
     imageQuery: "Kochi Kerala India waterfront",
+    feeds: ["Beaches", "Culture", "Urban"],
+  },
+  // ── Mountains ────────────────────────────────────────────────────────────
+  {
+    name: "Manali",
+    region: "Himachal Pradesh",
+    tagline: "Snow peaks & adventure capital",
+    highlights: ["Rohtang Pass", "Solang Valley skiing", "Old Manali cafes"],
+    imageQuery: "Manali Himachal Pradesh snow mountains",
+    feeds: ["Mountains", "Adventure", "Nature"],
   },
   {
-    name: "Mumbai",
-    region: "Maharashtra",
-    tagline: "Maximum city energy",
-    highlights: ["Marine Drive & art deco", "Street food trails", "Gateway of India"],
-    imageQuery: "Mumbai India skyline Marine Drive",
+    name: "Shimla",
+    region: "Himachal Pradesh",
+    tagline: "Colonial hill station in the clouds",
+    highlights: ["The Ridge & Mall Road", "Toy train ride", "Jakhu Temple"],
+    imageQuery: "Shimla Himachal Pradesh hill station",
+    feeds: ["Mountains", "Culture"],
   },
   {
-    name: "Bengaluru",
-    region: "Karnataka",
-    tagline: "Gardens, tech & filter coffee",
-    highlights: ["Cubbon Park & museums", "Café culture", "Weekend hill escapes"],
-    imageQuery: "Bangalore India city park",
+    name: "Darjeeling",
+    region: "West Bengal",
+    tagline: "Tea gardens & Himalayan panoramas",
+    highlights: ["Tiger Hill sunrise", "Darjeeling Himalayan Railway", "Tea estate tours"],
+    imageQuery: "Darjeeling tea garden Himalaya",
+    feeds: ["Mountains", "Nature", "Culture"],
   },
   {
-    name: "Goa",
-    region: "West India",
-    tagline: "Beaches & Portuguese lanes",
-    highlights: ["Coastal drives", "Seafood & shacks", "Churches & chapels"],
-    imageQuery: "Goa India beach palm",
+    name: "Leh-Ladakh",
+    region: "Ladakh",
+    tagline: "High-altitude desert & monasteries",
+    highlights: ["Pangong Lake", "Nubra Valley", "Hemis Monastery"],
+    imageQuery: "Leh Ladakh India mountains monastery",
+    feeds: ["Mountains", "Adventure", "Culture"],
   },
   {
-    name: "Varanasi",
-    region: "Uttar Pradesh",
-    tagline: "Ghats, temples & dawn on the Ganges",
-    highlights: ["Sunrise boat rides", "Evening aarti", "Silk & narrow lanes"],
-    imageQuery: "Varanasi India Ganges ghats",
-  },
-  {
-    name: "Udaipur",
-    region: "Rajasthan",
-    tagline: "Lakes, palaces & old-world romance",
-    highlights: ["City Palace complex", "Pichola boat rides", "Sunset viewpoints"],
-    imageQuery: "Udaipur India lake palace",
-  },
-  {
-    name: "Mysuru",
-    region: "Karnataka",
-    tagline: "Royal heritage and calm boulevards",
-    highlights: ["Mysore Palace", "Chamundi Hills", "Silk & sandalwood markets"],
-    imageQuery: "Mysore India palace",
-  },
-  {
-    name: "Pondicherry",
-    region: "Tamil Nadu",
-    tagline: "French quarters by the sea",
-    highlights: ["Promenade beach", "Cafes & pastel streets", "Auroville day trips"],
-    imageQuery: "Pondicherry India french quarter",
-  },
-  {
-    name: "Shillong",
-    region: "Meghalaya",
-    tagline: "Cloud-kissed hills & waterfalls",
-    highlights: ["Elephant Falls", "Music and cafe scene", "Scenic drives"],
-    imageQuery: "Shillong Meghalaya hills",
-  },
-  {
-    name: "Rishikesh",
+    name: "Mussoorie",
     region: "Uttarakhand",
-    tagline: "River rafting and Himalayan calm",
-    highlights: ["Ganga aarti", "Adventure sports", "Yoga retreats"],
-    imageQuery: "Rishikesh India Ganges",
-  },
-  {
-    name: "Amritsar",
-    region: "Punjab",
-    tagline: "Sacred heritage and rich food trails",
-    highlights: ["Golden Temple", "Wagah ceremony", "Punjabi cuisine"],
-    imageQuery: "Amritsar Golden Temple India",
+    tagline: "Queen of the Hills",
+    highlights: ["Kempty Falls", "Gun Hill cable car", "Landour walks"],
+    imageQuery: "Mussoorie Uttarakhand hill station",
+    feeds: ["Mountains", "Nature"],
   },
   {
     name: "Ooty",
@@ -108,11 +146,203 @@ const DESTINATION_POOL = [
     tagline: "Tea gardens and toy-train charm",
     highlights: ["Nilgiri Mountain Railway", "Botanical gardens", "Tea estate views"],
     imageQuery: "Ooty tea gardens India",
+    feeds: ["Mountains", "Nature"],
+  },
+  {
+    name: "Coorg",
+    region: "Karnataka",
+    tagline: "Coffee hills & misty valleys",
+    highlights: ["Abbey Falls", "Coffee plantation walks", "Dubare elephant camp"],
+    imageQuery: "Coorg Karnataka coffee hills",
+    feeds: ["Mountains", "Nature", "Adventure"],
+  },
+  {
+    name: "Spiti Valley",
+    region: "Himachal Pradesh",
+    tagline: "Remote high-altitude cold desert",
+    highlights: ["Key Monastery", "Chandratal Lake", "Kaza village"],
+    imageQuery: "Spiti Valley Himachal Pradesh mountains",
+    feeds: ["Mountains", "Adventure", "Nature"],
+  },
+  // ── Urban ─────────────────────────────────────────────────────────────────
+  {
+    name: "Mumbai",
+    region: "Maharashtra",
+    tagline: "Maximum city energy",
+    highlights: ["Marine Drive & art deco", "Street food trails", "Gateway of India"],
+    imageQuery: "Mumbai India skyline Marine Drive",
+    feeds: ["Urban", "Culture"],
+  },
+  {
+    name: "Delhi",
+    region: "Delhi",
+    tagline: "Layers of history in a modern capital",
+    highlights: ["Red Fort & Chandni Chowk", "Humayun's Tomb", "Connaught Place"],
+    imageQuery: "Delhi India Red Fort skyline",
+    feeds: ["Urban", "Culture", "Adventure"],
+  },
+  {
+    name: "Bengaluru",
+    region: "Karnataka",
+    tagline: "Gardens, tech & filter coffee",
+    highlights: ["Cubbon Park & museums", "Café culture", "Weekend hill escapes"],
+    imageQuery: "Bangalore India city park",
+    feeds: ["Urban", "Culture"],
+  },
+  {
+    name: "Hyderabad",
+    region: "Telangana",
+    tagline: "Biryani, pearls & Nizami grandeur",
+    highlights: ["Charminar & bazaars", "Golconda Fort", "Ramoji Film City"],
+    imageQuery: "Hyderabad India Charminar",
+    feeds: ["Urban", "Culture"],
+  },
+  {
+    name: "Chennai",
+    region: "Tamil Nadu",
+    tagline: "Dravidian temples & Marina sands",
+    highlights: ["Marina Beach", "Kapaleeshwarar Temple", "Mahabalipuram day trip"],
+    imageQuery: "Chennai India Marina Beach",
+    feeds: ["Urban", "Culture", "Beaches"],
+  },
+  {
+    name: "Kolkata",
+    region: "West Bengal",
+    tagline: "City of joy, art & colonial grandeur",
+    highlights: ["Victoria Memorial", "Howrah Bridge", "Kumartuli & street food"],
+    imageQuery: "Kolkata India Victoria Memorial",
+    feeds: ["Urban", "Culture"],
+  },
+  // ── Nature ────────────────────────────────────────────────────────────────
+  {
+    name: "Kaziranga",
+    region: "Assam",
+    tagline: "One-horned rhinos & wild grasslands",
+    highlights: ["Jeep safari", "Elephant safari", "Bird watching"],
+    imageQuery: "Kaziranga National Park Assam rhino",
+    feeds: ["Nature", "Adventure"],
+  },
+  {
+    name: "Sundarbans",
+    region: "West Bengal",
+    tagline: "Mangrove delta & Royal Bengal tigers",
+    highlights: ["Boat safari", "Tiger spotting", "Village homestays"],
+    imageQuery: "Sundarbans mangrove Bengal tiger",
+    feeds: ["Nature", "Adventure"],
+  },
+  {
+    name: "Wayanad",
+    region: "Kerala",
+    tagline: "Misty forests & tribal heritage",
+    highlights: ["Chembra Peak trek", "Edakkal Caves", "Banasura Sagar Dam"],
+    imageQuery: "Wayanad Kerala forest mist",
+    feeds: ["Nature", "Mountains", "Adventure"],
+  },
+  {
+    name: "Jim Corbett",
+    region: "Uttarakhand",
+    tagline: "India's oldest national park",
+    highlights: ["Tiger safari", "Dhikala zone", "Ramganga river"],
+    imageQuery: "Jim Corbett National Park tiger India",
+    feeds: ["Nature", "Adventure"],
+  },
+  {
+    name: "Ranthambore",
+    region: "Rajasthan",
+    tagline: "Tigers among ancient ruins",
+    highlights: ["Tiger safari", "Ranthambore Fort", "Padam Lake"],
+    imageQuery: "Ranthambore tiger safari India",
+    feeds: ["Nature", "Adventure", "Culture"],
+  },
+  // ── Culture ───────────────────────────────────────────────────────────────
+  {
+    name: "Jaipur",
+    region: "Rajasthan",
+    tagline: "Pink City forts & bazaars",
+    highlights: ["Amer Fort & City Palace", "Heritage walks", "Rajasthani cuisine"],
+    imageQuery: "Jaipur India Amber Fort",
+    feeds: ["Culture", "Urban"],
+  },
+  {
+    name: "Varanasi",
+    region: "Uttar Pradesh",
+    tagline: "Ghats, temples & dawn on the Ganges",
+    highlights: ["Sunrise boat rides", "Evening aarti", "Silk & narrow lanes"],
+    imageQuery: "Varanasi India Ganges ghats",
+    feeds: ["Culture", "Nature"],
+  },
+  {
+    name: "Udaipur",
+    region: "Rajasthan",
+    tagline: "Lakes, palaces & old-world romance",
+    highlights: ["City Palace complex", "Pichola boat rides", "Sunset viewpoints"],
+    imageQuery: "Udaipur India lake palace",
+    feeds: ["Culture", "Nature"],
+  },
+  {
+    name: "Mysuru",
+    region: "Karnataka",
+    tagline: "Royal heritage and calm boulevards",
+    highlights: ["Mysore Palace", "Chamundi Hills", "Silk & sandalwood markets"],
+    imageQuery: "Mysore India palace",
+    feeds: ["Culture", "Urban"],
+  },
+  {
+    name: "Hampi",
+    region: "Karnataka",
+    tagline: "Vijayanagara ruins & boulder landscapes",
+    highlights: ["Virupaksha Temple", "Vittala Temple & stone chariot", "Coracle rides"],
+    imageQuery: "Hampi Karnataka ruins India",
+    feeds: ["Culture", "Adventure", "Nature"],
+  },
+  {
+    name: "Amritsar",
+    region: "Punjab",
+    tagline: "Sacred heritage and rich food trails",
+    highlights: ["Golden Temple", "Wagah ceremony", "Punjabi cuisine"],
+    imageQuery: "Amritsar Golden Temple India",
+    feeds: ["Culture"],
+  },
+  {
+    name: "Khajuraho",
+    region: "Madhya Pradesh",
+    tagline: "UNESCO temples & medieval artistry",
+    highlights: ["Western Group temples", "Light & sound show", "Panna Tiger Reserve"],
+    imageQuery: "Khajuraho temples India",
+    feeds: ["Culture"],
+  },
+  // ── Adventure ─────────────────────────────────────────────────────────────
+  {
+    name: "Rishikesh",
+    region: "Uttarakhand",
+    tagline: "River rafting and Himalayan calm",
+    highlights: ["Ganga aarti", "White-water rafting", "Bungee jumping"],
+    imageQuery: "Rishikesh India Ganges rafting",
+    feeds: ["Adventure", "Nature", "Culture"],
+  },
+  {
+    name: "Shillong",
+    region: "Meghalaya",
+    tagline: "Cloud-kissed hills & waterfalls",
+    highlights: ["Elephant Falls", "Living root bridges", "Dawki river"],
+    imageQuery: "Shillong Meghalaya hills waterfall",
+    feeds: ["Adventure", "Nature", "Mountains"],
+  },
+  {
+    name: "Auli",
+    region: "Uttarakhand",
+    tagline: "India's premier ski destination",
+    highlights: ["Skiing & snowboarding", "Gurso Bugyal meadows", "Nanda Devi views"],
+    imageQuery: "Auli Uttarakhand skiing snow",
+    feeds: ["Adventure", "Mountains"],
   },
 ];
 
-function pickRandomSuggestions(pool, count) {
-  const shuffled = [...pool];
+function pickRandomSuggestions(pool, count, feed) {
+  // Filter by feed tag first; fall back to full pool if nothing matches
+  const filtered = feed ? pool.filter((d) => d.feeds?.includes(feed)) : pool;
+  const source = filtered.length > 0 ? filtered : pool;
+  const shuffled = [...source];
   for (let i = shuffled.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
@@ -381,8 +611,9 @@ export default function TripGuide() {
   const [chatOpen, setChatOpen] = useState(false);
   const suggestionInflightRef = useRef(new Set());
   const destinationSuggestions = useMemo(
-    () => pickRandomSuggestions(DESTINATION_POOL, SUGGESTION_COUNT),
-    []
+    () => pickRandomSuggestions(DESTINATION_POOL, SUGGESTION_COUNT, form.feed_preference),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [form.feed_preference]
   );
 
   const hasDestination = Boolean(form.destination?.trim());
@@ -503,6 +734,7 @@ export default function TripGuide() {
         ...payload,
         from_location: fromLocation,
         duration: Number(payload.duration) || 1,
+        transit_preference: payload.transit_preference || "flight",
       });
       setGuidance(data);
     } catch (err) {
