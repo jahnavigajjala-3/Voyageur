@@ -81,6 +81,7 @@ export default function Dashboard() {
   const [clickedRisk, setClickedRisk]   = useState(null);
   const [chatOpen, setChatOpen]         = useState(false);
   const [hospitalsFor, setHospitalsFor] = useState(null);
+  const [policeFor, setPoliceFor]       = useState(null);
   const [nearbyHospitalCount, setNearbyHospitalCount] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [locationName, setLocationName] = useState("");
@@ -454,6 +455,27 @@ export default function Dashboard() {
                             >
                               {hospitalsFor === "live" ? "Hide hospitals" : "Hospitals"}
                             </button>
+                            <button
+                              onClick={() => mapRef.current?.showPoliceFor("live")}
+                              className="flex-1 py-2 rounded-xl text-[10px] font-bold transition-colors"
+                              style={{
+                                background: policeFor === "live" ? "rgba(59,130,246,0.15)" : "rgba(59,130,246,0.08)",
+                                border: policeFor === "live"
+                                  ? "1px solid rgba(59,130,246,0.35)"
+                                  : "1px solid rgba(59,130,246,0.18)",
+                                color: policeFor === "live" ? "#93c5fd" : "rgba(147,197,253,0.75)",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = "rgba(59,130,246,0.2)";
+                                e.currentTarget.style.color = "#93c5fd";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = policeFor === "live" ? "rgba(59,130,246,0.15)" : "rgba(59,130,246,0.08)";
+                                e.currentTarget.style.color = policeFor === "live" ? "#93c5fd" : "rgba(147,197,253,0.75)";
+                              }}
+                            >
+                              {policeFor === "live" ? "Hide stations" : "Police Station"}
+                            </button>
                           </div>
                         </div>
                       ) : (
@@ -498,6 +520,7 @@ export default function Dashboard() {
                                 mapRef.current?.clearAll();
                                 setClickedRisk(null);
                                 setHospitalsFor(null);
+                                setPoliceFor(null);
                               }}
                               className="flex items-center justify-center rounded-xl w-7 h-7 text-xs transition-colors"
                               style={{ color: "rgb(var(--text-tertiary))" }}
@@ -576,6 +599,27 @@ export default function Dashboard() {
                             >
                               {hospitalsFor === "selected" ? "Hide hospitals" : "Hospitals"}
                             </button>
+                            <button
+                              onClick={() => mapRef.current?.showPoliceFor("selected")}
+                              className="flex-1 py-2 rounded-xl text-[10px] font-bold transition-colors"
+                              style={{
+                                background: policeFor === "selected" ? "rgba(59,130,246,0.15)" : "rgba(59,130,246,0.08)",
+                                border: policeFor === "selected"
+                                  ? "1px solid rgba(59,130,246,0.35)"
+                                  : "1px solid rgba(59,130,246,0.18)",
+                                color: policeFor === "selected" ? "#93c5fd" : "rgba(147,197,253,0.75)",
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.background = "rgba(59,130,246,0.2)";
+                                e.currentTarget.style.color = "#93c5fd";
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.background = policeFor === "selected" ? "rgba(59,130,246,0.15)" : "rgba(59,130,246,0.08)";
+                                e.currentTarget.style.color = policeFor === "selected" ? "#93c5fd" : "rgba(147,197,253,0.75)";
+                              }}
+                            >
+                              {policeFor === "selected" ? "Hide stations" : "Police Station"}
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -596,6 +640,7 @@ export default function Dashboard() {
                     onClickedRiskUpdate={setClickedRisk}
                     mapRef={mapRef}
                     onHospitalsChange={setHospitalsFor}
+                    onPoliceChange={setPoliceFor}
                     hospitalsFor={hospitalsFor}
                     nearbyHospitalCount={nearbyHospitalCount}
                     locationName={locationName}
@@ -1238,7 +1283,7 @@ function PlaceAutocomplete({ value, onChange, onSelect, placeholder, inputClassN
 }
 
 // ─── GlassMapCard (unchanged) ─────────────────────────────────────────────
-function GlassMapCard({ liveRisk, onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsChange, hospitalsFor, nearbyHospitalCount, locationName, safeRoutes = [], selectedRouteId, onRouteSelect, isLoadingRoutes = false, userLocation }) {
+function GlassMapCard({ liveRisk, onRiskUpdate, onClickedRiskUpdate, mapRef, onHospitalsChange, onPoliceChange, hospitalsFor, nearbyHospitalCount, locationName, safeRoutes = [], selectedRouteId, onRouteSelect, isLoadingRoutes = false, userLocation }) {
   const [routeFrom, setRouteFrom]             = useState("");
   const [routeTo, setRouteTo]                 = useState("");
   const [routeFromCoords, setRouteFromCoords] = useState(null);
@@ -1418,6 +1463,7 @@ function GlassMapCard({ liveRisk, onRiskUpdate, onClickedRiskUpdate, mapRef, onH
               onRiskUpdate={onRiskUpdate}
               onClickedRiskUpdate={onClickedRiskUpdate}
               onHospitalsChange={onHospitalsChange}
+              onPoliceChange={onPoliceChange}
             />
           </div>
         </div>
