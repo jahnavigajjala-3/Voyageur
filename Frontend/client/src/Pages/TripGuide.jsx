@@ -10,11 +10,6 @@ import FloatingVoyageurChat from "../components/FloatingVoyageurChat";
 
 const FEEDS = ["Mountains", "Beaches", "Urban", "Nature", "Culture", "Adventure"];
 const BUDGETS = ["economy", "midrange", "luxury"];
-const TRANSITS = [
-  { value: "airport", label: "Nearest airport" },
-  { value: "railway", label: "Nearest railway" },
-  { value: "bus", label: "Nearest bus stand" },
-];
 
 const SUGGESTION_COUNT = 6;
 
@@ -369,7 +364,6 @@ export default function TripGuide() {
   const { location } = useLocation();
   const [form, setForm] = useState({
     from_location: "Current Location",
-    transit_preference: "airport",
     destination: "",
     feed_preference: "Beaches",
     budget_scale: "midrange",
@@ -529,7 +523,7 @@ export default function TripGuide() {
     }, 350);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.from_location, form.transit_preference, form.feed_preference, form.budget_scale, form.duration, form.destination]);
+}, [form.from_location, form.feed_preference, form.budget_scale, form.duration, form.destination]);
 
   const updateForm = (key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -576,7 +570,7 @@ export default function TripGuide() {
     lines.push(`From / origin (form): ${form.from_location}`);
     lines.push(`Resolved origin label (when GPS): ${actualFromLocation}`);
     lines.push(
-      `Trip style: ${form.feed_preference} · Budget: ${form.budget_scale} · Duration: ${form.duration} day(s) · Transit hub: ${form.transit_preference}`
+      `Trip style: ${form.feed_preference} · Budget: ${form.budget_scale} · Duration: ${form.duration} day(s)`
     );
     if (!hasDestination) {
       const poolHint = DESTINATION_POOL.map((p) => `${p.name} (${p.region})`).slice(0, 10).join("; ");
@@ -919,10 +913,6 @@ export default function TripGuide() {
                       <Search size={13} /> Go
                     </button>
                   </div>
-                </Field>
-
-                <Field label="Transit preference">
-                  <Segmented options={TRANSITS} value={form.transit_preference} onChange={(value) => updateForm("transit_preference", value)} />
                 </Field>
 
                 <Field label="Feed preference">
