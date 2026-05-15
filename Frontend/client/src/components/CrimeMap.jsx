@@ -48,6 +48,8 @@ const routeEndIcon = makeGlowIcon("#f97316", 13);
 const clickedIcon = makeGlowIcon("#fbbf24", 12);
 // Hospital — emerald
 const hospitalIcon = makeGlowIcon("#10b981", 11);
+// Police station — blue
+const policeIcon = makeGlowIcon("#3b82f6", 11, "#3b82f6");
 // Route waypoint (legacy)
 const routeIcon = routeStartIcon;
 // Step marker — cyan small
@@ -359,7 +361,7 @@ function RecenterButton({ lat, lng }) {
 }
 
 const CrimeMap = forwardRef(function CrimeMap(
-  { onRiskUpdate, onClickedRiskUpdate, pickingFor, onRoutePick, onHospitalsChange, onRouteDirections },
+  { onRiskUpdate, onClickedRiskUpdate, pickingFor, onRoutePick, onHospitalsChange, onPoliceChange, onRouteDirections },
   ref
 ) {
   const { location, error } = useLocation();
@@ -379,6 +381,9 @@ const CrimeMap = forwardRef(function CrimeMap(
   const [hospitals, setHospitals]           = useState([]);
   const [showHospitals, setShowHospitals]   = useState(false);
   const [hospitalCenter, setHospitalCenter] = useState(null);
+  const [policeStations, setPoliceStations] = useState([]);
+  const [showPolice, setShowPolice]         = useState(false);
+  const [policeCenter, setPoliceCenter]     = useState(null);
   
   // Use route context for state management
   const {
@@ -549,12 +554,53 @@ const CrimeMap = forwardRef(function CrimeMap(
       } catch (e) { console.error("Hospital fetch failed:", e); }
     },
 
+    showPoliceFor: async (type) => {
+      if (showPolice) {
+        setShowPolice(false);
+        setPoliceStations([]);
+        setPoliceCenter(null);
+        if (onPoliceChange) onPoliceChange(null);
+        return;
+      }
+      const loc = type === "live" ? location : selectedLocation;
+      if (!loc) return;
+      setPoliceCenter({ lat: loc.lat, lng: loc.lng });
+      setShowPolice(true);
+      if (onPoliceChange) onPoliceChange(type);
+      try {
+        // Overpass API — fetch police stations within 10 km radius
+        const radius = 10000; // metres
+        const query = `[out:json][timeout:15];
+(
+  node["amenity"="police"](around:${radius},${loc.lat},${loc.lng});
+  way["amenity"="police"](around:${radius},${loc.lat},${loc.lng});
+  relation["amenity"="police"](around:${radius},${loc.lat},${loc.lng});
+);
+out center 15;`;
+        const res = await fetch("https://overpass-api.de/api/interpreter", {
+          method: "POST",
+          body: query,
+        });
+        const data = await res.json();
+        const stations = (data.elements || []).map((el) => ({
+          lat: el.lat ?? el.center?.lat,
+          lng: el.lon ?? el.center?.lon,
+          name: el.tags?.name || el.tags?.["name:en"] || "Police Station",
+          phone: el.tags?.phone || el.tags?.["contact:phone"] || null,
+        })).filter((s) => s.lat != null && s.lng != null);
+        setPoliceStations(stations);
+      } catch (e) { console.error("Police station fetch failed:", e); }
+    },
+
     clearAll: () => {
       setSelectedLocation(null);
       setSelectedCrimeRisk(null);
       setHospitals([]);
       setShowHospitals(false);
       setHospitalCenter(null);
+      setPoliceStations([]);
+      setShowPolice(false);
+      setPoliceCenter(null);
       setRouteActive(false);
       setRouteWaypoints([]);
       setStepCoords([]);
@@ -611,6 +657,9 @@ const CrimeMap = forwardRef(function CrimeMap(
     setHospitals([]);
     setShowHospitals(false);
     setHospitalCenter(null);
+    setPoliceStations([]);
+    setShowPolice(false);
+    setPoliceCenter(null);
     try {
       const risk = await getCrimeRiskByCoords(lat, lng);
       setSelectedCrimeRisk(risk);
@@ -752,6 +801,28 @@ const CrimeMap = forwardRef(function CrimeMap(
             radius={30000}
             pathOptions={{
               color: "#22c55e", fillColor: "#22c55e",
+              fillOpacity: 0.04, weight: 1, opacity: 0.3, dashArray: "6 4",
+            }}
+          />
+        )}
+
+        {showPolice && policeStations.map((ps, i) => (
+          <Marker key={`police-${i}`} position={[ps.lat, ps.lng]} icon={policeIcon}>
+            <Popup className="voyageour-popup">
+              <div style={POPUP_MIN_BOX}>
+                <div style={{ fontWeight: 700, fontSize: "11px", letterSpacing: "0.1em", color: "#3b82f6", marginBottom: "4px" }}>POLICE STATION</div>
+                <div style={{ color: "rgb(var(--text-primary))", fontWeight: 600 }}>{ps.name}</div>
+                {ps.phone && <div style={{ color: "#38bdf8", fontSize: "11px", marginTop: "3px" }}>{ps.phone}</div>}
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+        {showPolice && policeCenter && (
+          <Circle
+            center={[policeCenter.lat, policeCenter.lng]}
+            radius={10000}
+            pathOptions={{
+              color: "#3b82f6", fillColor: "#3b82f6",
               fillOpacity: 0.04, weight: 1, opacity: 0.3, dashArray: "6 4",
             }}
           />
