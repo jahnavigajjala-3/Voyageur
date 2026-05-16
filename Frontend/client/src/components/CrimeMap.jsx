@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-le
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import useLocation from "../hooks/useLocation";
-import { getCrimeRiskByCoords, getNearbyHospitals, getSafeRoutes, getSafeRoutesDebounced } from "../api/api";
+import { getCrimeRiskByCoords, getNearbyHospitals, getNearbyPoliceStations, getSafeRoutes, getSafeRoutesDebounced } from "../api/api";
 import { useRouteContext } from "../context/RouteContext";
 
 delete L.Icon.Default.prototype._getIconUrl;
@@ -568,27 +568,8 @@ const CrimeMap = forwardRef(function CrimeMap(
       setShowPolice(true);
       if (onPoliceChange) onPoliceChange(type);
       try {
-        // Overpass API — fetch police stations within 10 km radius
-        const radius = 10000; // metres
-        const query = `[out:json][timeout:15];
-(
-  node["amenity"="police"](around:${radius},${loc.lat},${loc.lng});
-  way["amenity"="police"](around:${radius},${loc.lat},${loc.lng});
-  relation["amenity"="police"](around:${radius},${loc.lat},${loc.lng});
-);
-out center 15;`;
-        const res = await fetch("https://overpass-api.de/api/interpreter", {
-          method: "POST",
-          body: query,
-        });
-        const data = await res.json();
-        const stations = (data.elements || []).map((el) => ({
-          lat: el.lat ?? el.center?.lat,
-          lng: el.lon ?? el.center?.lon,
-          name: el.tags?.name || el.tags?.["name:en"] || "Police Station",
-          phone: el.tags?.phone || el.tags?.["contact:phone"] || null,
-        })).filter((s) => s.lat != null && s.lng != null);
-        setPoliceStations(stations);
+        const data = await getNearbyPoliceStations(loc.lat, loc.lng, 10000, 15);
+        setPoliceStations(data.stations || []);
       } catch (e) { console.error("Police station fetch failed:", e); }
     },
 
