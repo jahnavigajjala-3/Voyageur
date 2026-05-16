@@ -58,6 +58,74 @@ async def nearby_hospitals(
     """Get nearby hospitals. Accessible by guests and authenticated users."""
     return get_nearby_hospitals(lat, lng, radius, limit)
 
+
+@router.get("/police-stations")
+async def nearby_police_stations(
+    lat: float,
+    lng: float,
+    radius: int = 10000,
+    limit: int = 15,
+    current_user=Depends(get_optional_user),
+):
+    """
+    Fetch nearby police stations via Overpass API (server-side proxy to avoid CORS).
+    radius is in metres, default 10 km.
+    Tries the main Overpass endpoint first, falls back to a mirror on failure.
+    """
+    import httpx
+    from urllib.parse import urlencode
+
+    query = (
+        f"[out:json][timeout:15];"
+        f"("
+        f'node["amenity"="police"](around:{radius},{lat},{lng});'
+        f'way["amenity"="police"](around:{radius},{lat},{lng});'
+        f'relation["amenity"="police"](around:{radius},{lat},{lng});'
+        f");"
+        f"out center {limit};"
+    )
+
+    # Encode as application/x-www-form-urlencoded — required by Overpass
+    body = urlencode({"data": query})
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+    endpoints = [
+        "https://overpass-api.de/api/interpreter",
+        "https://overpass.kumi.systems/api/interpreter",
+    ]
+
+    last_exc = None
+    data = None
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        for url in endpoints:
+            try:
+                resp = await client.post(url, content=body.encode(), headers=headers)
+                resp.raise_for_status()
+                data = resp.json()
+                break
+            except Exception as exc:
+                last_exc = exc
+                continue
+
+    if data is None:
+        raise HTTPException(status_code=502, detail=f"Overpass API error: {last_exc}")
+
+    stations = []
+    for el in data.get("elements", []):
+        slat = el.get("lat") or (el.get("center") or {}).get("lat")
+        slng = el.get("lon") or (el.get("center") or {}).get("lon")
+        if slat is None or slng is None:
+            continue
+        tags = el.get("tags", {})
+        stations.append({
+            "lat": slat,
+            "lng": slng,
+            "name": tags.get("name") or tags.get("name:en") or "Police Station",
+            "phone": tags.get("phone") or tags.get("contact:phone"),
+        })
+
+    return {"stations": stations}
+
 @router.post(
     "/routes/safe",
     response_model=SafeRouteResponse,
