@@ -455,27 +455,6 @@ export default function Dashboard() {
                             >
                               {hospitalsFor === "live" ? "Hide hospitals" : "Hospitals"}
                             </button>
-                            <button
-                              onClick={() => mapRef.current?.showPoliceFor("live")}
-                              className="flex-1 py-2 rounded-xl text-[10px] font-bold transition-colors"
-                              style={{
-                                background: policeFor === "live" ? "rgba(59,130,246,0.15)" : "rgba(59,130,246,0.08)",
-                                border: policeFor === "live"
-                                  ? "1px solid rgba(59,130,246,0.35)"
-                                  : "1px solid rgba(59,130,246,0.18)",
-                                color: policeFor === "live" ? "#93c5fd" : "rgba(147,197,253,0.75)",
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.background = "rgba(59,130,246,0.2)";
-                                e.currentTarget.style.color = "#93c5fd";
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.background = policeFor === "live" ? "rgba(59,130,246,0.15)" : "rgba(59,130,246,0.08)";
-                                e.currentTarget.style.color = policeFor === "live" ? "#93c5fd" : "rgba(147,197,253,0.75)";
-                              }}
-                            >
-                              {policeFor === "live" ? "Hide stations" : "Police Station"}
-                            </button>
                           </div>
                         </div>
                       ) : (
