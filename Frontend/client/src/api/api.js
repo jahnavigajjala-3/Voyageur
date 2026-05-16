@@ -125,6 +125,14 @@ export const getWeather = async (lat, lng) => {
   return handleResponse(res);
 };
 
+// Police stations — proxied through backend to avoid CORS
+export const getNearbyPoliceStations = async (lat, lng, radius = 10000, limit = 15) => {
+  const res = await fetch(
+    `${API_V1}/travel/police-stations?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&radius=${radius}&limit=${limit}`
+  );
+  return handleResponse(res);
+};
+
 // Safe Routes — public endpoint, no auth required
 export const getSafeRoutes = async (origin, destination, alternatives = 3, preference = "safety", signal = null) => {
   const res = await fetch(`${API_V1}/travel/routes/safe`, {
